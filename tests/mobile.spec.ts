@@ -17,10 +17,10 @@ test('mobile platform styles preserve zoom, scrolling and selectable content', a
   expect(styles.button).toBe('manipulation')
   expect(styles.selection).not.toBe('none')
   expect(styles.overscroll).toBe('none')
-  await expect(page.getByRole('button', { name: 'Opening sound', exact: true })).toHaveAttribute('aria-pressed', 'true')
-  await page.getByRole('button', { name: 'Opening sound', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Sound', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: 'Sound', exact: true }).click()
   await page.reload()
-  await expect(page.getByRole('button', { name: 'Opening sound', exact: true })).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.getByRole('button', { name: 'Sound', exact: true })).toHaveAttribute('aria-pressed', 'false')
 })
 
 test('a vertical touch swipe on the bouquet can scroll the page', async ({ page, isMobile }) => {

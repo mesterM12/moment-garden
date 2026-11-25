@@ -595,6 +595,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
       start = null;
     }
     if (current) pose(current, next);
+    options.onBloomProgress?.(next);
   }
 
   function tick(now: number): void {
@@ -621,6 +622,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
       const rect = stage!.getBoundingClientRect();
       const ratio = Math.min(view.devicePixelRatio || 1, 2);
       if (rect.width <= 0 || rect.height <= 0) {
+        options.onBloomPause?.();
         width = height = 0;
         start = null;
         cancelFrame();
@@ -703,6 +705,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
 
   function onVisibilityChange(): void {
     if (document.hidden) {
+      options.onBloomPause?.();
       cancelFrame();
       start = null;
       endDrag(view.performance.now(), true);
@@ -830,6 +833,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
       phase = 'blooming';
       start = document.hidden || !width || !height ? null : view.performance.now();
       setProgress(instant || reducedMotion ? 1 : 0);
+      if (document.hidden || !width || !height) options.onBloomPause?.();
       announceProgress();
       paint();
       if (progress === 1 && !rotation.moving) cancelFrame();

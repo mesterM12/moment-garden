@@ -66,6 +66,8 @@ test('production worker caches lazy engine and Three, reloads offline and opens 
   })
   expect(cached.some(url => /\/engine-[^/]+\.js/.test(url))).toBe(true)
   expect(cached.some(url => /\/three-[^/]+\.js/.test(url))).toBe(true)
+  expect(cached.some(url => /\/audio\/gift-open\.wav/.test(url))).toBe(true)
+  expect(cached.some(url => /\/audio\/bloom\.wav/.test(url))).toBe(true)
   await context.setOffline(true)
   await page.reload()
   await open(page, sharedSeed)
@@ -91,7 +93,7 @@ test('installation remains browser-owned without an in-page install control or p
 test('same production artifact works at a static subpath and updates wait without replacing a gift', async ({ page, context }) => {
   let update = false
   const mount = '/moment-garden/'
-  const types: Record<string, string> = { js: 'text/javascript', css: 'text/css', html: 'text/html', webmanifest: 'application/manifest+json', png: 'image/png', svg: 'image/svg+xml' }
+  const types: Record<string, string> = { js: 'text/javascript', css: 'text/css', html: 'text/html', webmanifest: 'application/manifest+json', png: 'image/png', svg: 'image/svg+xml', wav: 'audio/wav' }
   const server = createServer(async (request, response) => {
     const pathname = new URL(request.url!, 'http://localhost').pathname
     if (!pathname.startsWith(mount) || pathname.includes('..')) { response.writeHead(404).end(); return }

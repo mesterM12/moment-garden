@@ -10,7 +10,8 @@
     "test:unit": "vitest run --project unit",
     "test:react": "vitest run --project react",
     "test:e2e": "playwright test",
-    "pwa:icons": "node src/pwa/generate-icons.ts"
+    "pwa:icons": "node src/pwa/generate-icons.ts",
+    "sound:render": "node src/audio/generate.ts"
   },
   "dependencies": {
     "@ui-sdk/core": "^0.1.0-beta.17",

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { createAgent } from '@ui-sdk/react/agent'
 import { beforeEach, expect, it, vi } from 'vitest'
 import App from '../App'
+import type { GardenEngineOptions } from '../garden/types'
 
 const mocks = vi.hoisted(() => {
   const engine = {
@@ -11,8 +12,8 @@ const mocks = vi.hoisted(() => {
     bloom: vi.fn(), resetView: vi.fn(), setReducedMotion: vi.fn(),
     exportPng: vi.fn(async () => new Blob(['postcard'], { type: 'image/png' })), dispose: vi.fn(),
   }
-  const sound = { play: vi.fn(), stop: vi.fn(), dispose: vi.fn() }
-  return { engine, sound, createGarden: vi.fn(() => engine) }
+  const sound = { prepare: vi.fn(), play: vi.fn(), sync: vi.fn(), stop: vi.fn(), dispose: vi.fn() }
+  return { engine, sound, createGarden: vi.fn((_canvas: HTMLCanvasElement, _options: GardenEngineOptions) => engine) }
 })
 vi.mock('../garden/engine', () => ({ createGarden: mocks.createGarden }))
 vi.mock('../lib/bloom-sound', () => ({ createBloomSound: () => mocks.sound }))
@@ -33,13 +34,13 @@ it('opens the shared bouquet with keyboard, exposes named actions, and preserves
   open.focus()
   await user.keyboard('{Enter}')
   expect(mocks.engine.bloom).toHaveBeenCalledWith({ instant: true })
-  expect(mocks.sound.play).toHaveBeenCalledTimes(1)
+  expect(mocks.sound.play).toHaveBeenCalledWith('opening')
   expect(document.querySelector('.flower-garden')?.hasAttribute('data-pointer-opened')).toBe(false)
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Open your flowers' })).toBeNull())
   const components = agent.snapshot().filter(entry => !entry.offPage && entry.component !== 'more')
   for (const entry of components) expect(entry.label, `${entry.component} must have an accessible name`).toBeTruthy()
   const labels = components.map(entry => entry.label)
-  for (const label of ['Send flowers', 'Grow another', 'Replay bloom', 'Reset view', 'Opening sound']) {
+  for (const label of ['Send flowers', 'Grow another', 'Replay bloom', 'Reset view', 'Sound']) {
     expect(labels).toContain(label)
   }
   expect(labels.some(label => label?.includes('Save'))).toBe(true)
@@ -48,6 +49,7 @@ it('opens the shared bouquet with keyboard, exposes named actions, and preserves
     expect(result.ok, result.error?.message).toBe(true)
   })
   expect(mocks.engine.bloom).toHaveBeenCalled()
+  expect(mocks.sound.play).toHaveBeenLastCalledWith('bloom')
   expect(mocks.engine.show).toHaveBeenCalledTimes(1)
   await user.click(screen.getByRole('button', { name: 'Reset view' }))
   expect(mocks.engine.resetView).toHaveBeenCalled()
@@ -70,15 +72,21 @@ it('marks only pointer opening for the action reveal and keeps the group interac
   expect(actions.hasAttribute('data-sealed')).toBe(false)
   expect(actions.hasAttribute('inert')).toBe(false)
   expect(mocks.engine.bloom).toHaveBeenCalledWith({ instant: false })
+  expect(mocks.sound.play).toHaveBeenCalledWith('opening-and-bloom')
+  const callbacks = mocks.createGarden.mock.calls[0]![1]
+  act(() => callbacks.onBloomProgress?.(.35))
+  expect(mocks.sound.sync).toHaveBeenCalledWith(.35)
+  act(() => callbacks.onBloomPause?.())
+  expect(mocks.sound.stop).toHaveBeenCalledTimes(1)
   await user.click(screen.getByRole('button', { name: 'Grow another' }))
   expect(actions.hasAttribute('data-pointer-opened')).toBe(true)
   expect(mocks.engine.show).toHaveBeenCalledTimes(2)
 })
 
-it('lets people mute before opening, remembers the choice, and never plays on replay', async () => {
+it('lets people mute both layers before opening, remembers the choice, and keeps replay silent', async () => {
   const user = userEvent.setup()
   const view = render(<App />)
-  const sound = screen.getByRole('button', { name: 'Opening sound' })
+  const sound = screen.getByRole('button', { name: 'Sound' })
   expect(sound.getAttribute('aria-pressed')).toBe('true')
   sound.focus()
   await user.keyboard(' ')
@@ -93,7 +101,7 @@ it('lets people mute before opening, remembers the choice, and never plays on re
   expect(mocks.sound.stop).toHaveBeenCalled()
   view.unmount()
   render(<App />)
-  expect(screen.getByRole('button', { name: 'Opening sound' }).getAttribute('aria-pressed')).toBe('false')
+  expect(screen.getByRole('button', { name: 'Sound' }).getAttribute('aria-pressed')).toBe('false')
 })
 
 it('stops the opening sound when the page is hidden', async () => {

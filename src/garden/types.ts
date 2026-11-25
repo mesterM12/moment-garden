@@ -102,6 +102,8 @@ export interface GardenEngineOptions {
   onStatus?: (status: string) => void;
   onError?: (message: string | null) => void;
   onContextChange?: (lost: boolean) => void;
+  onBloomProgress?: (progress: number) => void;
+  onBloomPause?: () => void;
 }
 
 export interface GardenEngine {

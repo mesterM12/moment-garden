@@ -10,7 +10,7 @@ export function SoundToggle({ enabled, onChange }: { enabled: boolean; onChange:
       render={<Button variant="ghost" size="sm" className="flower-control flower-sound" />}
     >
       {enabled ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}
-      Opening sound
+      Sound
     </Toggle>
   )
 }

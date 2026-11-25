@@ -39,6 +39,8 @@ export default function App() {
   const [saveResult, setSaveResult] = useState<'downloaded' | 'failed' | null>(null)
   const reducedMotion = useReducedMotion()
   const openingSound = useOpeningSound()
+  const syncSound = openingSound.sync
+  const stopSound = openingSound.stop
 
   const canvas = useRef<HTMLCanvasElement>(null)
   const fallback = useRef<HTMLDivElement>(null)
@@ -75,14 +77,22 @@ export default function App() {
             lastStatus.current = next
             setStatus(next)
           },
+          onBloomProgress: syncSound,
+          onBloomPause: stopSound,
           onError(message) {
             if (canceled) return
-            if (message) uncoverForFailure()
+            if (message) {
+              stopSound()
+              uncoverForFailure()
+            }
             setError(message)
           },
           onContextChange(lost) {
             if (canceled) return
-            if (lost) uncoverForFailure()
+            if (lost) {
+              stopSound()
+              uncoverForFailure()
+            }
             else if (fallback.current?.contains(document.activeElement)) focusTarget.current = 'preview'
             setContextLost(lost)
           },
@@ -106,7 +116,7 @@ export default function App() {
       engine.current = null
       garden?.dispose()
     }
-  }, [])
+  }, [syncSound, stopSound])
 
   useEffect(() => {
     engine.current?.setReducedMotion(reducedMotion)
@@ -131,7 +141,7 @@ export default function App() {
     if (!ready || opened.current || !engine.current) return
     const instant = nonPointer || reducedMotion
     opened.current = true
-    openingSound.play()
+    openingSound.play(instant ? 'opening' : 'opening-and-bloom')
     focusTarget.current = 'preview'
     setPointerOpened(!nonPointer)
     setCover(instant ? 'gone' : 'exiting')
@@ -144,6 +154,7 @@ export default function App() {
     let seed = Math.max(lastFreshSeed.current + 1, Date.now())
     if (seed === activeSeed.current) seed += 1
     lastFreshSeed.current = seed
+    stopSound()
     const address = withoutBouquet(window.location.href)
     try {
       const next = garden.show(seed)
@@ -152,7 +163,9 @@ export default function App() {
       setSaveResult(null)
       setLinkStatus('absent')
       if (address !== window.location.href) history.replaceState(history.state, '', address)
-      garden.bloom({ instant: nonPointer || reducedMotion })
+      const instant = nonPointer || reducedMotion
+      if (!instant) openingSound.play('bloom')
+      garden.bloom({ instant })
     } catch {
       if (document.activeElement?.matches('.flower-render-control')) focusTarget.current = 'fallback'
       setError(previewError)
@@ -263,7 +276,10 @@ export default function App() {
             {reducedMotion ? null : (
               <ActionButton
                 disabled={!ready}
-                onClick={() => engine.current?.bloom()}
+                onClick={() => {
+                  openingSound.play('bloom')
+                  engine.current?.bloom()
+                }}
                 render={<Button variant="ghost" className="flower-control flower-render-control" />}
               ><RotateCw aria-hidden="true" />Replay bloom</ActionButton>
             )}
