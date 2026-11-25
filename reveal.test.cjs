@@ -5,7 +5,7 @@ const vm = require('node:vm');
 
 const source = readFileSync(`${__dirname}/reveal.js`, 'utf8');
 
-function setup({ reduced = false, activate, animation } = {}) {
+function setup({ reduced = false, activate, animation, offscreen = false } = {}) {
   const document = {};
   class Element extends EventTarget {
     children = [];
@@ -38,10 +38,14 @@ function setup({ reduced = false, activate, animation } = {}) {
   document.body = new Element();
   document.body.append(linkNotice, card, gardenControls, existingInert);
   document.activeElement = activate === 'notice' ? linkNotice : document.body;
-  document.createElement = () => new Element();
+  document.createElement = () => {
+    const created = new Element();
+    if (offscreen) created.getBoundingClientRect = () => ({ top: 1000, bottom: 1100 });
+    return created;
+  };
   document.querySelectorAll = selectors => document.body.querySelectorAll(selectors);
 
-  const window = { matchMedia: () => ({ matches: reduced }) };
+  const window = { innerHeight: 844, matchMedia: () => ({ matches: reduced }) };
   vm.runInNewContext(source, { window, document });
   const opened = [];
   const reveal = window.FlowerReveal.mount({ card, canvas, onOpen: ({ instant }) => opened.push(instant) });
@@ -105,6 +109,18 @@ test('fallback dismissal unseals without calling onOpen, and reports whether foc
   assert.ok(!canvas.hasAttribute('inert'));
   assert.ok(!card.contains(cover));
   assert.deepEqual(opened, []);
+});
+
+test('an offscreen opener does not take focus, and opening scrolls an offscreen bouquet into view', () => {
+  const { document, canvas, click } = setup({ offscreen: true });
+  assert.equal(document.activeElement, document.body);
+  canvas.getBoundingClientRect = () => ({ top: 1000, bottom: 1400 });
+  let scroll;
+  canvas.scrollIntoView = options => { scroll = options; };
+  click(0);
+  assert.equal(document.activeElement, canvas);
+  assert.equal(scroll.block, 'start');
+  assert.equal(scroll.behavior, 'instant');
 });
 
 test('mount and fallback dismissal do not take focus from an active link notice', () => {

@@ -43,7 +43,7 @@ The garden gathers **7–10 stems from at least three flower types**, brings the
 - **Unrestricted 360° rotation.** Explore above, below, and behind the bouquet with a mouse, touch, or keyboard.
 - **A gift to open.** Send a link that holds your exact bouquet behind a personal cover. Opening it begins the bloom from the front; keyboard opening and reduced-motion preferences show the finished arrangement immediately.
 - **A keepsake.** Download the current bouquet view as a PNG postcard.
-- **A quieter experience.** Reduced-motion preferences show the completed bouquet without the growth animation. Keyboard-activated opening, replay, and generation also show the finished arrangement immediately.
+- **A quieter experience.** Reduced-motion preferences show the completed bouquet without the growth animation. Keyboard-activated opening and generation also show the finished arrangement immediately; **Replay bloom** explicitly requests the animation and is unavailable while reduced motion is on.
 
 ### One garden, many bouquets
 

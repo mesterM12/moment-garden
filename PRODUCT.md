@@ -48,4 +48,4 @@ The product is named **Flowers for You**. The experience should feel warm and in
 
 ## Accessibility & Inclusion
 
-The bouquet supports pointer, touch, and keyboard rotation. The reduced-motion setting shows the finished bouquet without requiring the growth animation. Keyboard activation opens, replays, or generates the bouquet immediately; the bouquet rests after blooming rather than swaying continuously. Keep the gift view usable without dragging or waiting for motion.
+The bouquet supports pointer, touch, and keyboard rotation. The reduced-motion setting shows the finished bouquet without requiring the growth animation. Keyboard activation opens or generates the bouquet immediately. Replay explicitly requests the bloom animation for pointer and keyboard users; it is disabled while reduced motion is on. The bouquet rests after blooming rather than swaying continuously. Keep the gift view usable without dragging or waiting for motion.

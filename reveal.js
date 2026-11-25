@@ -37,7 +37,10 @@
     for (const element of content) element.setAttribute('data-flower-sealed', '');
     for (const element of newlyInert) element.setAttribute('inert', '');
     card.prepend(cover);
-    if (active === document.body || content.some(element => element.contains(active))) opener.focus({ preventScroll: true });
+    const openerBounds = opener.getBoundingClientRect?.();
+    const openerIsVisible = !openerBounds || (openerBounds.top >= 0 && openerBounds.bottom <= window.innerHeight);
+    if (content.some(element => element.contains(active))) opener.focus();
+    else if (active === document.body && openerIsVisible) opener.focus({ preventScroll: true });
 
     function uncover() {
       if (!sealed) return;
@@ -71,6 +74,10 @@
       const instant = event.detail === 0 || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       uncover();
       canvas.focus({ preventScroll: true });
+      const bounds = canvas.getBoundingClientRect?.();
+      if (bounds && (bounds.bottom <= 0 || bounds.top >= window.innerHeight)) {
+        canvas.scrollIntoView({ block: 'start', behavior: 'instant' });
+      }
       if (instant) {
         cover.remove();
       } else {

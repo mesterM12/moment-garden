@@ -17,6 +17,7 @@
   const manualShare = document.getElementById('manual-share');
   const shareUrl = document.getElementById('share-url');
   const saveButton = document.getElementById('save');
+  const replayButton = document.getElementById('replay');
   const saveStatus = document.getElementById('save-status');
   const renderControls = ['reset-view', 'save', 'grow', 'replay'].map(id => document.getElementById(id));
   const DURATION = 4600;
@@ -718,7 +719,8 @@
 
   document.getElementById('reset-view').addEventListener('click', resetView);
   document.getElementById('grow').addEventListener('click', event => grow({ instant: event.detail === 0 }));
-  document.getElementById('replay').addEventListener('click', event => replay({ instant: event.detail === 0 }));
+  // Replay is an explicit request to watch the artwork, not routine navigation.
+  replayButton.addEventListener('click', () => replay());
   shareButton.addEventListener('click', shareBouquet);
   function exportPostcard({ name, timestamp }) {
     start = performance.now() - DURATION;
@@ -803,6 +805,7 @@
     fallback.hidden = true;
     message.textContent = '';
     renderControls.forEach((button, index) => { button.disabled = disabledBeforeLoss[index]; });
+    syncReplayPreference();
     if (motion.matches) progress = 1;
     start = performance.now() - progress * DURATION;
     pose(progress);
@@ -816,7 +819,15 @@
     if (document.hidden) { if (frame !== null) cancelAnimationFrame(frame); frame = null; }
     else wake();
   });
-  motion.addEventListener('change', wake);
+  function syncReplayPreference() {
+    replayButton.disabled = contextLost || motion.matches;
+    replayButton.title = motion.matches ? 'Bloom animation is off with your reduced-motion preference.' : 'Watch this bouquet bloom again';
+  }
+  motion.addEventListener('change', () => {
+    syncReplayPreference();
+    wake();
+  });
+  syncReplayPreference();
   new ResizeObserver(resize).observe(stage);
 
   reveal = window.FlowerReveal?.mount?.({ card, canvas, onOpen: replay });
