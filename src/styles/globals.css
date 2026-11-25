@@ -1,0 +1,78 @@
+@layer ui-sdk;
+@import "tailwindcss";
+@import "@ui-sdk/core/web.css" layer(components);
+@import "./app.css";
+
+:root {
+  color-scheme: light;
+  --ink: #573b3d;
+  --rose: #9a4d5c;
+  --rose-hover: #803d4b;
+  --paper: #fff9f2;
+  --page: #f5e9e2;
+  --muted: #765b5d;
+  --line: #e7d3ce;
+  --wash: #f3e2df;
+  --serif: 'Instrument Serif', Georgia, serif;
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --primary: var(--rose);
+  --primary-foreground: var(--paper);
+  --secondary: var(--wash);
+  --secondary-foreground: var(--ink);
+  --accent: var(--wash);
+  --accent-foreground: var(--ink);
+  --muted-foreground: var(--muted);
+  --border: var(--line);
+  --input: #a4787c;
+  --ring: var(--rose);
+  --destructive: #a12f3b;
+  --radius: .875rem;
+  --ui-background: var(--paper);
+  --ui-foreground: var(--ink);
+  --ui-primary: var(--rose);
+  --ui-primary-foreground: var(--paper);
+  --ui-muted: var(--wash);
+  --ui-muted-foreground: var(--muted);
+  --ui-border: var(--line);
+  --ui-input: var(--input);
+  --ui-ring: var(--rose);
+  --ui-ring-border: var(--rose);
+  --ui-destructive: var(--destructive);
+  --ui-font-sans: 'DM Sans', sans-serif;
+  --ui-font-size: .9375rem;
+  font-family: 'DM Sans', sans-serif;
+  font-synthesis: none;
+  color: var(--ink);
+  background: var(--page);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+}
+
+html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+body { margin: 0; min-width: 280px; min-height: 100svh; }
+::selection { background: #eac9ce; color: var(--ink); }
+button, a, input { touch-action: manipulation; }
+button { user-select: none; -webkit-user-select: none; }
+button:not(:disabled, [aria-disabled="true"]):active { transform: scale(.97); }
+:is(button, a, input):focus-visible { outline: 2px solid var(--rose); outline-offset: 3px; }
+input { font-size: 1rem; caret-color: var(--rose); }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  button:not(:disabled, [aria-disabled="true"]):active { transform: none; }
+}
