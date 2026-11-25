@@ -554,13 +554,13 @@
     if (progress < 1) wake();
   }
 
-  function grow() {
+  function grow({ instant = false } = {}) {
     const cleanAddress = BouquetLink.withoutBouquet(window.location.href);
     if (cleanAddress !== window.location.href) history.replaceState(history.state, '', cleanAddress);
     linkNotice.textContent = '';
     introNote.textContent = senderNote;
     growFresh();
-    replay();
+    replay({ instant });
   }
 
   function growFresh() {
@@ -699,6 +699,10 @@
     if (event.key === 'ArrowUp') targetPitch -= 0.15;
     if (event.key === 'ArrowDown') targetPitch += 0.15;
     if (event.key === 'Home') resetView();
+    yaw = targetYaw;
+    pitch = targetPitch;
+    pose(progress);
+    renderer.render(scene, camera);
     wake();
   });
 
@@ -713,8 +717,8 @@
   }
 
   document.getElementById('reset-view').addEventListener('click', resetView);
-  document.getElementById('grow').addEventListener('click', grow);
-  document.getElementById('replay').addEventListener('click', replay);
+  document.getElementById('grow').addEventListener('click', event => grow({ instant: event.detail === 0 }));
+  document.getElementById('replay').addEventListener('click', event => replay({ instant: event.detail === 0 }));
   shareButton.addEventListener('click', shareBouquet);
   function exportPostcard({ name, timestamp }) {
     start = performance.now() - DURATION;
