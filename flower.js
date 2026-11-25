@@ -7,6 +7,12 @@
   const status = document.getElementById('growth-status');
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const message = document.getElementById('render-message');
+  const introNote = document.getElementById('intro-note');
+  const linkNotice = document.getElementById('link-notice');
+  const shareButton = document.getElementById('share');
+  const shareStatus = document.getElementById('share-status');
+  const manualShare = document.getElementById('manual-share');
+  const shareUrl = document.getElementById('share-url');
   const DURATION = 7800;
   let renderer;
 
@@ -54,7 +60,8 @@
   let pitch = 0;
   let targetPitch = 0;
   let drag = null;
-  let lastTimestamp = 0;
+  let lastFreshTimestamp = 0;
+  let sharing = false;
   const clamp = value => Math.max(0, Math.min(1, value));
   const ease = value => { const t = clamp(value); return t * t * (3 - 2 * t); };
 
@@ -411,9 +418,26 @@
   }
 
   function grow() {
-    // Monotonic millisecond seeds also distinguish very fast consecutive clicks.
-    lastTimestamp = Math.max(Date.now(), lastTimestamp + 1);
-    specimen = Botany.createBouquet(lastTimestamp);
+    const cleanAddress = BouquetLink.withoutBouquet(window.location.href);
+    if (cleanAddress !== window.location.href) history.replaceState(history.state, '', cleanAddress);
+    linkNotice.textContent = '';
+    introNote.textContent = 'A new surprise, every moment.';
+    growFresh();
+  }
+
+  function growFresh() {
+    // Monotonic seeds distinguish rapid clicks without inheriting a link's timestamp.
+    lastFreshTimestamp = Math.max(Date.now(), lastFreshTimestamp + 1);
+    if (lastFreshTimestamp === specimen?.timestamp) lastFreshTimestamp++;
+    showBouquet(lastFreshTimestamp);
+  }
+
+  function showBouquet(timestamp) {
+    specimen = Botany.createBouquet(timestamp);
+    manualShare.hidden = true;
+    shareUrl.value = '';
+    shareButton.disabled = !BouquetLink.create(window.location.href, timestamp);
+    shareStatus.textContent = shareButton.disabled ? 'Open the garden on a website to share a link.' : '';
     buildBouquet();
     const date = new Date(specimen.timestamp);
     document.getElementById('flower-name').textContent = specimen.name;
@@ -428,6 +452,54 @@
     document.getElementById('botanical-note').textContent = `${specimen.flowers.length} stems · ${kinds.join(', ')} · just for this moment.`;
     canvas.setAttribute('aria-label', `A hand-tied bouquet of ${specimen.flowers.length} procedurally generated flowers: ${kinds.join(', ')}. Drag in any direction for a full 360-degree view, or use the arrow keys. Press Home or Reset view to return to the front.`);
     replay();
+  }
+
+  function showManualShare(url, shouldFocus = true) {
+    shareStatus.textContent = 'Copy this link to send your bouquet.';
+    shareUrl.value = url;
+    manualShare.hidden = false;
+    if (shouldFocus) {
+      shareUrl.focus();
+      shareUrl.select();
+    }
+  }
+
+  async function shareBouquet() {
+    if (sharing) return;
+    const current = specimen;
+    const url = BouquetLink.create(window.location.href, current.timestamp);
+    if (!url) return;
+
+    sharing = true;
+    shareButton.setAttribute('aria-disabled', 'true');
+    shareStatus.textContent = '';
+    manualShare.hidden = true;
+    try {
+      const data = { title: 'Moment Garden', url };
+      try {
+        if (navigator.share && (!navigator.canShare || navigator.canShare(data))) {
+          await navigator.share(data);
+          return;
+        }
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          // A cancelled share should not silently write to the clipboard.
+          if (current === specimen) showManualShare(url, false);
+          return;
+        }
+      }
+
+      if (current !== specimen) return;
+      try {
+        await navigator.clipboard.writeText(url);
+        if (current === specimen) shareStatus.textContent = 'Bouquet link copied.';
+      } catch {
+        if (current === specimen) showManualShare(url);
+      }
+    } finally {
+      sharing = false;
+      shareButton.removeAttribute('aria-disabled');
+    }
   }
 
   function resize() {
@@ -489,7 +561,9 @@
   document.getElementById('reset-view').addEventListener('click', resetView);
   document.getElementById('grow').addEventListener('click', grow);
   document.getElementById('replay').addEventListener('click', replay);
+  shareButton.addEventListener('click', shareBouquet);
   document.getElementById('save').addEventListener('click', () => {
+    const { name, timestamp } = specimen;
     start = performance.now() - DURATION;
     progress = 1;
     pose(1, performance.now());
@@ -508,16 +582,16 @@
     ctx.drawImage(canvas, left, top, width, height);
     ctx.textAlign = 'center';
     ctx.fillStyle = '#354f3e'; ctx.font = '48px Georgia';
-    ctx.fillText(specimen.name, 800, 1500);
+    ctx.fillText(name, 800, 1500);
     ctx.fillStyle = '#7c8571'; ctx.font = '18px monospace';
-    ctx.fillText(`MOMENT GARDEN · ${new Date(specimen.timestamp).toISOString()}`, 800, 1560);
+    ctx.fillText(`MOMENT GARDEN · ${new Date(timestamp).toISOString()}`, 800, 1560);
     ctx.font = 'italic 25px Georgia'; ctx.fillText('A moment, in bloom.', 800, 1620);
     image.toBlob(blob => {
       if (!blob) return;
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `moment-garden-${specimen.timestamp}.png`;
+      link.download = `moment-garden-${timestamp}.png`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }, 'image/png');
@@ -537,6 +611,15 @@
   });
   motion.addEventListener('change', wake);
   new ResizeObserver(resize).observe(stage);
-  grow();
+
+  const incoming = BouquetLink.read(window.location.search);
+  if (incoming.status === 'valid') {
+    introNote.textContent = 'Sent to you from Moment Garden.';
+    showBouquet(incoming.timestamp);
+  } else {
+    if (incoming.status === 'invalid') linkNotice.textContent = 'This bouquet link is incomplete or invalid. We grew a fresh bouquet for you instead.';
+    if (incoming.status === 'unsupported') linkNotice.textContent = 'This garden can’t open that version of the bouquet link. We grew a fresh bouquet for you instead.';
+    growFresh();
+  }
   resize();
 })();

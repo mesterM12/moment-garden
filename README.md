@@ -12,6 +12,7 @@
 </p>
 
 <p align="center">
+  <a href="https://mesterm12.github.io/moment-garden/">Open the garden</a> ·
   <a href="#the-garden">Preview</a> ·
   <a href="#run-it-locally">Run locally</a> ·
   <a href="#how-it-grows">How it works</a> ·
@@ -27,7 +28,7 @@
 
 ## The garden
 
-Every visit gathers **7–9 stems from at least three flower types**, brings them into bloom, and ties them into a little bouquet. All geometry is generated in code—not loaded from photographs or model files.
+The garden gathers **7–9 stems from at least three flower types**, brings them into bloom, and ties them into a little bouquet. Open the garden for a surprise or follow a shared link to watch someone’s chosen bouquet bloom. All geometry is generated in code—not loaded from photographs or model files.
 
 <p align="center">
   <img src="docs/images/bloom.gif" width="630" alt="A procedurally generated bouquet growing its stems and opening its petals" />
@@ -40,6 +41,7 @@ Every visit gathers **7–9 stems from at least three flower types**, brings the
 - **Different construction, not just recoloring.** Nested rose cups, six tulip shells, rolled dahlia florets, broad poppy petals, recurved lily tepals, and golden-angle disk centers.
 - **A full blooming sequence.** Staggered growth, unfolding leaves, opening petals, and gentle swaying.
 - **Unrestricted 360° rotation.** Explore above, below, and behind the bouquet with a mouse, touch, or keyboard.
+- **A gift.** Send a link that opens your exact bouquet and plays the bloom from the front.
 - **A keepsake.** Download the current bouquet view as a PNG postcard.
 - **A quieter experience.** Reduced-motion preferences show the completed bouquet without the growth animation or idle sway.
 
@@ -85,7 +87,10 @@ Three.js is vendored locally, so rendering does not depend on a JavaScript CDN. 
 | Return to the front | **Reset view**, or `Home` while the bouquet is focused |
 | Generate a new bouquet | **Surprise me** |
 | Replay the same bouquet | **Watch them bloom** |
+| Send the current bouquet | **Share bouquet** |
 | Save a PNG postcard | Download icon at the bottom-right of the card |
+
+**Share bouquet** opens the system share sheet when available. Otherwise it copies the link or shows it for manual copying. Link sharing requires an HTTP(S) page; use the public garden to send links that others can open. When opened as a local file, the garden can still save a PNG.
 
 Touch gestures inside the bouquet rotate it; scroll the page from outside the illustration. Saving completes the bloom and captures the current viewing angle.
 
@@ -93,7 +98,7 @@ Touch gestures inside the bouquet rotate it; scroll the page from outside the il
 
 ```mermaid
 flowchart TD
-    A[Current timestamp] --> B[Seeded pseudo-random generator]
+    A[Current timestamp or shared seed] --> B[Seeded pseudo-random generator]
     B --> C[Choose focal, supporting, and accent species]
     B --> D[Generate species-aware cultivar colors]
     B --> E[Arrange 7–9 stems in depth]
@@ -111,7 +116,11 @@ flowchart TD
 
 `botany.js` turns a millisecond timestamp into a bouquet plan. Each stem gets a derived seed for its geometry, while repeated species share cultivar colors. Layout is chosen before tessellation, so changing mesh detail does not reshuffle the arrangement.
 
-Replay keeps the existing bouquet; **Surprise me** starts from a new timestamp. Generation is deterministic for the same seed and generator version, though browser/GPU rendering can vary. There is no seed-entry UI or shareable-seed URL yet.
+Replay, rotation, and PNG export keep the existing bouquet. **Surprise me** starts from a new timestamp and clears any bouquet seed from the address, so refreshing afterward is a fresh visit. The link carries the arrangement, not the sender’s camera angle. Browser/GPU rendering can vary.
+
+#### Bouquet link contract
+
+The share control adds `?bouquet=1.<timestamp>` to the current site path. Version `1` identifies the seeded plan and procedural geometry. The timestamp is a nonnegative integer in Unix epoch milliseconds, written in decimal without leading zeros (except `0`), and must be a valid JavaScript `Date`. A valid link restores its bouquet on every open and refresh. Malformed and unsupported links show a notice and grow a fresh bouquet instead. If a future recipe change breaks visual reproducibility, use a new version and keep the version 1 generator available for old links.
 
 ### Geometry with botanical cues
 
@@ -130,16 +139,17 @@ These are stylized procedural interpretations, not botanical simulations or phot
 
 ## Development
 
-The site is plain HTML, CSS, and JavaScript. **Node.js 18+** is only needed to run the generator tests.
+The site is plain HTML, CSS, and JavaScript. **Node.js 18+** is only needed to run the tests.
 
 ```sh
-node --test botany.test.cjs
+node --test botany.test.cjs bouquet-link.test.cjs
 node --check botany.js
+node --check bouquet-link.js
 node --check flower.js
 node --check petal-meshes.js
 ```
 
-The automated tests cover deterministic generation, distinct species recipes, bouquet size and diversity, shared cultivar colors, valid geometry parameters, and species-aware pigment ranges. They do **not** prove botanical resemblance or catch visual clipping; those require browser inspection.
+The tests cover deterministic generation, distinct species recipes, bouquet size and diversity, geometry and pigment ranges, and the bouquet link contract. For a browser check, share a bouquet from the HTTP-served site, open the link in a private window, and confirm that the same bouquet blooms. Try **Surprise me** and refresh to check that the old bouquet doesn’t return.
 
 ### Project map
 
@@ -149,9 +159,11 @@ moment-garden/
 ├── style.css              # Paper, typography, layout, responsive styles
 ├── botanical.css          # Illustration and interaction styles
 ├── botany.js              # Seeded species, pigments, and bouquet planning
+├── bouquet-link.js        # Versioned bouquet URL contract
 ├── petal-meshes.js        # Dedicated rose, tulip, and dahlia surfaces
-├── flower.js              # Scene, other flower meshes, animation, input, export
-├── botany.test.cjs        # Generator tests using Node's built-in test runner
+├── flower.js              # Scene, animation, input, sharing, and export
+├── botany.test.cjs        # Seeded generation tests
+├── bouquet-link.test.cjs  # Share URL contract tests
 ├── DESIGN-REVIEW.md       # Botanical geometry review and refinement notes
 ├── docs/images/           # Logo, screenshots, gallery, and animated preview
 └── vendor/                # Three.js 0.160.1 and its license
