@@ -27,7 +27,9 @@ it('opens the shared bouquet with keyboard, exposes named actions, and preserves
   const open = await screen.findByRole('button', { name: 'Open your flowers', exact: true })
   await waitFor(() => expect((open as HTMLButtonElement).disabled).toBe(false))
   expect(mocks.engine.show).toHaveBeenCalledWith(1748091600123)
-  await user.click(open)
+  open.focus()
+  await user.keyboard('{Enter}')
+  expect(mocks.engine.bloom).toHaveBeenCalledWith({ instant: true })
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Open your flowers', exact: true })).toBeNull())
   const components = agent.snapshot().filter(entry => !entry.offPage && entry.component !== 'more')
   for (const entry of components) expect(entry.label, `${entry.component} must have an accessible name`).toBeTruthy()
@@ -44,6 +46,12 @@ it('opens the shared bouquet with keyboard, exposes named actions, and preserves
   expect(mocks.engine.show).toHaveBeenCalledTimes(1)
   await user.click(screen.getByRole('button', { name: 'Reset view', exact: true }))
   expect(mocks.engine.resetView).toHaveBeenCalled()
+  const sharedAction = await agent.act({ steps: [{ ref: 'Send flowers', action: 'press' }] })
+  expect(sharedAction.ok).toBe(false)
+  await user.click(screen.getByRole('button', { name: 'Grow another', exact: true }))
+  expect(mocks.engine.show).toHaveBeenCalledTimes(2)
+  expect(mocks.engine.show.mock.calls[1][0]).not.toBe(1748091600123)
+  expect(new URL(window.location.href).searchParams.has('bouquet')).toBe(false)
 })
 
 it('disposes the renderer when its React owner unmounts', async () => {
