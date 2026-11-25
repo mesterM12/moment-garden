@@ -1,5 +1,7 @@
 # Botanical design review
 
+> Historical geometry review from the pre-React implementation. References to `flower.js` describe the renderer at that time; the current implementation lives in `src/garden/engine.ts`, `src/garden/petal-meshes.js`, and `src/garden/extra-blooms.js`. Some `/tmp/` captures cited below were temporary and are not repository assets. Use `DESIGN.md` for the current interface system and the committed screenshots in `docs/images/` for its present appearance. The findings below are not an unresolved implementation checklist or a review of the current release.
+
 ## Final visual follow-up
 
 Reviewed `/tmp/bouquet-final-rose.png`, `/tmp/bouquet-refined-tulip.png`, and `/tmp/bouquet-refined-dahlia.png` against the current source. **No remaining blocker in the supplied captures.** The rose tearing and green center holes are gone in the final rose capture, the tulips read as six-part upright cups, and the dahlia reads as many rolled florets rather than intersecting blades. The tulip capture still shows horizontal bands; current source changes profile interpolation to monotone Hermite, but the post-change image was not reviewed. The dahlia capture likewise predates the smaller backing dome (`.88R` width, `.39R` height scale).

@@ -28,7 +28,7 @@ The postcard runs in desktop and mobile browsers and requires WebGL for the 3D s
 - Replay and sharing preserve the current arrangement. The recipient opens it from the front, regardless of the sender’s viewing angle. The PNG preserves the viewing angle.
 - **Send flowers** opens the native share sheet when available, otherwise copies the link or offers it for manual copying. Feedback confirms that the link was copied or the postcard is ready; don’t imply that a gift was delivered.
 - Flower geometry is generated in code rather than loaded from model files or photographs. Bouquet state stays in the browser; the lowercase hexadecimal timestamp in the URL reproduces the same arrangement without a server lookup, including for existing links.
-- The React and TypeScript source builds with Vite to `dist/` for static hosting at the existing [public site URL](https://mesterm12.github.io/moment-garden/); the migrated build must be published there before rollout. Hosting serves the built files; there is no application server or backend. The public source repository is [mesterM12/moment-garden](https://github.com/mesterM12/moment-garden).
+- The React and TypeScript source builds with Vite to `dist/` for static hosting at the [public site URL](https://mesterm12.github.io/moment-garden/). The GitHub Pages workflow publishes the built artifact at that path; repository-root publishing is not supported. Hosting serves the built files; there is no application server or backend. The public source repository is [mesterM12/moment-garden](https://github.com/mesterM12/moment-garden).
 
 ## Brand Commitments
 
@@ -37,7 +37,8 @@ The product is named **Flowers for You**. The experience should feel warm and in
 ## Evidence on Hand
 
 - [`src/`](src/): the postcard UI and browser-side rendering.
-- [`docs/images/`](docs/images/): reference screenshots, bouquet gallery, and animated preview.
+- [`docs/images/`](docs/images/): current React desktop/mobile and gift-cover screenshots, plus earlier bouquet studies and an animated preview.
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md): the static publishing contract and release checks.
 - [`DESIGN-REVIEW.md`](DESIGN-REVIEW.md): observations about species resemblance and remaining geometry refinements.
 
 ## Product Principles

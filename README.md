@@ -16,7 +16,8 @@
   <a href="#the-garden">Preview</a> ·
   <a href="#run-it-locally">Run locally</a> ·
   <a href="#how-it-grows">How it works</a> ·
-  <a href="#development">Development</a>
+  <a href="#development">Development</a> ·
+  <a href="docs/DEPLOYMENT.md">Deployment</a>
 </p>
 
 <p align="center">
@@ -59,13 +60,19 @@ These four studies show some of the original flowers, which are still in the mix
   <img src="docs/images/bouquet-gallery.jpg" width="920" alt="Four procedural bouquets featuring roses, tulips, dahlias, and sunflowers, each with supporting flowers" />
 </p>
 
+### A gift to open
+
+<p align="center">
+  <img src="docs/images/gift-cover.png" width="800" alt="The cream stationery cover with an envelope seal and an Open your flowers button" />
+</p>
+
 ### Desktop & mobile
 
-These screenshots show an earlier version of the postcard on desktop and mobile.
+Current React postcard, shown with [the same reproducible bouquet](https://mesterm12.github.io/moment-garden/?bouquet=1970260fcfb) on desktop and mobile. Screenshots capture the finished bouquet; the bloom plays when opened by pointer with motion enabled.
 
 <table>
   <tr>
-    <td width="72%" valign="top"><img src="docs/images/desktop.png" alt="Desktop postcard with a mixed bouquet, replay and surprise controls, and download button" /></td>
+    <td width="72%" valign="top"><img src="docs/images/desktop.png" alt="Rose-and-cream desktop postcard with The Last Light bouquet, sharing, replay, and save actions" /></td>
     <td width="28%" valign="top"><img src="docs/images/mobile.png" alt="The same bouquet postcard in a narrow mobile layout" /></td>
   </tr>
 </table>
@@ -122,7 +129,7 @@ flowchart TD
 
 ### A shared seed, independent details
 
-`botany.js` turns a millisecond timestamp into a bouquet plan. Each stem gets a derived seed for its geometry, while repeated species share cultivar colors. Layout is chosen before tessellation. Flower-head envelopes keep the mature blooms apart in 3D. Stem paths make room around neighboring heads, and crowded leaves are shortened, redirected, or omitted.
+[`src/garden/botany.js`](src/garden/botany.js) turns a millisecond timestamp into a bouquet plan. Each stem gets a derived seed for its geometry, while repeated species share cultivar colors. Layout is chosen before tessellation. Flower-head envelopes keep the mature blooms apart in 3D. Stem paths make room around neighboring heads, and crowded leaves are shortened, redirected, or omitted.
 
 Replay, rotation, and PNG export keep the existing bouquet. **Grow another** starts from a new timestamp and clears any bouquet seed from the address, so refreshing afterward is a fresh visit. The link carries the arrangement, not the sender’s camera angle. Browser/GPU rendering can vary. Messaging apps show a general preview image; the link itself opens the exact bouquet.
 
@@ -178,17 +185,23 @@ npm run test:e2e                 # Starts its own preview server on port 4175
 ### Project map
 
 - [`index.html`](index.html) and [`src/main.tsx`](src/main.tsx): Vite entry page and React entry point.
-- [`src/`](src/): postcard UI, URL handling, and the Three.js garden engine.
+- [`src/App.tsx`](src/App.tsx) and [`src/components/`](src/components/): gift state, focus handoff, reveal, and sharing/saving feedback.
+- [`src/garden/engine.ts`](src/garden/engine.ts) and [`src/garden/rotation.ts`](src/garden/rotation.ts): disposable Three.js rendering and frame-independent gesture physics.
+- [`src/lib/bouquet-link.ts`](src/lib/bouquet-link.ts): the deterministic share-link contract.
 - [`src/components/ui/`](src/components/ui/) and [`src/styles/`](src/styles/): local UI primitives and stationery styling.
 - Root-level generators and their `.test.cjs` files: deterministic compatibility fixtures for bouquet plans, geometry, and links.
 - [`tests/`](tests/): browser tests against the production build.
-- [`docs/images/`](docs/images/) and [`DESIGN-REVIEW.md`](DESIGN-REVIEW.md): reference images and botanical geometry notes.
+- [`DESIGN.md`](DESIGN.md) and [`PRODUCT.md`](PRODUCT.md): the current visual system and product constraints.
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md): publishing, verification, troubleshooting, and rollback.
+- [`docs/images/`](docs/images/) and [`DESIGN-REVIEW.md`](DESIGN-REVIEW.md): current screenshots, earlier flower studies, and historical botanical geometry notes.
 
 ### Hosting
 
 Run `npm ci` and `npm run build`, then publish the contents of **`dist/`**, not the repository root. The result is a static site: no Next.js or Node.js runtime server, backend, database, API keys, or runtime settings are required.
 
-Vite’s relative asset base (`./`) lets the same build run at a domain root or a subpath such as `/moment-garden/`. For GitHub Pages, select **GitHub Actions** as the Pages source in repository Settings → Pages before publishing the migration. The included [Pages workflow](.github/workflows/pages.yml) tests and builds the site, uploads `dist/`, and deploys that artifact on pushes to `main` or manual dispatch. The separate test workflow does not publish. Keep the existing site path so previously shared bouquet links keep working. No live deployment or Pages settings change is performed by local setup.
+Vite’s relative asset base (`./`) lets the same build run at a domain root or a subpath such as `/moment-garden/`. The included [Pages workflow](.github/workflows/pages.yml) tests and builds the site, uploads `dist/`, and deploys that artifact on pushes to `main` or manual dispatch. Pages must use **GitHub Actions** as its source, not branch-root publishing. The separate test workflow also runs desktop/mobile browser checks but does not publish.
+
+See [Deployment](docs/DEPLOYMENT.md) for setup, release verification, and rollback. Keep the existing site path so previously shared bouquet links keep working. Local setup and `npm run build` do not deploy anything.
 
 ### Contributing
 
