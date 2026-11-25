@@ -27,7 +27,7 @@
   <a href="LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/license-MIT-c18c75?style=flat-square" /></a>
 </p>
 
-Try the [live app](https://flowers.joojoo-lab.xyz/) or [open a reproducible bouquet](https://flowers.joojoo-lab.xyz/?bouquet=1970260fcfb). No account is required. The project is a Next.js server application with browser-side 3D rendering, not a static GitHub Pages site.
+Try the [live app](https://flowers.joojoo-lab.xyz/) or [open a reproducible bouquet](https://flowers.joojoo-lab.xyz/?bouquet=1970260fcfb). No account is required. The project is a self-hosted Next.js application with browser-side 3D rendering.
 
 ## The garden
 
@@ -253,7 +253,7 @@ The supported self-hosted deployment is the custom Docker image: Node.js 24 runs
 
 The default build serves the domain root, as the [live demo](https://flowers.joojoo-lab.xyz/) does. To serve `/moment-garden/`, build with `NEXT_PUBLIC_BASE_PATH=/moment-garden` and set a matching runtime `PUBLIC_URL`. Path changes require rebuilding; hostname-only changes do not. Health checks follow the same prefix (`/moment-garden/healthz`). This is a Next.js server deployment, not a static export. Releases are manual: there are no GitHub Actions test or deployment workflows, and no registry publication is configured. Building locally does not publish anything.
 
-See [Deployment](docs/DEPLOYMENT.md) for setup, release verification, and rollback. Existing GitHub Pages URLs do not move automatically: preserving a path on a new domain does not redirect links on the old host.
+See [Deployment](docs/DEPLOYMENT.md) for setup, release verification, and rollback.
 
 ### Contributing
 

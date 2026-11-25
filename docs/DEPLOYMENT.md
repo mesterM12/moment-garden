@@ -93,7 +93,7 @@ Chromium's capture requests are restricted to the local app origin; callers cann
 
 The supported deployment needs the Next.js server; it is not a static export. A static file host cannot provide the App Router metadata, image routes, or exact-seed Chromium rendering.
 
-## Existing shared links and migration
+## Shared-link contract
 
 The gift contract is the app path plus a canonical lowercase hexadecimal timestamp, for example:
 
@@ -103,7 +103,7 @@ https://flowers.example/moment-garden/?bouquet=1970260fcfb
 
 Keep the path and query intact in your reverse proxy. The token format has not changed: no leading zeros except `0`, a nonnegative millisecond Unix timestamp within the JavaScript `Date` range. Seeded generation needs no server-side gift lookup.
 
-**Existing GitHub Pages URLs do not move automatically.** Links at `https://mesterm12.github.io/moment-garden/` still go to that host, not to a new container or domain. This container cannot configure redirects on the old GitHub Pages host. Retaining `/moment-garden/` on a new hostname preserves the subpath contract, but not the old hostname. Keeping old links usable requires control of the old hosting configuration or an appropriate custom domain/DNS and proxy migration. Do not claim those links have migrated until the old public URL has been tested.
+When changing domains or app paths, existing shared URLs need redirects at their original host. Preserve the bouquet query when redirecting so recipients open the same arrangement.
 
 ## Test before publishing
 
