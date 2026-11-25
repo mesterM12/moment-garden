@@ -1,0 +1,23 @@
+services:
+  flowers:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_BASE_PATH: ${NEXT_PUBLIC_BASE_PATH:-}
+    image: flowers-for-you:local
+    init: true
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${FLOWERS_PORT:-3000}:3000"
+    environment:
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000/}
+      OG_CACHE_ENTRIES: ${OG_CACHE_ENTRIES:-256}
+    volumes:
+      - og-cache:/app/.cache/og
+    shm_size: 256mb
+    mem_limit: 2g
+    cpus: 2
+    stop_grace_period: 40s
+
+volumes:
+  og-cache:

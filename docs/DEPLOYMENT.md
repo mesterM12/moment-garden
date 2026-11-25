@@ -1,98 +1,182 @@
 # Deploy Flowers for You
 
-The site is a React 19 + TypeScript application built with Vite. GitHub Pages serves the contents of `dist/`; it does not execute React, TypeScript, or a Node server.
+The supported self-hosted deployment is a custom Docker image containing **Node.js 24**, the **Next.js 16 App Router standalone build**, and **Playwright Chromium**. Next.js serves the app on port **3000** and generates bouquet-specific social-preview PNGs using the real Three.js garden engine. Application code, server helpers, build scripts, and tests use TypeScript. There is no bouquet database, external rendering service, or API key requirement.
 
-- Public site: https://mesterm12.github.io/moment-garden/
-- Deployment workflow: [pages.yml](../.github/workflows/pages.yml)
-- Build and browser checks: [test.yml](../.github/workflows/test.yml)
+The [live demo](https://flowers.joojoo-lab.xyz/) serves the domain root. The repository has no GitHub Actions test or deployment workflows. Releases are manual: run checks and deploy explicitly; a push does not publish a release. These instructions do not provision infrastructure or configure TLS for you. For an existing Docker host with a shared reverse-proxy network, see the optional [host deployment template](../deploy/shipyard/README.md).
 
-## Publish through GitHub Actions
+## Run with Docker Compose
 
-1. In repository **Settings → Pages → Build and deployment**, select **GitHub Actions** as the source. Branch-root publishing is incompatible with the Vite source tree.
-2. Push a reviewed commit to `main`, or run **Deploy static site to GitHub Pages** manually from the Actions tab.
-3. The build job installs the lockfile with Node.js 24, runs the Node and React tests, builds the application, and uploads `dist/` as a Pages artifact.
-4. The deploy job publishes that artifact to the `github-pages` environment using GitHub’s short-lived deployment token. No personal access token or application secret is needed.
-5. Wait for both the deployment and the separate browser-test workflow to succeed. Smoke-test the public URL before sharing it.
-
-From an authenticated GitHub CLI:
+Install Docker Engine and the Compose plugin, then run from the repository root:
 
 ```sh
-gh workflow run pages.yml --ref main
-gh run list --workflow pages.yml --limit 5
-gh run watch <run-id> --exit-status
+docker compose up --build -d
 ```
 
-The workflow runs on `main` pushes automatically; manual dispatch is useful for redeploying an existing commit. Concurrent Pages runs are canceled in favor of the latest one.
+Open **http://localhost:3000/**. The default public URL is `http://localhost:3000/`, suitable only for local use.
 
-## Verify a release
+```sh
+curl --fail http://localhost:3000/healthz
+docker compose logs -f
+# Stop without removing the persistent image cache:
+docker compose down
+```
 
-Open this known bouquet:
+The named `og-cache` volume persists generated PNGs across container replacement. `docker compose down --volumes` removes that cache; it is not necessary for an ordinary update. Images are reproducible from the seed, so clearing the cache loses no gifts, but the next image request needs a fresh render.
 
-https://mesterm12.github.io/moment-garden/?bouquet=1970260fcfb
+### Production URL and reverse proxy
 
-Check that:
+Set **`PUBLIC_URL` for every production deployment** to the externally reachable app URL. Use HTTPS, include any path prefix, and omit queries, fragments, and credentials. A trailing slash is normalized by the server.
 
-- The personal cover loads and **Open your flowers** is enabled.
-- Opening reveals **The Last Light**, seeded by timestamp `1748091600123`.
-- Replay preserves the arrangement; **Grow another** changes it and removes the old bouquet token from the URL.
-- **Send flowers** produces a link under `/moment-garden/`, not a local preview address.
-- **Save postcard** downloads a PNG of the current bouquet.
-- Keyboard and reduced-motion opening show the finished arrangement without waiting.
-- The browser reports no failed local asset requests or application errors.
-- `manifest.webmanifest`, `sw.js`, and all four PNGs under `icons/` load from `/moment-garden/`, not the domain root. The manifest’s `id`, `start_url`, and `scope` resolve to the app directory without a bouquet token.
-- After **Application → Service Workers** reports an activated worker and the initial precache completes, switch the browser offline, reload, and open another valid bouquet query you have never visited. Both bouquets should open with their original names and seeds.
-- Use the browser’s **Install** or **Add to Home Screen** menu to install. On iPhone or iPad in Safari, use **Share → Add to Home Screen**. The postcard adds no installation button, custom prompt, or automatic prompt call.
+For a domain-root deployment, leave `NEXT_PUBLIC_BASE_PATH` empty. For a subpath deployment, set it **at build time**, beginning with `/` and without a trailing slash:
 
-The URL token and path are part of the gift contract. Keep `/moment-garden/` and the existing lowercase hexadecimal seed format when changing deployment infrastructure. Vite’s relative asset base allows deployment at this subpath without rebuilding for a specific hostname.
+```sh
+NEXT_PUBLIC_BASE_PATH=/moment-garden \
+PUBLIC_URL=https://flowers.example/moment-garden/ \
+docker compose up --build -d
+```
+
+You can also set both variables in the Compose project's `.env` file; copy [`.env.example`](../.env.example) as a starting point. Keep deployment-specific environment files out of version control. `PUBLIC_URL` is public configuration, not a secret, but credentials and private host details do not belong in the repository. Compose passes `${NEXT_PUBLIC_BASE_PATH:-}` as a Docker build argument; the Dockerfile sets it in both build and runtime stages. `PUBLIC_URL` is runtime configuration, but its normalized pathname **must match the built base path**. Changing `/moment-garden` to another path requires rebuilding the image and recreating the container. Changing only the hostname or scheme in `PUBLIC_URL` needs only container recreation (`docker compose up -d --force-recreate`). The server does not infer its public origin from request headers.
+
+Provide your own TLS reverse proxy in front of port 3000. Compose binds the published port to host loopback (`127.0.0.1`) by default, suitable for a reverse proxy running on the same host. Set `FLOWERS_PORT` to change that host port; if your proxy runs in another container or on another machine, explicitly configure its network access rather than assuming the loopback binding is reachable. Forward the app prefix **without stripping it**, preserve query strings, and allow public unauthenticated GET requests to app assets and `og/` images. For the example above, `/moment-garden/?bouquet=1970260fcfb` and `/moment-garden/og/...` must reach the container unchanged. Health checks use that same prefix: `/moment-garden/healthz` for this build, or `/healthz` for a root build. The Docker health check includes the built prefix; do not add a separate root-only health route at the proxy. It does not prove Chromium can render—verify an actual image too.
+
+Do not put an authentication challenge in front of shared pages or preview images. Do not cache HTML across bouquet queries: the metadata is request-specific and HTML is served with `Cache-Control: no-store`. The server supplies immutable caching for versioned OG PNGs and fingerprinted assets; preserve those headers. TLS, DNS, proxy configuration, resource limits, and host security remain the operator's responsibility.
+
+### Build and runtime settings
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `NEXT_PUBLIC_BASE_PATH` | Empty (domain root) | Build-time app prefix, e.g. `/moment-garden`, without a trailing slash. Set before `npm run build` or through Compose's build argument. Path changes require rebuilding. |
+| `PUBLIC_URL` | `http://localhost:3000/` in Compose; localhost with the built prefix for direct startup | Runtime absolute externally reachable app URL. Its pathname must match `NEXT_PUBLIC_BASE_PATH`. Required configuration for production. |
+| `FLOWERS_PORT` | `3000` in root Compose | Host loopback port mapped to container port 3000. If you change it for local use, also update `PUBLIC_URL` to match the URL you open. |
+| `PORT` | `3000` | HTTP listener port inside the container. Keep 3000 with the supplied Compose port mapping and health check. |
+| `HOSTNAME` | `0.0.0.0` in Docker | Next.js standalone server bind address; keep this for container access. `npm start` supplies the equivalent Next.js CLI hostname option. |
+| `OG_CACHE_DIR` | `/app/.cache/og` in Docker; `.cache/og` for direct startup | Writable persistent PNG cache directory. The Compose volume mounts the Docker path. |
+| `OG_CACHE_ENTRIES` | `256` | Maximum persistent PNG entries, pruned across content versions. This bounds entry count, not disk bytes. |
+| `CHROMIUM_EXECUTABLE_PATH` | Playwright's bundled browser | Optional compatible Chromium executable override. Normally leave unset. |
+
+`PUBLIC_URL` and `OG_CACHE_ENTRIES` are passed through at runtime by the supplied Compose setup; `NEXT_PUBLIC_BASE_PATH` is passed at build time. Other runtime overrides can be added to the service's `environment` block if needed. Do not change the container's base-path environment independently of the build. Changing cache paths also requires updating volume mounts and write permissions. Changing the listener port requires coordinating the mapping, health check, and proxy.
+
+## Run without Docker
+
+Use Node.js 24 or newer and install Chromium plus its operating-system dependencies on a supported host:
+
+```sh
+npm ci
+npx playwright install --with-deps chromium
+npm run build
+PUBLIC_URL=http://localhost:3000/ npm start
+```
+
+`npm start` runs `next start` from the repository root. Keep `.next/`, `public/` (including the generated PWA files), package metadata, and installed dependencies together. The cache directory must be writable by the service account. Browser dependency installation can require elevated privileges on Linux. For production use a process supervisor and a TLS reverse proxy, and replace `PUBLIC_URL` with your public HTTPS URL.
+
+For a subpath, set `NEXT_PUBLIC_BASE_PATH=/moment-garden` before `npm run build`, then start with `PUBLIC_URL=https://flowers.example/moment-garden/`. Rebuild to change the path; a runtime environment change alone cannot relocate Next.js assets or routes.
+
+The Docker image instead copies `.next/standalone`, `.next/static`, and `public`, then runs **`node server.js`**. That `server.js` is generated by Next.js, not a hand-written server. For a manual standalone deployment, copy `.next/static` into `.next/standalone/.next/static` and `public` into `.next/standalone/public`, provide compatible Playwright/Chromium runtime dependencies, and run from `.next/standalone`.
+
+`npm run dev` runs `next dev`; production startup is `npm run build` followed by `npm start`. There is no separate preview command, static-export deployment, or root `index.html` entry. Vite remains a development dependency only to underpin Vitest.
+
+## Social link previews
+
+For a canonical valid `?bouquet=` token, App Router **`generateMetadata`** supplies Open Graph and Twitter image metadata in the HTML **before JavaScript runs**. Messaging crawlers need not execute the renderer or service worker. The absolute image URL has this form, relative to `PUBLIC_URL`:
+
+```text
+og/<16hex-build-ID-hash>/<bouquet-token>.png
+```
+
+Pages without a valid gift token use the fixed default preview seed `1970260fcfb`; they cannot preview a fresh timestamp that the browser has not chosen yet. Valid shared pages use their own seed. The preview always uses the canonical front view, not a saved sender camera angle.
+
+The version is the first 16 hexadecimal characters of the SHA-256 hash of `.next/BUILD_ID`, so each new Next.js build gets its own image namespace. PNGs are served as `image/png`, at **1200 × 630**, with immutable caching. Social platforms cache independently; request a platform re-scrape when necessary. An image URL for an old build version is not a permanent archive: an old version may no longer be served after an update. The original shared page URL still regenerates that seed with the current build.
+
+The internal `/__og?bouquet=...` capture view (under the built app prefix) mounts a client-only capture component and reuses the real Three.js engine, locally hosted Instrument Serif and DM Sans fonts, and the current stationery styles. Neither the interactive garden nor the capture renderer is server-rendered. It renders the **same seeded bouquet**, fully bloomed in its canonical front view, adapted to a landscape card. It does not copy the sender's rotation or promise pixel identity across browsers, GPUs, screen sizes, or future visual changes. The URL stores the bouquet seed, not an uploaded screenshot.
+
+Chromium's capture requests are restricted to the local app origin; callers cannot supply an arbitrary URL to render. The image endpoint rejects malformed or noncanonical tokens with HTTP 404 before starting Chromium. The client-only internal capture view rejects invalid tokens through its capture-readiness error state rather than promising a page HTTP status. A shared app page with an invalid `?bouquet=` query still returns HTTP 200 with default preview metadata, preserving the browser's invalid-link notice and fresh-bouquet recovery. Missing images are handled by a serialized browser queue, concurrent requests for the same image share one render, and completed PNGs are persisted in the bounded cache. By default, per process, new renders are limited to 30 per minute with at most four pending jobs; the persistent cache holds at most 256 entries. Cached hits do not require a browser render. Saturated requests receive HTTP 429 with `Retry-After`; render failures receive a retryable error rather than a cached error image. These bounds limit work but are not a substitute for reverse-proxy abuse controls or host monitoring.
+
+The supported deployment needs the Next.js server; it is not a static export. A static file host cannot provide the App Router metadata, image routes, or exact-seed Chromium rendering.
+
+## Existing shared links and migration
+
+The gift contract is the app path plus a canonical lowercase hexadecimal timestamp, for example:
+
+```text
+https://flowers.example/moment-garden/?bouquet=1970260fcfb
+```
+
+Keep the path and query intact in your reverse proxy. The token format has not changed: no leading zeros except `0`, a nonnegative millisecond Unix timestamp within the JavaScript `Date` range. Seeded generation needs no server-side gift lookup.
+
+**Existing GitHub Pages URLs do not move automatically.** Links at `https://mesterm12.github.io/moment-garden/` still go to that host, not to a new container or domain. This container cannot configure redirects on the old GitHub Pages host. Retaining `/moment-garden/` on a new hostname preserves the subpath contract, but not the old hostname. Keeping old links usable requires control of the old hosting configuration or an appropriate custom domain/DNS and proxy migration. Do not claim those links have migrated until the old public URL has been tested.
 
 ## Test before publishing
 
 ```sh
 npm ci
+npx playwright install --with-deps chromium
+npm run typecheck
 npm test
 npm run build
-npx playwright install chromium
+npm run test:server
 npm run test:e2e
 ```
 
-To inspect the generated files locally, use `npm run preview`. Opening `index.html` from disk or serving the repository root is not a production deployment. Production includes `public/` assets copied into `dist/`; documentation screenshots and legacy generator fixtures stay in the repository.
+All test runners are **Vitest**. `npm test` runs the unit, React, and server projects; `npm run test:server` selects the server project (`vitest run --project server`) for backend and image-cache checks. `npm run test:e2e` uses `vitest.browser.config.ts`, Node test fixtures, and the **Playwright library** for desktop/mobile automation against the built Next.js app—not the `@playwright/test` runner. Run the build first. Tests do not deploy anything.
 
-## Social link previews
+### Verify a release
 
-The built HTML includes Open Graph and Twitter `summary_large_image` metadata before JavaScript runs. The 1200 × 630 JPEG is committed at `public/og/flowers-for-you.jpg` and published at `og/flowers-for-you.jpg` inside the app directory. It must be publicly reachable over HTTPS without authentication and served as `image/jpeg`; messaging crawlers do not run the bouquet renderer or service worker.
+Use your real production origin and path in the following checks:
 
-By default, image metadata points at `https://mesterm12.github.io/moment-garden/og/flowers-for-you.jpg`. For another host or path, build with `VITE_SITE_URL=https://your-domain.example/app/ npm run build`. The build validates HTTPS and normalizes a trailing slash. This changes only absolute social-image URLs; the app and PWA still use relative asset paths. Rebuild metadata when moving hosts, then check the published HTML and image URL, not only the local preview.
+```sh
+curl --fail https://flowers.example/moment-garden/healthz
+curl --fail 'https://flowers.example/moment-garden/?bouquet=1970260fcfb'
+```
 
-All bouquet URLs use the same brand preview. The query string still restores the exact shared bouquet after opening. No static `og:url` or canonical-to-home tag is emitted: that would advertise the home URL as the identity of every gift. Truly bouquet-specific preview images and metadata require server-side or edge rendering, which this static deployment does not provide. Social platforms cache previews independently; after replacing the image, use a new filename/update its metadata URL or request a platform re-scrape.
+Use `/healthz` only for a root build; subpath builds expose health under that subpath. Inspect the fetched HTML, not just the live DOM: `og:image` and `twitter:image` must name the public HTTPS versioned PNG for `1970260fcfb`, with no localhost address. Fetch that exact URL, verify HTTP 200, `Content-Type: image/png`, and 1200 × 630 dimensions, then view it to confirm the seeded arrangement on stationery. Try a second valid seed and confirm its image URL and bouquet differ. Verify that an invalid shared-page token still loads the app with HTTP 200, default preview metadata, and an invalid-link notice followed by a fresh bouquet. Invalid image tokens should return HTTP 404 without starting Chromium; invalid internal capture tokens should produce the capture-readiness error state instead of a ready image. Re-request a completed image to check the persisted cache path.
 
-`tests/social.spec.ts` verifies metadata with application scripts blocked, the deployed JPEG MIME/signature/dimensions, and shared-query behavior. After publishing, send a real link in the target messaging apps to confirm their crawler caches have refreshed.
+In a browser, check that:
+
+- The personal cover loads and **Open your flowers** is enabled.
+- Opening the known token reveals **The Last Light**, seeded by timestamp `1748091600123`.
+- Replay preserves the arrangement; **Grow another** changes it and removes the old token from the URL.
+- **Send flowers** produces a public link under the intended path, not a local address.
+- **Save postcard** downloads a PNG of the current bouquet and viewing angle.
+- Keyboard and reduced-motion opening show the finished arrangement without waiting.
+- There are no failed local asset requests or application errors.
+- `manifest.webmanifest`, `sw.js`, fonts, audio, and all four PNGs under `icons/` load from the app path, not the domain root. Manifest identity, launch URL, and scope resolve to the app directory without a seed.
+- After service-worker activation and precaching, switch offline, reload, and open another valid bouquet query you have not visited. Both bouquets should retain their original names and seeds. Offline browser use does not generate a new server preview image.
+- Use the browser's **Install** or **Add to Home Screen** menu to install. On iPhone or iPad in Safari, use **Share → Add to Home Screen**. The postcard adds no installation button or custom prompt.
+
+Finally, send a real shared link in the target messaging apps. Local tests do not establish crawler reachability, cache refreshes, native sharing behavior, or operating-system installation.
 
 ## PWA hosting and update contract
 
-Publish the whole `dist/` artifact together, including `manifest.webmanifest`, `sw.js`, `assets/`, and `icons/`. The app requires HTTPS for installation and service-worker storage; localhost is the development exception. A plain HTTP LAN address can preview the UI but cannot establish production offline/install behavior. Serve JavaScript with a JavaScript MIME type, the manifest as `application/manifest+json` (or JSON), and images with their image MIME types. Do not rewrite missing JavaScript files to `index.html`.
+Deploy the whole build together, including `.next/`, the generated `public/manifest.webmanifest` and `public/sw.js`, and public fonts, audio, and icons. In standalone packaging, copy `.next/static` and `public` alongside the generated server. HTTPS is required for installation and service-worker storage; localhost is the development exception. Plain HTTP on a LAN can preview the UI but cannot establish production offline/install behavior. The server sends appropriate asset MIME types and does not rewrite missing JavaScript files to HTML. Preserve those behaviors at the proxy.
 
-Vite uses `base: './'`. Registration resolves `sw.js` beside the document and limits its scope to that app directory. Workbox’s navigation handler serves the precached shell only for the app root or `index.html`; arbitrary sibling paths and unrelated same-origin apps are not captured. Bouquet queries remain in the address bar for deterministic generation, but do not create a separate cache per gift. The build precaches all local JS/CSS, icons, and both WAV sound assets under `audio/`, including lazy rendering chunks; external fonts and documentation images are not offline dependencies. Publish `audio/` with the rest of the artifact and serve WAVs as `audio/wav`. Missing or blocked audio does not prevent opening a bouquet. If initial precaching fails, the new worker will not activate. Unsupported service workers and storage/registration errors leave the online postcard usable.
+After `next build`, `node scripts/build-pwa.ts` uses esbuild to bundle the native TypeScript worker in `src/pwa/sw.ts`. It generates `public/sw.js` and `public/manifest.webmanifest`; both are ignored build outputs, not hand-maintained assets. The precache includes Next.js JS/CSS under `/_next/static/`, lazy rendering chunks, local fonts, icons, and both WAVs under `audio/`, all with the built base-path prefix. Documentation images are not offline dependencies.
 
-The manifest uses stable relative `./` values for identity, start URL, and scope. Installing from a shared bouquet does **not** install that seed as the app’s permanent launch target. Opening the installed app is a fresh visit; save the link or PNG to retain a gift. The theme stays light intentionally: blush browser chrome (`#f5e9e2`) and cream startup background (`#fff9f2`) match the stationery in either OS color scheme, because the app has no dark theme.
+Registration resolves `sw.js` under the built app directory and limits its scope to that directory. Home navigations try the network and fall back to the precached shell when offline; arbitrary sibling paths, image routes, and unrelated same-origin apps are not captured. Bouquet queries remain in the address bar for deterministic client generation, but do not create a separate precache per gift. Missing or blocked audio does not prevent opening. If initial precaching fails, the new worker will not activate. Unsupported service workers and storage/registration errors leave the online postcard usable.
 
-Updates use the browser’s waiting-worker lifecycle: there is no forced `skipWaiting`, client takeover, or reload. Existing windows continue using their current shell and cached lazy chunks. Close **all** app tabs and installed windows, then reopen to activate a waiting release. Workbox revisions changed files and removes obsolete entries from this app’s own scope-namespaced precache at activation; it does not clear unrelated origin caches. Recommend revalidation/no-cache for `sw.js`, `index.html`, and the manifest when the host allows headers; fingerprinted `assets/` files can use long-lived immutable caching. GitHub Pages controls its own response cache policy; registration requests bypass the HTTP cache when checking the worker.
+The manifest uses stable relative `./` values for identity, start URL, and scope. Installing from a shared bouquet does **not** install that seed as the permanent launch target. Opening the installed app is a fresh visit; save the link or PNG to retain a gift. The theme stays light intentionally: blush browser chrome (`#f5e9e2`) and cream startup background (`#fff9f2`) match the stationery in either OS color scheme.
 
-Browser storage is best-effort and may be evicted. Offline availability starts only after a successful online installation of the worker, and must be re-established after clearing site data. A production deployment should retain old hashed assets briefly where hosting permits, to support an already-open page that was not yet controlled during its first visit.
+Updates use the browser's waiting-worker lifecycle: there is no forced `skipWaiting`, client takeover, or reload. Existing windows continue using their current shell and cached lazy chunks. Close **all** app tabs and installed windows, then reopen to activate a waiting release. The native worker uses a build-versioned, scope-namespaced cache and removes this app scope's obsolete caches at activation; it does not clear unrelated origin caches. Preserve revalidation/no-cache for `sw.js` and the manifest, no-store for request-specific HTML, and long-lived immutable caching for fingerprinted assets. Registration bypasses the HTTP cache when checking the worker.
+
+Browser storage is best-effort and may be evicted. Offline availability starts only after successful online worker installation and must be re-established after clearing site data. Where practical, retain old hashed assets briefly to support an already-open page not yet controlled during its first visit; replacing a single container's build does not itself retain those assets.
 
 ### Automated PWA checks
 
-`tests/pwa.spec.ts` runs with the normal `npm run test:e2e` suite after a build. It verifies PNG dimensions and manifest identity, production registration, precached Three/engine chunks, offline reloads and unseen bouquet queries, and a copy of the same build served under `/moment-garden/` on an isolated test server. The subpath test serves a changed worker and verifies it waits without re-sealing the current gift or deleting an unrelated cache. These checks do not prove operating-system installation; verify Safari home-screen install, standalone safe areas, Android install, and offline launches on physical devices before calling those capabilities device-tested.
+`tests/pwa.spec.ts` runs through Vitest with `npm run test:e2e` after a build. It covers PNG dimensions and manifest identity, production registration, precached Next.js/engine assets, offline reloads and unseen bouquet queries, and waiting-worker updates without re-sealing the current gift or deleting an unrelated cache. A subpath is a separate build configuration, not a runtime relocation of the same build; also build and smoke-test with `NEXT_PUBLIC_BASE_PATH=/moment-garden` when deploying that prefix. Verify Safari home-screen install, standalone safe areas, Android install, and offline launches on physical devices before calling them device-tested.
 
-App icons are committed build inputs. To regenerate them with Node.js 24 and ImageMagick installed, run `npm run pwa:icons`. [`src/pwa/generate-icons.ts`](../src/pwa/generate-icons.ts) renders the existing [`public/flowers.svg`](../public/flowers.svg) flower mark on cream, with a smaller safe-zone mark for the 512px maskable icon. Outputs are deterministic for the installed ImageMagick renderer; normal builds require no image tooling.
+App icons are committed build inputs. With Node.js 24 and ImageMagick installed, `npm run pwa:icons` regenerates them. [`src/pwa/generate-icons.ts`](../src/pwa/generate-icons.ts) renders [`public/flowers.svg`](../public/flowers.svg) on cream, with a smaller safe-zone mark for the 512px maskable icon. Outputs are deterministic for the installed ImageMagick renderer; normal builds require no image tooling.
 
-## Troubleshooting and rollback
+## Updates, troubleshooting, and rollback
 
-- **Blank page or a `/src/main.tsx` request:** Pages is serving the source tree. Select GitHub Actions as the source and deploy the `dist/` artifact.
-- **Deployment permission or environment failure:** confirm Pages is enabled, the `github-pages` environment permits `main`, and the deploy job has `pages: write` and `id-token: write`. Keep those permissions limited to the deploy job.
-- **Build or tests fail:** inspect the failing job. The workflow does not publish when its build job fails; fix the source or lockfile instead of uploading the repository root.
-- **An old preview appears in a messaging app:** the social card is generic and may be cached. The bouquet URL still selects the recipient’s exact arrangement.
-- **Old app after a successful deployment:** a replacement worker deliberately waits while any older app tab/window remains open. Close all app tabs and installed windows, then reopen online. Do not solve this by automatically reloading a gift.
-- **Offline fails on a first visit:** open online and allow worker precaching to finish first. Check HTTPS, worker scope, storage policy, and failed local asset requests. Clearing browser site data also removes offline availability.
-- **Rollback:** revert the faulty change on `main` and push. The workflow rebuilds and publishes the reverted source; the rolled-back worker follows the same waiting lifecycle. Do not revert to a pre-Vite source layout without also coordinating the Pages publishing configuration.
+For an update, check out the reviewed source, run the tests, then run `docker compose up --build -d` with the same production `NEXT_PUBLIC_BASE_PATH`, `PUBLIC_URL`, and volume. Save the previous source revision or image before replacing it. Verify both health and a real preview render after each release.
 
-A successful Actions run confirms artifact publication. Real-device Safari, native sharing, and screen-reader behavior still need device testing; desktop/mobile Chromium automation does not establish those results.
+- **Blank page or missing Next.js chunks:** the proxy may be serving source files or an incomplete build instead of Next.js. Route to port 3000 and ensure the image includes the standalone server, `.next/static`, and generated `public` files from the same build.
+- **Subpath assets, health, or images return 404:** compare the built `NEXT_PUBLIC_BASE_PATH`, runtime `PUBLIC_URL`, and external path. Rebuild after changing the path, and preserve the prefix and query strings at the proxy. Do not strip `/moment-garden/` before forwarding.
+- **Preview points at localhost or the wrong host:** correct runtime `PUBLIC_URL`, recreate the container, inspect raw HTML, then request a platform re-scrape. The browser's interactive bouquet is not proof that metadata is correct.
+- **Preview returns 429:** the per-process queue or render-start budget is full. Honor `Retry-After`; inspect traffic and add proxy-level controls if needed.
+- **Preview returns a retryable error:** inspect `docker compose logs`, Chromium dependencies, available memory, and cache write permissions. The prefixed health endpoint alone does not test rendering. Do not point Chromium at an arbitrary executable unless it is compatible with the installed Playwright version.
+- **An old preview appears in a messaging app:** the platform may have cached the old HTML/image URL. Check the public HTML and image independently before requesting a re-scrape.
+- **Old app after a successful deployment:** a replacement worker deliberately waits while an older app tab/window remains open. Close all app tabs and installed windows, then reopen online. Do not automatically reload a gift to force updates.
+- **Offline fails on a first visit:** load online and allow precaching to finish. Check HTTPS, worker scope, storage policy, and failed assets. Clearing browser data removes offline availability.
+- **Rollback:** check out the previous known-good revision and rebuild/recreate with the same `NEXT_PUBLIC_BASE_PATH` and matching `PUBLIC_URL`, or redeploy a saved previous image. Keep the cache volume; versioned cache keys prevent mixing images from different builds. The rolled-back worker follows the same waiting lifecycle. Verify the public shared URL and image again.
+
+A successful build or healthy container is not proof of external publication. Real-device Safari, native sharing, screen-reader behavior, and messaging-app crawlers need separate verification.

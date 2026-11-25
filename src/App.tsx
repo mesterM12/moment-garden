@@ -1,3 +1,5 @@
+'use client'
+
 import { Button as ActionButton } from '@ui-sdk/react/button'
 import { ArrowDownToLine, RotateCcw, RotateCw, Sprout } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
@@ -10,6 +12,7 @@ import type { BouquetInfo, GardenEngine } from './garden/types'
 import { getReducedMotion, useReducedMotion } from './hooks/useReducedMotion'
 import { useOpeningSound } from './hooks/useOpeningSound'
 import { create, read, withoutBouquet } from './lib/bouquet-link'
+import { publicPath } from './lib/site'
 
 const dates = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 const flowerNames = new Intl.ListFormat('en')
@@ -203,10 +206,13 @@ export default function App() {
     <div className="flower-app">
       <main className="flower-layout">
         <header className="flower-intro">
-          <a className="flower-home" href={import.meta.env.BASE_URL} aria-label="Flowers for You home">
-            <img src={`${import.meta.env.BASE_URL}flowers.svg`} width="29" height="29" alt="" />
+          <a className="flower-home" href={publicPath('')} aria-label="Flowers for You home">
+            <img src={publicPath('flowers.svg')} width="29" height="29" alt="" />
           </a>
           <h1>Flowers <em>for You</em></h1>
+          <div className="flower-app-options">
+            <SoundToggle enabled={openingSound.enabled} onChange={openingSound.changeEnabled} />
+          </div>
           <p>{linkStatus === 'valid' ? 'I picked these flowers for you.' : 'Find a bouquet for someone on your mind.'}</p>
           <p className="flower-link-notice" role="status">{linkStatus === 'invalid' ? `This bouquet link couldn’t be opened.${bouquet ? ' There’s a fresh bouquet for you instead.' : ''}` : null}</p>
         </header>
@@ -236,8 +242,8 @@ export default function App() {
           <div className="flower-postcard-details" data-sealed={sealed ? '' : undefined} inert={sealed}>
             <p className="sr-only" role="status">{unavailable ? null : status}</p>
             <div className="flower-stage-controls" data-unavailable={unavailable ? '' : undefined}>
-              <p id="flower-turn-instructions" className="sr-only">Drag left or right or use the arrow keys to turn the bouquet. Scroll vertically to move down the page. Press Home or Reset view to return to the front.</p>
-              <span aria-hidden="true" className="flower-turn-hint"><span className="flower-pointer-hint">Drag or use arrow keys to turn</span><span className="flower-touch-hint">Drag sideways to turn</span></span>
+              <p id="flower-turn-instructions" className="sr-only">Drag in any direction or use the arrow keys to turn the bouquet. To scroll, swipe outside the artwork. Press Home or Reset view to return to the front.</p>
+              <span aria-hidden="true" className="flower-turn-hint"><span className="flower-pointer-hint">Drag or use arrow keys to turn</span><span className="flower-touch-hint">Drag to turn</span></span>
               <ActionButton
                 disabled={!ready}
                 onClick={(event) => engine.current?.resetView({ instant: event.detail === 0 || reducedMotion })}
@@ -287,9 +293,6 @@ export default function App() {
           {reducedMotion && ready ? <p className="flower-motion-note">Bloom animation is off with your reduced-motion setting.</p> : null}
           {bouquet ? <p className="flower-stem-note">{bouquet.flowerCount} stems with {kinds}</p> : null}
         </div>
-        <footer className="flower-app-options" aria-label="App options">
-          <SoundToggle enabled={openingSound.enabled} onChange={openingSound.changeEnabled} />
-        </footer>
       </main>
     </div>
   )

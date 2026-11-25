@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://mesterm12.github.io/moment-garden/">Open the garden</a> ·
+  <a href="https://flowers.joojoo-lab.xyz/">Live demo</a> ·
   <a href="#the-garden">Preview</a> ·
   <a href="#run-it-locally">Run locally</a> ·
   <a href="#how-it-grows">How it works</a> ·
@@ -21,11 +21,13 @@
 </p>
 
 <p align="center">
-  <img alt="React 19 and TypeScript" src="https://img.shields.io/badge/React_19-TypeScript-f2df91?style=flat-square" />
+  <img alt="Next.js 16, React 19, and TypeScript" src="https://img.shields.io/badge/Next.js_16-React_19_%2B_TypeScript-f2df91?style=flat-square" />
   <img alt="Three.js WebGL rendering" src="https://img.shields.io/badge/Three.js-WebGL-354f3e?style=flat-square" />
-  <img alt="Static Vite build" src="https://img.shields.io/badge/Vite-static_build-e8ecdd?style=flat-square&amp;labelColor=6b795d" />
+  <img alt="Self-hosted Docker application" src="https://img.shields.io/badge/Docker-self_hosted-e8ecdd?style=flat-square&amp;labelColor=6b795d" />
   <a href="LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/license-MIT-c18c75?style=flat-square" /></a>
 </p>
+
+Try the [live app](https://flowers.joojoo-lab.xyz/) or [open a reproducible bouquet](https://flowers.joojoo-lab.xyz/?bouquet=1970260fcfb). No account is required. The project is a Next.js server application with browser-side 3D rendering, not a static GitHub Pages site.
 
 ## The garden
 
@@ -69,7 +71,7 @@ These four studies show some of the original flowers, which are still in the mix
 
 ### Desktop & mobile
 
-Current React postcard, shown with [the same reproducible bouquet](https://mesterm12.github.io/moment-garden/?bouquet=1970260fcfb) on desktop and mobile. Screenshots capture the finished bouquet; the bloom plays when opened by pointer with motion enabled.
+The postcard design, shown with the same reproducible bouquet (`?bouquet=1970260fcfb`) on desktop and mobile. Screenshots capture the finished bouquet; the bloom plays when opened by pointer with motion enabled.
 
 <table>
   <tr>
@@ -80,7 +82,7 @@ Current React postcard, shown with [the same reproducible bouquet](https://meste
 
 ## Run it locally
 
-Use **Node.js 24** (the version used in CI), npm, and a modern browser with WebGL enabled. Vite 8 itself requires Node.js 20.19+ in the 20.x line or 22.12+, but some test dependencies require a newer release.
+Use **Node.js 24 or newer**, npm, and a modern browser with WebGL enabled. The app uses the Next.js 16 App Router; Vite is a development dependency for Vitest, not the application server or bundler.
 
 ```sh
 git clone https://github.com/mesterM12/moment-garden.git
@@ -89,19 +91,39 @@ npm ci
 npm run dev
 ```
 
-Open the URL Vite prints, usually **http://127.0.0.1:5173**. Stop the server with `Ctrl+C`. Opening [`index.html`](index.html) directly from disk is not supported.
+Open the URL Next.js prints, usually **http://127.0.0.1:3000**. Stop the server with `Ctrl+C`. The app needs the Next.js server; opening files directly from disk is not supported.
 
-The build bundles Three.js from npm; rendering does not depend on a JavaScript CDN. Google Fonts are optional; system fonts are used if they are unavailable.
+The build bundles Three.js from npm and serves Instrument Serif and DM Sans locally; rendering and typography do not require a third-party CDN.
+
+### Run the self-hosted app
+
+With Docker Engine and the Compose plugin installed, run from the repository root:
+
+```sh
+docker compose up --build -d
+```
+
+Open **http://localhost:3000/**. The custom image includes Node.js 24, the Next.js standalone build, and Playwright Chromium for bouquet-specific social previews. The `og-cache` volume persists generated PNGs. Use `docker compose logs -f` to inspect logs and `docker compose down` to stop the app without deleting its cache.
+
+For production, set `PUBLIC_URL` to the externally reachable HTTPS app URL. For a subpath, also set `NEXT_PUBLIC_BASE_PATH` at build time, without a trailing slash:
+
+```sh
+NEXT_PUBLIC_BASE_PATH=/moment-garden \
+PUBLIC_URL=https://flowers.example/moment-garden/ \
+docker compose up --build -d
+```
+
+The `PUBLIC_URL` pathname must match the built base path. Changing the path requires a rebuild; changing only the public hostname requires a container recreation, not a rebuild. Put a TLS reverse proxy in front of port 3000 and preserve that path and its query strings. No deployment or proxy setup happens automatically. See [Deployment](docs/DEPLOYMENT.md) for runtime settings, non-Docker startup, verification, and migration of existing links.
 
 ### Install and use offline
 
 On the production HTTPS site (or a localhost production preview), use your browser’s **Install** or **Add to Home Screen** menu option. On iPhone or iPad in Safari, choose **Share → Add to Home Screen**. Installation availability and presentation are controlled by the browser. The postcard adds no installation button or custom prompt.
 
-Let the first online load finish before going offline. The production service worker precaches the complete local application, including the lazy garden engine, Three.js, and app icons. It does not depend on a previously visited bouquet: query tokens still generate their exact arrangements offline. Google Fonts remain optional and fall back to system fonts. Native sharing and sending a link to another person still need the relevant platform/network capabilities. Browser storage can be cleared or evicted; installation is not a permanent backup.
+Let the first online load finish before going offline. The production service worker precaches the complete local application, including the lazy garden engine, Three.js, and app icons. It does not depend on a previously visited bouquet: query tokens still generate their exact arrangements offline. Fonts are served locally with the app. Native sharing and sending a link to another person still need the relevant platform/network capabilities. Browser storage can be cleared or evicted; installation is not a permanent backup.
 
 Opening the home-screen app grows a fresh surprise. To keep a particular bouquet, save its shared URL or PNG; the installed app’s identity and launch URL never include a bouquet seed. Updates wait until all existing app windows/tabs are closed, so a release does not reload the gift someone is viewing.
 
-The service worker is deliberately disabled in `npm run dev`. Test offline behavior using `npm run build` followed by `npm run preview`. A first-ever offline visit, an insecure HTTP deployment, and opening files directly from disk are not supported offline entry paths. Physical iOS/Android installation still needs real-device verification.
+The service worker is deliberately disabled in `npm run dev`. Test offline behavior using `npm run build` followed by `npm start`. A first-ever offline visit, an insecure HTTP deployment, and opening files directly from disk are not supported offline entry paths. Physical iOS/Android installation still needs real-device verification.
 
 ### Controls
 
@@ -142,11 +164,11 @@ flowchart TD
 
 [`src/garden/botany.ts`](src/garden/botany.ts) turns a millisecond timestamp into a bouquet plan. Each stem gets a derived seed for its geometry, while repeated species share cultivar colors. Layout is chosen before tessellation. Flower-head envelopes keep the mature blooms apart in 3D. Stem paths make room around neighboring heads, and crowded leaves are shortened, redirected, or omitted.
 
-Replay, rotation, and PNG export keep the existing bouquet. **Grow another** starts from a new timestamp and clears any bouquet seed from the address, so refreshing afterward is a fresh visit. The link carries the arrangement, not the sender’s camera angle. Browser/GPU rendering can vary. Messaging apps show a general preview image; the link itself opens the exact bouquet.
+Replay, rotation, and PNG export keep the existing bouquet. **Grow another** starts from a new timestamp and clears any bouquet seed from the address, so refreshing afterward is a fresh visit. The link carries the arrangement, not the sender’s camera angle. The self-hosted server gives messaging crawlers a 1200 × 630 PNG of that same seeded bouquet, fully bloomed in its canonical front view on the current stationery. The landscape layout adapts to the image dimensions; browser/GPU rendering can vary, so this is not a pixel-identical copy of the sender’s screen. The garden itself is client-only, while Next.js generates crawler metadata on the server; no server-rendered garden or external image service is involved.
 
 #### Bouquet link contract
 
-**Send flowers** adds a token like `?bouquet=1970260fcfb` to the site path. The token is the bouquet’s timestamp in lowercase hexadecimal, with no leading zeros (except `0`). It represents a nonnegative Unix timestamp in milliseconds within the JavaScript `Date` range. Existing links use the same format and still restore the same bouquet. An invalid link shows a notice and grows a fresh bouquet. All bouquet generation and interaction state stay in the browser; there is no server-side lookup.
+**Send flowers** adds a token like `?bouquet=1970260fcfb` to the site path. The token is the bouquet’s timestamp in lowercase hexadecimal, with no leading zeros (except `0`). It represents a nonnegative Unix timestamp in milliseconds within the JavaScript `Date` range. Existing links use the same format and still restore the same bouquet. An invalid token still loads the app with HTTP 200 and default preview metadata, so the browser can show an invalid-link notice and grow a fresh bouquet. The image endpoint rejects invalid tokens with HTTP 404 before starting Chromium; the client-only internal capture view reports a capture-readiness error for invalid tokens. The seed is sufficient to regenerate the bouquet—there is no bouquet database or server-side gift lookup. Interactive generation stays in the browser; social previews reuse the same Three.js engine in server-managed Chromium.
 
 ### Geometry with botanical cues
 
@@ -178,61 +200,70 @@ Both original mono WAVs are generated by the TypeScript DSP renderer in `src/aud
 
 ## Development
 
-The browser app uses React 19.3 and TypeScript, built with Vite 8 and Tailwind CSS 4. The ui-sdk React 0.1 beta handles interaction behavior, including pending states for async actions; local shadcn buttons provide presentation, with Lucide icons. Three.js 0.160.1 renders the procedural geometry in WebGL.
+The app uses the Next.js 16 App Router, React 19.3, TypeScript, and Tailwind CSS 4. The ui-sdk React 0.1 beta handles interaction behavior, including pending states for async actions; local shadcn buttons provide presentation, with Lucide icons. Three.js 0.160.1 renders the procedural geometry in WebGL.
 
-Application code, unit tests, React tests, browser tests, and build/test configuration are TypeScript and checked in strict mode by the build. `npm run test:unit` runs the Node-environment botanical/link suites; `npm run test:react` runs the jsdom component suite. The former root JavaScript implementations and test-only vendored Three.js have been removed; rendering and geometry tests both use the pinned npm Three.js dependency.
+Application code, server helpers, tests, and build/test configuration use TypeScript. `npm run typecheck` checks strict types. All suites run through Vitest: `npm test` includes unit, React, and server projects; `npm run test:unit`, `npm run test:react`, and `npm run test:server` select individual projects. Browser tests also use Vitest, with the Playwright library providing automation and Node fixtures—not the `@playwright/test` runner. Rendering and geometry tests use the pinned npm Three.js dependency.
 
 React owns the renderer lifecycle, including disposal of the renderer, textures, listeners, and observers on unmount and during development Strict Mode remounts. Per-frame geometry and rotation stay outside React state. Dragging updates rotation 1:1 at the configured sensitivity. Release projects the drag velocity into a spring target (0.4 s response, 0.8 damping ratio); pointer reset springs to the nearest equivalent front angle (0.4 s response, 1.0 damping ratio). Keyboard and reduced-motion controls do not add momentum.
 
 After `npm ci`:
 
 ```sh
-npm test                         # Vitest unit and React tests
-npm run build                    # Type-check and build dist/
-npm run preview                  # Serve dist/ locally for a smoke check
+npm run typecheck                # Strict TypeScript checks
+npm test                         # Vitest unit, React, and server projects
+npm run build                    # next build, then the TypeScript PWA build
+npm run test:server               # Vitest server project (also included above)
+npm start                        # Next.js production server on port 3000
 ```
 
-Open the preview URL Vite prints, usually **http://127.0.0.1:4173**. Open a shared URL such as `/?bouquet=1970260fcfb` in a private window and verify it restores the same bouquet. Try **Grow another** and refresh: the old seed should not return.
+Open **http://localhost:3000/**. Open a shared URL such as `/?bouquet=1970260fcfb` in a private window and verify it restores the same bouquet. Try **Grow another** and refresh: the old seed should not return.
 
-To run the desktop and mobile Playwright checks against the built site, build first, then run:
+To run the desktop and mobile browser checks against the built site, build first, then run:
 
 ```sh
-npx playwright install chromium
-npm run test:e2e                 # Starts its own preview server on port 4175
+npx playwright install --with-deps chromium
+npm run test:e2e                 # Vitest browser config starts Next.js fixtures
 ```
+
+The social-preview checks use the actual Next.js production server and Playwright Chromium. Tests run locally; this repository does not include GitHub Actions CI/CD workflows.
 
 ### Project map
 
-- [`index.html`](index.html) and [`src/main.tsx`](src/main.tsx): Vite entry page and React entry point.
+- [`src/app/`](src/app/): Next.js App Router pages, layout, `generateMetadata`, health route, versioned OG image endpoint, and client-only garden/capture boundaries.
+- [`next.config.ts`](next.config.ts): standalone output, build-time base path, and response headers.
 - [`src/App.tsx`](src/App.tsx) and [`src/components/`](src/components/): gift state, focus handoff, reveal, and sharing/saving feedback.
 - [`src/garden/engine.ts`](src/garden/engine.ts) and [`src/garden/rotation.ts`](src/garden/rotation.ts): disposable Three.js rendering and frame-independent gesture physics.
 - [`src/lib/bouquet-link.ts`](src/lib/bouquet-link.ts): the deterministic share-link contract.
 - [`src/components/ui/`](src/components/ui/) and [`src/styles/`](src/styles/): local UI primitives and stationery styling.
 - [`src/garden/`](src/garden/): strictly typed botanical recipes, mesh builders, and deterministic unit tests. [`golden-fixtures.json`](src/garden/golden-fixtures.json) freezes pre-TypeScript v1/v2 plans, per-stem geometry streams, head envelopes, and custom mesh buffers; it is deliberately not regenerated by the test suite.
 - [`src/lib/bouquet-link.compat.test.ts`](src/lib/bouquet-link.compat.test.ts): the original shared-URL compatibility and seeded round-trip checks against the single TypeScript implementation.
-- [`src/pwa/`](src/pwa/): production registration, the Workbox service worker, and deterministic icon generation. `npm run pwa:icons` regenerates the committed PNGs from `public/flowers.svg` using ImageMagick; it is not required for a normal build.
+- [`src/pwa/`](src/pwa/) and [`scripts/build-pwa.ts`](scripts/build-pwa.ts): production registration, the native TypeScript service worker, and its esbuild bundling after `next build`. The build generates ignored `public/sw.js` and `public/manifest.webmanifest`. `npm run pwa:icons` regenerates committed PNGs from `public/flowers.svg` using ImageMagick; it is not required for a normal build.
 - [`public/icons/`](public/icons/): cream-and-rose flower-brand PNGs, including separate maskable and Apple home-screen assets. Manifest identity, scope, and launch path are relative and seed-independent.
-- [`tests/`](tests/): browser tests against the production build, including manifest/icons, offline unseen-seed links, subpath hosting, and waiting updates.
+- [`server/`](server/): TypeScript social-preview helpers and bounded persistent Chromium-rendered image cache. Next.js supplies the HTTP server and generates the standalone `server.js`; there is no hand-written JavaScript server.
+- [`src/social/`](src/social/): the internal landscape capture view using the real garden engine and stationery styles.
+- [`Dockerfile`](Dockerfile) and [`compose.yaml`](compose.yaml): the self-hosted app image and persistent OG cache volume.
+- [`tests/`](tests/): Vitest browser suites and Playwright-library fixtures against the production build, including social previews, manifest/icons, offline unseen-seed links, and waiting updates. Base-path changes require a separately built app.
 - [`DESIGN.md`](DESIGN.md) and [`PRODUCT.md`](PRODUCT.md): the current visual system and product constraints.
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md): publishing, verification, troubleshooting, and rollback.
 - [`docs/images/`](docs/images/) and [`DESIGN-REVIEW.md`](DESIGN-REVIEW.md): current screenshots, earlier flower studies, and historical botanical geometry notes.
 
 ### Hosting
 
-Run `npm ci` and `npm run build`, then publish the contents of **`dist/`**, not the repository root. The result is a static site: no Next.js or Node.js runtime server, backend, database, API keys, or runtime settings are required.
+The supported self-hosted deployment is the custom Docker image: Node.js 24 runs the Next.js-generated standalone `server.js` from **`.next/standalone`**, with `.next/static` and `public` copied alongside it. App Router `generateMetadata` supplies social metadata before JavaScript runs; bundled Playwright Chromium renders exact-seed previews on demand at `/og/<16hex-build-ID-hash>/<seed>.png`. No database, API keys, or external rendering service are required. Production requires `PUBLIC_URL` and a user-managed HTTPS reverse proxy.
 
-Vite’s relative asset base (`./`) lets the same build run at a domain root or a subpath such as `/moment-garden/`. The included [Pages workflow](.github/workflows/pages.yml) tests and builds the site, uploads `dist/`, and deploys that artifact on pushes to `main` or manual dispatch. Pages must use **GitHub Actions** as its source, not branch-root publishing. The separate test workflow also runs desktop/mobile browser checks but does not publish.
+The default build serves the domain root, as the [live demo](https://flowers.joojoo-lab.xyz/) does. To serve `/moment-garden/`, build with `NEXT_PUBLIC_BASE_PATH=/moment-garden` and set a matching runtime `PUBLIC_URL`. Path changes require rebuilding; hostname-only changes do not. Health checks follow the same prefix (`/moment-garden/healthz`). This is a Next.js server deployment, not a static export. Releases are manual: there are no GitHub Actions test or deployment workflows, and no registry publication is configured. Building locally does not publish anything.
 
-See [Deployment](docs/DEPLOYMENT.md) for setup, release verification, and rollback. Keep the existing site path so previously shared bouquet links keep working. Local setup and `npm run build` do not deploy anything.
+See [Deployment](docs/DEPLOYMENT.md) for setup, release verification, and rollback. Existing GitHub Pages URLs do not move automatically: preserving a path on a new domain does not redirect links on the old host.
 
 ### Contributing
 
-Small botanical improvements are welcome. Keep the experience surprise-only, preserve seeded reproducibility, and check both desktop and mobile. When changing a mesh, include before/after renders and inspect it from the front, a quarter turn, and behind. Please run the generator tests before opening a pull request.
+Read [Contributing](CONTRIBUTING.md) for setup, checks, bug reports, and pull request guidance. Keep the experience surprise-only, preserve seeded reproducibility, and check desktop, mobile, keyboard, and reduced-motion behavior. For vulnerabilities, follow the [security reporting policy](SECURITY.md) instead of posting exploit details in a public issue.
 
 ## Credits & license
 
 - Rendering: [Three.js](https://threejs.org/), MIT; its license is retained in [`vendor/THREE-LICENSE.txt`](vendor/THREE-LICENSE.txt).
-- Typography: Instrument Serif and DM Sans, optionally loaded from Google Fonts.
+- Typography: locally hosted Instrument Serif and DM Sans under the SIL Open Font License; see [font sources](public/fonts/README.md), [Instrument Serif license](public/fonts/Instrument-Serif-OFL.txt), and [DM Sans license](public/fonts/DM-Sans-OFL.txt).
+- Sound: original, code-generated WAVs; see [sound sources and format](public/audio/README.md).
 - All bouquet geometry and screenshot examples are generated by this project.
 
 Project code, documentation, logo, and screenshots are available under the [MIT License](LICENSE).

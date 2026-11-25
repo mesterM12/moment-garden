@@ -1,9 +1,14 @@
-import { expect, test } from '@playwright/test'
+import { describe, expect } from 'vitest'
+import type { Page } from 'playwright'
+import { browserProjects, createBrowserTest } from './browser.fixtures'
+
+describe.each(browserProjects)('$name', ({ options, isMobile }) => {
+const test = createBrowserTest(options, isMobile)
 
 const gift = '/?bouquet=1970260fcfb'
 const seed = '1748091600123'
 
-async function openGift(page: import('@playwright/test').Page) {
+async function openGift(page: Page) {
   await page.goto(gift)
   const opener = page.getByRole('button', { name: 'Open your flowers', exact: true })
   await expect(opener).toBeEnabled()
@@ -193,4 +198,5 @@ test('renderer failure exposes a readable recovery rather than a sealed cover', 
   await page.goto(gift)
   await expect(page.getByText(/WebGL|couldn.t open|couldn.t bloom|couldn.t load|hardware acceleration|3D/i).first()).toBeVisible()
   await expect(page.getByRole('button', { name: 'Open your flowers', exact: true })).not.toBeVisible()
+})
 })

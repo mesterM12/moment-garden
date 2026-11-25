@@ -1,4 +1,8 @@
-import { expect, test } from '@playwright/test'
+import { describe, expect } from 'vitest'
+import { browserProjects, createBrowserTest } from './browser.fixtures'
+
+describe.each(browserProjects)('$name', ({ options, isMobile }) => {
+const test = createBrowserTest(options, isMobile)
 
 test('opening and bloom assets are local PCM audio and decode in the browser', async ({ page, request }) => {
   await page.goto('/')
@@ -17,6 +21,27 @@ test('opening and bloom assets are local PCM audio and decode in the browser', a
     }, file)
     expect(duration).toBeCloseTo(expected, 1)
   }
+})
+
+test('an explicit opening starts the local audio without autoplay', async ({ page, isMobile }) => {
+  await page.addInitScript(() => {
+    const durations: number[] = []
+    Object.assign(window, { startedAudio: durations })
+    const start = AudioBufferSourceNode.prototype.start
+    AudioBufferSourceNode.prototype.start = function (...args: Parameters<typeof start>) {
+      start.apply(this, args)
+      if (this.buffer && this.context.state === 'running') durations.push(this.buffer.duration)
+    }
+  })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/?bouquet=1970260fcfb')
+  const started = () => page.evaluate(() => (window as unknown as { startedAudio: number[] }).startedAudio)
+  const open = page.getByRole('button', { name: 'Open your flowers', exact: true })
+  await expect(open).toBeEnabled()
+  expect(await started()).toEqual([])
+  if (isMobile) await open.tap()
+  else await open.click()
+  await expect.poll(started).toEqual([expect.closeTo(.28, 2)])
 })
 
 test('a zero-sized bouquet cancels new bloom audio instead of playing without animation', async ({ page }) => {
@@ -67,4 +92,5 @@ test('sound can be muted before opening and a failed audio download never blocks
   await sound.click()
   await expect(sound).toHaveAttribute('aria-pressed', 'false')
   expect(errors).toEqual([])
+})
 })

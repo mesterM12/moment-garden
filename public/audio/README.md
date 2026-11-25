@@ -11,9 +11,7 @@ TypeScript type stripping (Node 22.18+ / 24+):
 node src/audio/generate.ts
 ```
 
-The `.ts` entry works directly; Node may print a harmless module-type warning
-because the repository does not declare `type: module`. No generation occurs at
-build time. The committed WAV files are the runtime/build inputs.
+The `.ts` entry runs directly with Node's native TypeScript support. No generation occurs at build time. The committed WAV files are the runtime/build inputs.
 
 ## Format and intent
 

@@ -27,6 +27,7 @@ interface Voice {
 
 interface Playback {
   context: AudioContext
+  restoreAudioSession: () => void
   requestedAt: number
   resumed: boolean
   released: boolean
@@ -87,7 +88,7 @@ export function createBloomSound(): {
     try {
       const documentURL = typeof document !== 'undefined' ? document.baseURI : undefined
       const fallback = typeof location !== 'undefined' ? location.href : 'http://localhost/'
-      const base = import.meta.env.BASE_URL || '/'
+      const base = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/`
       const url = new URL(asset.path, new URL(base.endsWith('/') ? base : `${base}/`, documentURL || fallback))
       void fetch(url.href, { signal: controller.signal }).then(async (response) => {
         if (!response.ok) { settle(); return }
@@ -97,6 +98,24 @@ export function createBloomSound(): {
       settle()
     }
     return pending
+  }
+
+  function enterPlaybackSession() {
+    const navigatorWithAudio = typeof navigator === 'undefined' ? undefined : navigator as Navigator & {
+      audioSession?: { type: string }
+    }
+    try {
+      const session = navigatorWithAudio?.audioSession
+      if (session && session.type !== 'playback') {
+        const previous = session.type
+        // Safari's default Web Audio session can be silenced by the iPhone ringer setting.
+        session.type = 'playback'
+        return () => {
+          try { if (session.type === 'playback') session.type = previous } catch { /* Session already gone. */ }
+        }
+      }
+    } catch { /* Audio Session is optional; Web Audio can still run. */ }
+    return () => {}
   }
 
   function close(context: AudioContext) {
@@ -120,6 +139,7 @@ export function createBloomSound(): {
     clearTimeout(playback.timer)
     for (const voice of playback.voices) removeVoice(playback, voice)
     close(playback.context)
+    playback.restoreAudioSession()
   }
 
   function finishIfIdle(playback: Playback) {
@@ -259,10 +279,11 @@ export function createBloomSound(): {
     play(mode) {
       if (active) release(active)
       if (disposed || hidden() || typeof AudioContext === 'undefined') return
+      const restoreAudioSession = enterPlaybackSession()
       let context: AudioContext
-      try { context = new AudioContext() } catch { return }
+      try { context = new AudioContext() } catch { restoreAudioSession(); return }
       const playback: Playback = {
-        context, requestedAt: performance.now(), resumed: false, released: false, accepting: true,
+        context, restoreAudioSession, requestedAt: performance.now(), resumed: false, released: false, accepting: true,
         openingPending: mode !== 'bloom', bloomPending: mode !== 'opening', voices: new Set(),
       }
       active = playback

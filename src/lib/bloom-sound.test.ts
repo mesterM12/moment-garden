@@ -97,7 +97,7 @@ describe('asset bloom sound controller', () => {
     vi.unstubAllEnvs()
   })
 
-  it('prefetches bytes without autoplay/context/decode and resolves the Vite base', async () => {
+  it('prefetches bytes without autoplay/context/decode and resolves the app base', async () => {
     const sound = createBloomSound()
     sound.prepare()
     sound.prepare()
@@ -114,7 +114,7 @@ describe('asset bloom sound controller', () => {
   })
 
   it('preserves a non-root deployment base and document origin', async () => {
-    vi.stubEnv('BASE_URL', '/moment-garden/')
+    vi.stubEnv('NEXT_PUBLIC_BASE_PATH', '/moment-garden')
     vi.stubGlobal('document', { baseURI: 'https://flowers.example/moment-garden/?seed=7', visibilityState: 'visible' })
     const sound = createBloomSound()
     sound.prepare()
@@ -148,6 +148,31 @@ describe('asset bloom sound controller', () => {
     sound.dispose()
     expect(context(1).close).toHaveBeenCalledOnce()
     expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('sets Safari playback audio only on activation and restores the previous session', async () => {
+    const audioSession = { type: 'auto' }
+    vi.stubGlobal('navigator', { audioSession })
+    MockAudioContext.configure = (audio) => {
+      audio.resume.mockImplementation(() => audioSession.type === 'playback'
+        ? Promise.resolve()
+        : Promise.reject(new Error('Playback session not selected')))
+    }
+    const sound = createBloomSound()
+    sound.prepare()
+    await flush()
+    expect(audioSession.type).toBe('auto')
+    sound.play('opening')
+    await flush()
+    expect(context().sources).toHaveLength(1)
+    expect(context().sources[0]!.start).toHaveBeenCalledWith(12, 0)
+    expect(audioSession.type).toBe('playback')
+    context().sources[0]!.onended?.()
+    expect(audioSession.type).toBe('auto')
+    sound.play('bloom')
+    expect(audioSession.type).toBe('playback')
+    sound.dispose()
+    expect(audioSession.type).toBe('auto')
   })
 
   it('waits for first geometry sync and seeks to live progress when decoding finishes', async () => {

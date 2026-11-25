@@ -9,19 +9,21 @@ export default defineConfig({
       {
         extends: true,
         test: {
-          name: 'unit',
-          environment: 'node',
+          name: 'unit', environment: 'node',
           include: ['src/garden/**/*.test.ts', 'src/lib/**/*.test.ts'],
         },
       },
       {
         extends: true,
         test: {
-          name: 'react',
-          environment: 'jsdom',
-          include: ['src/test/**/*.test.tsx'],
-          setupFiles: ['./src/test/setup.ts'],
-          css: false,
+          name: 'server', environment: 'node', include: ['server/**/*.test.ts'],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'react', environment: 'jsdom', include: ['src/test/**/*.test.tsx'],
+          setupFiles: ['./src/test/setup.ts'], css: false,
         },
       },
     ],

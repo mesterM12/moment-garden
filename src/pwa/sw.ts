@@ -1,22 +1,34 @@
 /// <reference lib="webworker" />
-
-import { setCacheNameDetails } from 'workbox-core'
-import { createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching'
-import { registerRoute } from 'workbox-routing'
+export {}
 
 declare const self: ServiceWorkerGlobalScope
+// Injected by the TypeScript build script, not maintained as a second asset list.
+declare const __PRECACHE_URLS__: string[]
+declare const __CACHE_VERSION__: string
 
-setCacheNameDetails({ prefix: 'flowers-for-you', suffix: self.registration.scope })
+const scope = new URL(self.registration.scope)
+const cacheName = `flowers-for-you-${encodeURIComponent(scope.pathname)}-${__CACHE_VERSION__}`
+const shell = new URL('./', scope).href
 
-// Workbox revisions every shell asset and removes stale entries only on activation.
-// A replacement worker waits for all old tabs to close; it never interrupts a gift.
-precacheAndRoute(self.__WB_MANIFEST)
-
-const home = new URL('./', self.registration.scope)
-const shell = new URL('index.html', home)
-registerRoute(
-  ({ request, url }) => request.mode === 'navigate'
-    && url.origin === home.origin
-    && (url.pathname === home.pathname || url.pathname === shell.pathname),
-  createHandlerBoundToURL(shell.href),
-)
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(cacheName).then(cache => cache.addAll(__PRECACHE_URLS__)))
+})
+self.addEventListener('activate', event => {
+  const prefix = `flowers-for-you-${encodeURIComponent(scope.pathname)}-`
+  event.waitUntil(caches.keys().then(names => Promise.all(names.filter(name => name.startsWith(prefix) && name !== cacheName).map(name => caches.delete(name)))))
+})
+self.addEventListener('fetch', event => {
+  const { request } = event
+  if (request.method !== 'GET') return
+  const url = new URL(request.url)
+  if (url.origin !== scope.origin) return
+  const isHome = url.pathname === scope.pathname || url.pathname === `${scope.pathname}index.html`
+  if (request.mode === 'navigate' && isHome) {
+    event.respondWith(fetch(request).catch(async () => {
+      const cached = await (await caches.open(cacheName)).match(shell)
+      return cached || new Response('Open these flowers online once before going offline.', { status: 503 })
+    }))
+  } else if (__PRECACHE_URLS__.includes(url.pathname)) {
+    event.respondWith(caches.open(cacheName).then(async cache => (await cache.match(request)) || fetch(request)))
+  }
+})

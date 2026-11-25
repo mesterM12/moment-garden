@@ -1,9 +1,11 @@
-import { expect, test, type Page } from '@playwright/test'
-import { createServer } from 'node:http'
-import { readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { describe, expect } from 'vitest'
+import type { Page } from 'playwright'
+import { createServer, request as proxyRequest } from 'node:http'
+import { baseURL, browserProjects, createBrowserTest } from './browser.fixtures'
 import { createBouquet } from '../src/garden/botany'
 
+describe.each(browserProjects)('$name', ({ options, isMobile }) => {
+const test = createBrowserTest(options, isMobile)
 const sharedToken = '1970260fcfb'
 const sharedSeed = 1748091600123
 
@@ -57,15 +59,18 @@ test('manifest has stable app identity and real branded install icons', async ({
   }
 })
 
-test('production worker caches lazy engine and Three, reloads offline and opens unseen query seeds', async ({ page, context }) => {
+test('production worker caches Next assets, reloads offline and opens unseen query seeds', async ({ page, context }) => {
   const registration = await ready(page)
   expect(registration.script).toMatch(/\/sw\.js$/)
   const cached = await page.evaluate(async () => {
     const names = (await caches.keys()).filter(name => name.startsWith('flowers-for-you-'))
     return (await Promise.all(names.map(async name => (await (await caches.open(name)).keys()).map(request => request.url)))).flat()
   })
-  expect(cached.some(url => /\/engine-[^/]+\.js/.test(url))).toBe(true)
-  expect(cached.some(url => /\/three-[^/]+\.js/.test(url))).toBe(true)
+  const scripts = await page.locator('script[src]').evaluateAll(elements => elements.map(element => (element as HTMLScriptElement).src).filter(url => url.includes('/_next/static/')))
+  expect(scripts.length).toBeGreaterThan(0)
+  for (const script of scripts) expect(cached).toContain(script)
+  expect(cached.some(url => /\/_next\/static\/.+\.css$/.test(url))).toBe(true)
+  expect(cached.some(url => /\/fonts\/.+\.woff2$/.test(url))).toBe(true)
   expect(cached.some(url => /\/audio\/gift-open\.wav/.test(url))).toBe(true)
   expect(cached.some(url => /\/audio\/bloom\.wav/.test(url))).toBe(true)
   await context.setOffline(true)
@@ -90,44 +95,76 @@ test('installation remains browser-owned without an in-page install control or p
   })).toBe(false)
 })
 
-test('same production artifact works at a static subpath and updates wait without replacing a gift', async ({ page, context }) => {
+test('Next production worker updates wait without replacing open gifts and preserve unrelated caches', async ({ page, context, browser }) => {
   let update = false
-  const mount = '/moment-garden/'
-  const types: Record<string, string> = { js: 'text/javascript', css: 'text/css', html: 'text/html', webmanifest: 'application/manifest+json', png: 'image/png', svg: 'image/svg+xml', wav: 'audio/wav' }
-  const server = createServer(async (request, response) => {
-    const pathname = new URL(request.url!, 'http://localhost').pathname
-    if (!pathname.startsWith(mount) || pathname.includes('..')) { response.writeHead(404).end(); return }
-    const path = pathname.slice(mount.length) || 'index.html'
-    try {
-      let body = await readFile(resolve('dist', path))
-      if (path === 'sw.js' && update) body = Buffer.concat([body, Buffer.from('\n/* release two */')])
-      response.writeHead(200, { 'Content-Type': types[path.split('.').at(-1)!] ?? 'application/octet-stream', 'Cache-Control': 'no-cache' }).end(body)
-    } catch { response.writeHead(404).end() }
+  let workerRequests = 0
+  const server = createServer((request, response) => {
+    const upstream = proxyRequest(new URL(request.url!, baseURL), {
+      method: request.method,
+      headers: { ...request.headers, host: new URL(baseURL).host, 'accept-encoding': 'identity' },
+    }, incoming => {
+      if (new URL(request.url!, baseURL).pathname !== '/sw.js') {
+        response.writeHead(incoming.statusCode ?? 502, incoming.headers)
+        incoming.pipe(response)
+        return
+      }
+      workerRequests += 1
+      const chunks: Buffer[] = []
+      incoming.on('data', chunk => chunks.push(Buffer.from(chunk)))
+      incoming.on('end', () => {
+        const body = Buffer.concat([...chunks, Buffer.from(update ? '\n/* release two */' : '')])
+        const headers = { ...incoming.headers, 'cache-control': 'no-store' }
+        delete headers['content-length']
+        delete headers.etag
+        response.writeHead(200, headers).end(body)
+      })
+    })
+    upstream.on('error', error => response.writeHead(502).end(error.message))
+    request.pipe(upstream)
   })
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
   const address = server.address()
   if (!address || typeof address === 'string') throw new Error('Missing test server address')
-  const url = `http://127.0.0.1:${address.port}${mount}`
+  const url = `http://127.0.0.1:${address.port}/`
+  const secondContext = await browser.newContext(options)
   try {
     expect((await ready(page, url)).scope).toBe(url)
-    const manifest = await page.locator('link[rel="manifest"]').evaluate(async (element: HTMLLinkElement) => (await fetch(element.href)).json())
-    expect(new URL(manifest.start_url, `${url}manifest.webmanifest`).href).toBe(url)
+    const manifest = await page.locator('link[rel="manifest"]').evaluate(async (element: HTMLLinkElement) => ({ url: element.href, data: await (await fetch(element.href)).json() }))
+    expect(new URL(manifest.data.start_url, manifest.url).href).toBe(url)
     await page.reload()
     await open(page, sharedSeed)
+    const otherGift = await secondContext.newPage()
+    await ready(otherGift, url)
+    await otherGift.reload()
+    await open(otherGift, sharedSeed)
     await page.evaluate(async () => { await caches.open('unrelated-app-cache') })
     update = true
     await page.evaluate(async () => { await (await navigator.serviceWorker.ready).update() })
     await expect.poll(() => page.evaluate(async () => Boolean((await navigator.serviceWorker.ready).waiting))).toBe(true)
-    await expect(page.locator('canvas')).toHaveAttribute('data-seed', String(sharedSeed))
-    await expect(page.getByRole('button', { name: 'Open your flowers', exact: true })).toHaveCount(0)
+    expect(workerRequests).toBeGreaterThanOrEqual(2)
+    for (const gift of [page, otherGift]) {
+      await expect(gift.locator('canvas')).toHaveAttribute('data-seed', String(sharedSeed))
+      await expect(gift.getByRole('button', { name: 'Open your flowers', exact: true })).toHaveCount(0)
+    }
     expect(await page.evaluate(() => caches.has('unrelated-app-cache'))).toBe(true)
     await context.setOffline(true)
     const seed = sharedSeed + 7654321
     await page.goto(`${url}?bouquet=${seed.toString(16)}`)
     await open(page, seed)
-  } finally {
     await context.setOffline(false)
     await page.goto('about:blank')
-    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+    await page.goto(`${url}?bouquet=${sharedToken}`)
+    await page.evaluate(async () => navigator.serviceWorker.ready)
+    await expect.poll(() => page.evaluate(async () => Boolean((await navigator.serviceWorker.ready).waiting))).toBe(false)
+    expect(await page.evaluate(() => caches.has('unrelated-app-cache'))).toBe(true)
+    await open(page, sharedSeed)
+  } finally {
+    await secondContext.close()
+    await context.setOffline(false)
+    await page.goto('about:blank')
+    const closed = new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+    server.closeAllConnections()
+    await closed
   }
+})
 })

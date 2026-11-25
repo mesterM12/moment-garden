@@ -1,0 +1,45 @@
+name: shipyard-flowers
+
+services:
+  flowers:
+    build:
+      context: ${APP_SOURCE:-./app}
+      args:
+        NEXT_PUBLIC_BASE_PATH: ""
+    image: ${FLOWERS_IMAGE:?Set FLOWERS_IMAGE to an immutable release tag}
+    container_name: flowers
+    init: true
+    restart: unless-stopped
+    labels:
+      diun.enable: "false"
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      PUBLIC_URL: ${PUBLIC_URL:?Set PUBLIC_URL to the public HTTPS app URL}
+      OG_CACHE_DIR: /app/.cache/og
+      OG_CACHE_ENTRIES: "256"
+    ports:
+      - "127.0.0.1:${FLOWERS_PORT:-8109}:3000"
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    volumes:
+      - og-cache:/app/.cache/og
+    shm_size: 256mb
+    mem_limit: 2g
+    cpus: 2
+    stop_grace_period: 40s
+    networks:
+      - tunnel
+
+volumes:
+  og-cache:
+
+networks:
+  tunnel:
+    external: true
+    name: ${FLOWERS_PROXY_NETWORK:-tunnel}

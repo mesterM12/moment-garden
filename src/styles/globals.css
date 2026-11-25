@@ -3,6 +3,30 @@
 @import "@ui-sdk/core/web.css" layer(components);
 @import "./app.css";
 
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../../public/fonts/instrument-serif-latin-regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../../public/fonts/instrument-serif-latin-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('../../public/fonts/dm-sans-latin-variable.woff2') format('woff2');
+}
+
 :root {
   color-scheme: light;
   --ink: #573b3d;

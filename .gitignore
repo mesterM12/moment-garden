@@ -8,5 +8,26 @@ node_modules/
 playwright-report/
 test-results/
 dist/
+.next/
+out/
+next-env.d.ts
+public/sw.js
+public/manifest.webmanifest
+.cache/
 *.tsbuildinfo
 .impeccable/review/
+
+# Local agent installations and hooks (not application source)
+.agents/
+.claude/
+.codex/
+.github/agents/
+.github/hooks/
+.github/skills/
+skills-lock.json
+
+# Private key material; do not commit deployment credentials
+*.pem
+*.key
+*.p12
+*.pfx

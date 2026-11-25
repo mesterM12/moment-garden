@@ -28,11 +28,11 @@ The postcard runs in desktop and mobile browsers and requires WebGL for the 3D s
 - Replay and sharing preserve the current arrangement. The recipient opens it from the front, regardless of the sender’s viewing angle. The PNG preserves the viewing angle.
 - **Send flowers** opens the native share sheet when available, otherwise copies the link or offers it for manual copying. Feedback confirms that the link was copied or the postcard is ready; don’t imply that a gift was delivered.
 - Flower geometry is generated in code rather than loaded from model files or photographs. Bouquet state stays in the browser; the lowercase hexadecimal timestamp in the URL reproduces the same arrangement without a server lookup, including for existing links.
-- The React and TypeScript source builds with Vite to `dist/` for static hosting at the [public site URL](https://mesterm12.github.io/moment-garden/). The GitHub Pages workflow publishes the built artifact at that path; repository-root publishing is not supported. Hosting serves the built files; there is no application server or backend. The public source repository is [mesterM12/moment-garden](https://github.com/mesterM12/moment-garden).
+- The React and TypeScript app uses the Next.js 16 App Router. The supported Docker deployment runs Node.js 24, the Next.js standalone server, and Playwright Chromium for social-preview images of the same seeded bouquet. The garden renders in the browser; the server supplies initial social metadata and preview images without a bouquet database. The [live app](https://flowers.joojoo-lab.xyz/) serves the domain root. Releases are manual; no GitHub Actions workflows are configured. This is not a static GitHub Pages deployment. The public source repository is [mesterM12/moment-garden](https://github.com/mesterM12/moment-garden).
 
 ## Home Screen App
 
-Visitors can install Flowers for You from supported browser installation UI, or use Safari's Share menu and Add to Home Screen. The installed app uses the same stationery design without browser chrome. Installation is optional and never interrupts opening a gift. Once the production app has cached successfully online, its shell and bouquet renderer are available offline; deterministic shared bouquet URLs do not require a server lookup. Sharing to another app and external fonts still depend on browser capabilities or connectivity. App updates must not reload an active bouquet unexpectedly.
+Visitors can install Flowers for You from supported browser installation UI, or use Safari's Share menu and Add to Home Screen. The installed app uses the same stationery design without browser chrome. Installation is optional and never interrupts opening a gift. Once the production app has cached successfully online, its shell and bouquet renderer are available offline; deterministic shared bouquet URLs do not require a server lookup. Fonts are served locally and cached with the app. Sharing to another app still depends on browser capabilities and any required connectivity. App updates must not reload an active bouquet unexpectedly.
 
 ## Brand Commitments
 
@@ -42,7 +42,7 @@ The product is named **Flowers for You**. The experience should feel warm and in
 
 - [`src/`](src/): the postcard UI and browser-side rendering.
 - [`docs/images/`](docs/images/): current React desktop/mobile and gift-cover screenshots, plus earlier bouquet studies and an animated preview.
-- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md): the static publishing contract and release checks.
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md): the Next.js/Docker deployment contract and manual release checks.
 - [`DESIGN-REVIEW.md`](DESIGN-REVIEW.md): observations about species resemblance and remaining geometry refinements.
 
 ## Product Principles
@@ -54,4 +54,4 @@ The product is named **Flowers for You**. The experience should feel warm and in
 
 ## Accessibility & Inclusion
 
-Pointer and touch drags turn the bouquet directly. Sideways touch drags turn the arrangement while vertical swipes can scroll the page and pinch gestures remain available for zoom. A flick settles with momentum, and pointer reset takes the shortest route back to the front. On the focused bouquet, arrow keys turn in steps and `Home` resets instantly. Reduced motion skips bloom, release momentum, and reset animation without removing direct drag or keyboard rotation. Keyboard activation opens or generates the finished bouquet immediately. **Replay bloom** explicitly requests the animation with either input method and is omitted with an explanation when reduced motion is on. At rest, the bouquet does not sway. Keep the gift usable without dragging or waiting for motion.
+Pointer and one-finger touch drags turn the bouquet in any direction without scrolling the page. Pinch gestures still zoom. The postcard and actions fit typical phone viewports; when content needs more room, swipes starting outside the artwork scroll the page. A flick settles with momentum, and pointer reset takes the shortest route back to the front. On the focused bouquet, arrow keys turn in steps and `Home` resets instantly. Reduced motion skips bloom, release momentum, and reset animation without removing direct drag or keyboard rotation. Keyboard activation opens or generates the finished bouquet immediately. **Replay bloom** explicitly requests the animation with either input method and is omitted with an explanation when reduced motion is on. At rest, the bouquet does not sway. Keep the gift usable without dragging or waiting for motion.

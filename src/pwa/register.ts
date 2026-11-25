@@ -1,9 +1,10 @@
+import { publicPath } from '../lib/site'
+
 export async function registerOfflineApp() {
-  if (!import.meta.env.PROD || !window.isSecureContext || !('serviceWorker' in navigator)) return
+  if (process.env.NODE_ENV !== 'production' || !window.isSecureContext || !('serviceWorker' in navigator)) return
   try {
-    const base = new URL(import.meta.env.BASE_URL, document.baseURI)
-    await navigator.serviceWorker.register(new URL('sw.js', base), {
-      scope: base.pathname,
+    await navigator.serviceWorker.register(publicPath('sw.js'), {
+      scope: publicPath(''),
       updateViaCache: 'none',
     })
   } catch {

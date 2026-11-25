@@ -1,0 +1,67 @@
+.social-capture {
+  inline-size: 1200px;
+  block-size: 630px;
+  overflow: hidden;
+  padding: 30px;
+  background: var(--page);
+}
+
+.social-postcard {
+  display: grid;
+  grid-template-columns: 440px minmax(0, 1fr);
+  block-size: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+
+.social-note {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 54px 0 48px 54px;
+}
+
+.social-intro {
+  margin: 0;
+  text-align: start;
+}
+
+.social-intro h1 {
+  margin-block-end: 24px;
+  font-size: 88px;
+  line-height: .98;
+}
+
+.social-intro p {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.5;
+}
+
+.social-identity {
+  flex: none;
+  padding-block-start: 24px;
+  border-block-start: 1px solid var(--line);
+}
+
+.social-identity h2 {
+  font-size: 36px;
+  line-height: 1.12;
+}
+
+.social-identity p {
+  max-inline-size: 30ch;
+  margin-block-start: 12px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.social-stage {
+  min-block-size: 0;
+  margin: 8px 8px 8px 0;
+}
+
+.social-canvas {
+  pointer-events: none;
+  cursor: default;
+}
