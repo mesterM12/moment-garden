@@ -19,19 +19,30 @@
   const saveButton = document.getElementById('save');
   const saveStatus = document.getElementById('save-status');
   const renderControls = ['reset-view', 'save', 'grow', 'replay'].map(id => document.getElementById(id));
-  const DURATION = 7800;
+  const DURATION = 4600;
   const BRAND = 'Flowers for You';
+  const GIFT_NOTE = 'I picked these flowers for you.';
+  const incoming = window.BouquetLink?.read(window.location.search);
+  const formatDate = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   let renderer;
+
+  if (incoming?.status === 'valid') introNote.textContent = GIFT_NOTE;
+  if (incoming?.status === 'invalid') linkNotice.textContent = 'This bouquet link couldn’t be opened.';
+
+  function unavailable(error, explanation) {
+    fallback.hidden = false;
+    message.textContent = explanation;
+    status.textContent = 'Taking a break';
+    shareButton.disabled = true;
+    for (const button of renderControls) button.disabled = true;
+    console.error(error);
+  }
 
   try {
     if (!window.THREE) throw new Error('The 3D renderer could not be loaded.');
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
   } catch (error) {
-    fallback.hidden = false;
-    message.textContent = 'This little garden needs WebGL. Try a browser with hardware acceleration enabled, then reload.';
-    status.textContent = 'GARDEN AT REST';
-    for (const button of renderControls) button.disabled = true;
-    console.error(error);
+    unavailable(error, 'These flowers need WebGL to bloom. Try reloading with hardware acceleration enabled.');
     return;
   }
 
@@ -69,6 +80,8 @@
   let lastFreshTimestamp = 0;
   let sharing = false;
   let contextLost = false;
+  let reveal;
+  let disabledBeforeLoss;
   let interruptedFocus;
   const clamp = value => Math.max(0, Math.min(1, value));
   const ease = value => { const t = clamp(value); return t * t * (3 - 2 * t); };
@@ -105,8 +118,8 @@
     return texture;
   }
 
-  const petalTexture = veinTexture(false);
-  const leafTexture = veinTexture(true);
+  let petalTexture;
+  let leafTexture;
 
   // A petal is a cupped, gently ruffled surface, not a flat billboard.
   function botanicalGeometry(length, width, palette, random, specimen, isLeaf = false) {
@@ -394,7 +407,7 @@
   // Lay out foliage once at full bloom, not every frame. The thin leaf surfaces
   // may overlap in projection, but don't send them into another plant's volume.
   function settleFoliage() {
-    pose(1, 0);
+    pose(1);
     plant.rotation.set(0, 0, 0);
     plant.updateMatrixWorld(true);
     const headBounds = blooms.map(({ head }) => new THREE.Box3().setFromObject(head).expandByScalar(0.018));
@@ -480,8 +493,8 @@
     }
   }
 
-  function pose(p, time) {
-    blooms.forEach(({ group, head, center, petals, leaves, sepals, entry }, index) => {
+  function pose(p) {
+    blooms.forEach(({ group, head, center, petals, leaves, sepals, entry }) => {
       const local = clamp((p - entry.delay) / (1 - entry.delay));
       // Raise the packed arrangement together; only the opening is staggered.
       const growth = ease((specimen.version === 2 ? p : local) / 0.4);
@@ -502,41 +515,43 @@
       });
       sepals.forEach(sepal => { sepal.rotation.x = -1.3 + 1.5 * unfurl; });
       center.scale.setScalar(Math.max(0.001, ease((local - 0.60) / 0.30)));
-      head.rotation.z = -entry.turn * 0.5 + (motion.matches ? 0 : Math.sin(time * 0.0006 + index) * 0.012);
     });
     ribbon.scale.setScalar(Math.max(0.001, ease((p - 0.20) / 0.2)));
-    const sway = motion.matches ? 0 : Math.sin(time * 0.0005) * 0.008;
-    plant.rotation.set(pitch, yaw, sway);
+    plant.rotation.set(pitch, yaw, 0);
   }
 
   function updateStatus(p) {
-    const label = p < 0.22 ? 'TAKING ROOT' : p < 0.45 ? 'REACHING FOR LIGHT' : p < 1 ? 'UNFOLDING SLOWLY' : 'IN FULL BLOOM';
+    const label = p < 0.22 ? 'Taking root' : p < 0.45 ? 'Growing taller' : p < 1 ? 'Opening up' : 'In full bloom';
     if (status.textContent !== label) status.textContent = label;
     card.classList.toggle('is-growing', p < 1);
   }
 
+  function turnToward(angle, target) {
+    return motion.matches || Math.abs(target - angle) < 0.001 ? target : angle + (target - angle) * 0.09;
+  }
+
   function tick(now) {
     frame = null;
-    progress = motion.matches ? 1 : clamp((now - start) / DURATION);
-    yaw += (targetYaw - yaw) * 0.09;
-    pitch += (targetPitch - pitch) * 0.09;
-    pose(progress, now);
+    progress = motion.matches ? 1 : Math.max(progress, clamp((now - start) / DURATION));
+    yaw = turnToward(yaw, targetYaw);
+    pitch = turnToward(pitch, targetPitch);
+    pose(progress);
     updateStatus(progress);
     renderer.render(scene, camera);
-    if (!motion.matches || Math.abs(targetYaw - yaw) > 0.001 || Math.abs(targetPitch - pitch) > 0.001) frame = requestAnimationFrame(tick);
+    if (progress < 1 || yaw !== targetYaw || pitch !== targetPitch) wake();
   }
 
   function wake() {
-    if (frame === null && !document.hidden && !contextLost) frame = requestAnimationFrame(tick);
+    if (frame === null && !document.hidden && !contextLost && !reveal?.sealed) frame = requestAnimationFrame(tick);
   }
 
-  function replay() {
+  function replay({ instant = false } = {}) {
     start = performance.now();
-    progress = motion.matches ? 1 : 0;
-    pose(progress, start);
+    progress = instant || motion.matches ? 1 : 0;
+    pose(progress);
     updateStatus(progress);
     renderer.render(scene, camera);
-    wake();
+    if (progress < 1) wake();
   }
 
   function grow() {
@@ -545,6 +560,7 @@
     linkNotice.textContent = '';
     introNote.textContent = senderNote;
     growFresh();
+    replay();
   }
 
   function growFresh() {
@@ -567,15 +583,14 @@
     document.getElementById('specimen-number').textContent = `NO. ${String(specimen.timestamp % 1000000).padStart(6, '0')}`;
     const time = document.getElementById('flower-time');
     time.dateTime = date.toISOString();
-    time.textContent = `${date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })} · ${date.toLocaleTimeString('en-GB', { hour12: false })}`;
+    time.textContent = formatDate.format(date);
     canvas.dataset.species = specimen.kinds.join(',');
     canvas.dataset.flowerCount = String(specimen.flowers.length);
     canvas.dataset.seed = String(specimen.timestamp);
     canvas.dataset.version = String(specimen.version ?? 1);
-    const kinds = specimen.kinds.map(key => Botany.species[key].label.toLowerCase());
-    document.getElementById('botanical-note').textContent = `${specimen.flowers.length} stems · ${new Intl.ListFormat('en').format(kinds)}`;
-    canvas.setAttribute('aria-label', `A hand-tied bouquet of ${specimen.flowers.length} procedurally generated flowers: ${kinds.join(', ')}. Drag in any direction for a full 360-degree view, or use the arrow keys. Press Home or Reset view to return to the front.`);
-    replay();
+    const kinds = new Intl.ListFormat('en').format(specimen.kinds.map(key => Botany.species[key].label.toLowerCase()));
+    document.getElementById('botanical-note').textContent = `${specimen.flowers.length} stems with ${kinds}`;
+    canvas.setAttribute('aria-label', `A hand-tied bouquet with ${kinds}. Drag or use the arrow keys to turn it. Press Home or Reset view to return to the front.`);
   }
 
   function showManualShare(url, shouldFocus = true) {
@@ -599,7 +614,7 @@
     shareStatus.textContent = '';
     manualShare.hidden = true;
     try {
-      const data = { title: BRAND, text: 'I picked these flowers for you.', url };
+      const data = { title: BRAND, text: GIFT_NOTE, url };
       try {
         if (navigator.share && (!navigator.canShare || navigator.canShare(data))) {
           await navigator.share(data);
@@ -629,6 +644,7 @@
   function resize() {
     if (contextLost) return;
     const { width, height } = stage.getBoundingClientRect();
+    if (!width || !height) return;
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     // Maintain enough vertical and horizontal space for the entire bloom.
@@ -636,7 +652,20 @@
     camera.position.set(0, 2.15, distance);
     camera.lookAt(0, 0.05, 0);
     camera.updateProjectionMatrix();
-    renderer.render(scene, camera);
+    if (!reveal?.sealed) renderer.render(scene, camera);
+  }
+
+  try {
+    petalTexture = veinTexture(false);
+    leafTexture = veinTexture(true);
+    if (incoming?.status === 'valid') showBouquet(incoming.timestamp);
+    else growFresh();
+    pose(0);
+    resize();
+    if (incoming?.status === 'invalid') linkNotice.textContent += ' There’s a fresh bouquet for you instead.';
+  } catch (error) {
+    unavailable(error, 'These flowers couldn’t open. Try reloading the page.');
+    return;
   }
 
   canvas.tabIndex = 0;
@@ -678,7 +707,7 @@
     canvas.classList.remove('is-dragging');
     yaw = targetYaw = -0.10;
     pitch = targetPitch = 0;
-    pose(progress, performance.now());
+    pose(progress);
     renderer.render(scene, camera);
     wake();
   }
@@ -690,14 +719,14 @@
   function exportPostcard({ name, timestamp }) {
     start = performance.now() - DURATION;
     progress = 1;
-    pose(1, performance.now());
+    pose(1);
     updateStatus(1);
     renderer.render(scene, camera);
     const image = document.createElement('canvas');
     image.width = 1600;
     image.height = 1700;
     const ctx = image.getContext('2d');
-    ctx.fillStyle = '#fcfbf6'; ctx.fillRect(0, 0, image.width, image.height);
+    ctx.fillStyle = '#fff9f2'; ctx.fillRect(0, 0, image.width, image.height);
     const scale = Math.min(1440 / canvas.width, 1400 / canvas.height);
     const width = canvas.width * scale;
     const height = canvas.height * scale;
@@ -705,11 +734,12 @@
     const top = 60 + (1400 - height) / 2;
     ctx.drawImage(canvas, left, top, width, height);
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#354f3e'; ctx.font = '48px Georgia';
-    ctx.fillText(name, 800, 1500);
-    ctx.fillStyle = '#5e6b55'; ctx.font = '20px monospace';
-    ctx.fillText(`${BRAND.toUpperCase()} · ${new Date(timestamp).toISOString()}`, 800, 1560);
-    ctx.font = 'italic 25px Georgia'; ctx.fillText('I picked these flowers for you.', 800, 1620);
+    ctx.fillStyle = '#573b3d'; ctx.font = '48px Georgia, serif';
+    ctx.fillText(name, 800, 1485, 1440);
+    ctx.fillStyle = '#765b5d'; ctx.font = '24px Georgia, serif';
+    ctx.fillText(`${BRAND} · ${formatDate.format(timestamp)}`, 800, 1535);
+    ctx.fillStyle = '#9a4d5c'; ctx.font = 'italic 30px Georgia, serif';
+    ctx.fillText(GIFT_NOTE, 800, 1605);
     return new Promise((resolve, reject) => {
       image.toBlob(blob => blob ? resolve(blob) : reject(new Error('PNG encoding failed.')), 'image/png');
     });
@@ -737,6 +767,7 @@
 
   canvas.addEventListener('webglcontextlost', event => {
     event.preventDefault();
+    if (contextLost) return;
     contextLost = true;
     if (frame !== null) cancelAnimationFrame(frame);
     frame = null;
@@ -745,6 +776,9 @@
     canvas.classList.remove('is-dragging');
     card.classList.remove('is-growing');
     const active = document.activeElement;
+    const wasSealed = reveal?.sealed;
+    const hadCoverFocus = reveal?.dismiss();
+    if (wasSealed) progress = 1;
     interruptedFocus = active === canvas || renderControls.includes(active) ? active : null;
     const address = BouquetLink.create(window.location.href, specimen.timestamp);
     reloadBouquet.href = address ?? window.location.href;
@@ -753,17 +787,21 @@
     message.textContent = address
       ? 'The 3D preview paused. You can still send this bouquet, or reload it if the preview doesn’t return.'
       : 'The 3D preview paused. Wait a moment for it to return.';
-    status.textContent = 'PREVIEW PAUSED';
+    status.textContent = 'Taking a break';
+    disabledBeforeLoss = renderControls.map(button => button.disabled);
     for (const button of renderControls) button.disabled = true;
-    if (interruptedFocus) message.focus();
+    if (interruptedFocus || hadCoverFocus) message.focus();
   });
   canvas.addEventListener('webglcontextrestored', () => {
+    if (!contextLost) return;
     contextLost = false;
     const restoreFocus = fallback.contains(document.activeElement);
     fallback.hidden = true;
     message.textContent = '';
-    for (const button of renderControls) button.disabled = false;
+    renderControls.forEach((button, index) => { button.disabled = disabledBeforeLoss[index]; });
+    if (motion.matches) progress = 1;
     start = performance.now() - progress * DURATION;
+    pose(progress);
     updateStatus(progress);
     resize();
     wake();
@@ -777,13 +815,6 @@
   motion.addEventListener('change', wake);
   new ResizeObserver(resize).observe(stage);
 
-  const incoming = BouquetLink.read(window.location.search);
-  if (incoming.status === 'valid') {
-    introNote.textContent = 'Someone picked these flowers for you.';
-    showBouquet(incoming.timestamp);
-  } else {
-    if (incoming.status === 'invalid') linkNotice.textContent = 'This bouquet link is incomplete or invalid. We grew a fresh bouquet for you instead.';
-    growFresh();
-  }
-  resize();
+  reveal = window.FlowerReveal?.mount?.({ card, canvas, onOpen: replay });
+  if (!reveal) replay();
 })();
