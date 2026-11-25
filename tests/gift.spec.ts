@@ -76,6 +76,28 @@ test('shows an invalid-link notice without trapping the gift', async ({ page }) 
   await expect(page.getByRole('button', { name: 'Open your flowers', exact: true })).toBeEnabled()
 })
 
+test('context loss dismisses a sealed cover, keeps sharing available, and restores the same bouquet', async ({ page }) => {
+  await page.goto(gift)
+  await expect(page.getByRole('button', { name: 'Open your flowers', exact: true })).toBeEnabled()
+  const canLoseContext = await page.evaluate(() => {
+    const canvas = document.querySelector('canvas')!
+    const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl')
+    const extension = gl?.getExtension('WEBGL_lose_context')
+    if (!extension) return false
+    ;(window as unknown as { contextLoss: WEBGL_lose_context }).contextLoss = extension
+    extension.loseContext()
+    return true
+  })
+  expect(canLoseContext).toBe(true)
+  await expect(page.getByText(/3D preview paused/)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Open your flowers', exact: true })).not.toBeVisible()
+  await expect(page.getByRole('button', { name: 'Send flowers', exact: true })).toBeEnabled()
+  await page.evaluate(() => (window as unknown as { contextLoss: WEBGL_lose_context }).contextLoss.restoreContext())
+  await expect(page.getByText(/3D preview paused/)).not.toBeVisible()
+  await expect(page.locator('canvas')).toHaveAttribute('data-seed', seed)
+  await expect(page.getByRole('button', { name: /Save postcard/ })).toBeEnabled()
+})
+
 test('renderer failure exposes a readable recovery rather than a sealed cover', async ({ page }) => {
   await page.addInitScript(() => {
     const get = HTMLCanvasElement.prototype.getContext
