@@ -22,7 +22,7 @@ body { margin: 0; min-height: 100svh; }
 .masthead {
   max-width: 1440px;
   margin: auto;
-  padding: 12px max(4%, 16px);
+  padding: 8px max(4%, 16px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -47,8 +47,8 @@ body { margin: 0; min-height: 100svh; }
 .wordmark img { flex: none; }
 .masthead-note { font-size: .8125rem; color: var(--muted); }
 
-main { max-width: 820px; margin: 0 auto; padding: 21px 28px 35px; }
-.intro { text-align: center; margin: 0 0 22px; }
+main { max-width: 820px; margin: 0 auto; padding: 18px 28px 32px; }
+.intro { text-align: center; margin: 0 0 20px; }
 h1 {
   margin: 0 0 8px;
   font: 400 clamp(2.7rem, 1.9rem + 3.7vw, 4.25rem)/1 var(--serif);
@@ -104,12 +104,12 @@ h1 em { color: var(--accent); }
   align-items: center;
   gap: 8px 20px;
   border-top: 1px solid var(--line);
-  padding: 12px 0 14px;
+  padding: 9px 0 11px;
 }
 .flower-identity h2 { margin: 0; font: 400 1.625rem/1.05 var(--serif); overflow-wrap: anywhere; }
 .flower-birthday { text-align: right; color: var(--muted); }
 .micro-label { display: block; font-size: .75rem; line-height: 1.35; }
-.flower-birthday time { display: inline-block; font: .6875rem/1.4 var(--mono); }
+.flower-birthday time { font: .6875rem/1.4 var(--mono); }
 .save-button {
   width: 44px;
   height: 44px;
@@ -134,6 +134,7 @@ button {
 }
 :is(button, a, input):focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
 button:disabled { opacity: .55; cursor: not-allowed; }
+button[aria-disabled="true"] { cursor: wait; }
 
 .garden-controls, .garden-secondary { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 12px; }
 .garden-controls { margin-top: 16px; gap: 4px 16px; }
@@ -147,19 +148,19 @@ button:disabled { opacity: .55; cursor: not-allowed; }
   font-size: .875rem;
 }
 .share-button { padding: 9px 16px; border: 1px solid var(--green); background: var(--green); color: #fffdf6; font-weight: 550; }
-.share-button[aria-disabled="true"] { cursor: wait; }
 .garden-action { border: 0; background: none; color: var(--green); padding: 8px 9px; }
 .share-button svg, .garden-action svg { width: 16px; height: 16px; flex: none; }
 .share-button:not(:disabled, [aria-disabled="true"]):active { background: var(--green-hover); }
-:is(.garden-action, .save-button, .reset-view):not(:disabled):active { background: var(--wash); }
+:is(.garden-action, .save-button, .reset-view):not(:disabled, [aria-disabled="true"]):active { background: var(--wash); }
 @media (hover: hover) and (pointer: fine) {
   .share-button:not(:disabled, [aria-disabled="true"]):hover { background: var(--green-hover); }
-  :is(.garden-action, .save-button, .reset-view):not(:disabled):hover { background: var(--wash); }
+  :is(.garden-action, .save-button, .reset-view):not(:disabled, [aria-disabled="true"]):hover { background: var(--wash); }
   .wordmark:hover { text-decoration: underline; text-underline-offset: .2em; }
 }
 
-.share-status { font-size: .875rem; line-height: 1.5; color: var(--green); text-align: center; margin: 10px 0 0; }
-.link-notice:empty, .share-status:empty { margin: 0; }
+.action-status { font-size: .875rem; line-height: 1.5; color: var(--green); text-align: center; margin: 10px 0 0; text-wrap: balance; }
+.save-status:not(:empty) { border-top: 1px solid var(--line); padding: 9px 0 11px; margin: 0; text-align: start; }
+.link-notice:empty, .action-status:empty { margin: 0; }
 .manual-share { max-width: 28rem; margin: 10px auto 0; font-size: .875rem; color: var(--green); }
 .manual-share label { display: block; margin-bottom: 5px; }
 .manual-share input {
@@ -181,10 +182,10 @@ footer { max-width: 1292px; margin: 0 auto; padding: 17px 0 22px; border-top: 1p
   footer { margin-inline: 4%; }
 }
 @media (max-width: 600px) {
-  main { padding: 14px 16px 25px; }
+  main { padding: 12px 16px 25px; }
   .masthead { padding-block: 6px; }
   .masthead-note { font-size: .75rem; }
-  .intro { margin-bottom: 18px; }
+  .intro { margin-bottom: 16px; }
   .postcard { padding-inline: 16px; }
   .card-bottomline { gap: 7px 10px; }
 }
@@ -198,6 +199,7 @@ footer { max-width: 1292px; margin: 0 auto; padding: 17px 0 22px; border-top: 1p
 }
 @media (max-width: 350px) {
   .masthead-note { display: none; }
+  .micro-label { display: block; margin-inline-end: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   button { transition: none; }

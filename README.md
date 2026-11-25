@@ -126,7 +126,7 @@ Replay, rotation, and PNG export keep the existing bouquet. **Surprise me** star
 
 #### Bouquet link contract
 
-The share control adds `?bouquet=<version>.<timestamp>` to the site path. New bouquets use version `2`; existing version `1` links still open their original arrangement. Re-sharing a bouquet preserves its version. The timestamp is a nonnegative integer in Unix epoch milliseconds, written in decimal without leading zeros (except `0`), and must be a valid JavaScript `Date`. Malformed and unsupported links show a notice and grow a fresh bouquet instead. Keep existing generators available when introducing a version with different recipes.
+**Send flowers** adds a token like `?bouquet=1970260fcfb` to the site path. The token is the bouquet’s timestamp in lowercase hexadecimal, with no leading zeros (except `0`). It represents a nonnegative Unix timestamp in milliseconds within the JavaScript `Date` range. An invalid link shows a notice and grows a fresh bouquet.
 
 ### Geometry with botanical cues
 
@@ -173,9 +173,9 @@ moment-garden/
 ├── index.html             # Postcard markup and controls
 ├── style.css              # Paper, typography, layout, responsive styles
 ├── botanical.css          # Illustration and interaction styles
-├── botany.js              # Versioned seeded bouquet planning
+├── botany.js              # Seeded bouquet planning
 ├── botany-varieties.js    # Recipes and pigment ranges for additional varieties
-├── bouquet-link.js        # Versioned bouquet URL contract
+├── bouquet-link.js        # Bouquet URL encoding and decoding
 ├── petal-meshes.js        # Dedicated rose, tulip, and dahlia surfaces
 ├── extra-blooms.js        # Additional flower geometries
 ├── flower.js              # Scene, animation, input, sharing, and export

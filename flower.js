@@ -6,7 +6,9 @@
   const card = document.querySelector('.postcard');
   const status = document.getElementById('growth-status');
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const fallback = document.getElementById('render-fallback');
   const message = document.getElementById('render-message');
+  const reloadBouquet = document.getElementById('reload-bouquet');
   const introNote = document.getElementById('intro-note');
   const senderNote = introNote.textContent;
   const linkNotice = document.getElementById('link-notice');
@@ -14,6 +16,9 @@
   const shareStatus = document.getElementById('share-status');
   const manualShare = document.getElementById('manual-share');
   const shareUrl = document.getElementById('share-url');
+  const saveButton = document.getElementById('save');
+  const saveStatus = document.getElementById('save-status');
+  const renderControls = ['reset-view', 'save', 'grow', 'replay'].map(id => document.getElementById(id));
   const DURATION = 7800;
   const BRAND = 'Flowers for You';
   let renderer;
@@ -22,11 +27,10 @@
     if (!window.THREE) throw new Error('The 3D renderer could not be loaded.');
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
   } catch (error) {
-    message.hidden = false;
+    fallback.hidden = false;
     message.textContent = 'This little garden needs WebGL. Try a browser with hardware acceleration enabled, then reload.';
     status.textContent = 'GARDEN AT REST';
-    document.getElementById('interaction-hint').hidden = true;
-    for (const id of ['grow', 'replay', 'save', 'share', 'reset-view']) document.getElementById(id).disabled = true;
+    for (const button of renderControls) button.disabled = true;
     console.error(error);
     return;
   }
@@ -64,6 +68,8 @@
   let drag = null;
   let lastFreshTimestamp = 0;
   let sharing = false;
+  let contextLost = false;
+  let interruptedFocus;
   const clamp = value => Math.max(0, Math.min(1, value));
   const ease = value => { const t = clamp(value); return t * t * (3 - 2 * t); };
 
@@ -521,7 +527,7 @@
   }
 
   function wake() {
-    if (frame === null && !document.hidden) frame = requestAnimationFrame(tick);
+    if (frame === null && !document.hidden && !contextLost) frame = requestAnimationFrame(tick);
   }
 
   function replay() {
@@ -548,11 +554,12 @@
     showBouquet(lastFreshTimestamp);
   }
 
-  function showBouquet(timestamp, version) {
-    specimen = Botany.createBouquet(timestamp, version);
+  function showBouquet(timestamp) {
+    specimen = Botany.createBouquet(timestamp);
     manualShare.hidden = true;
     shareUrl.value = '';
-    shareButton.disabled = !BouquetLink.create(window.location.href, timestamp, specimen.version ?? 1);
+    saveStatus.textContent = '';
+    shareButton.disabled = !BouquetLink.create(window.location.href, timestamp);
     shareStatus.textContent = shareButton.disabled ? 'Open the garden on a website to share a link.' : '';
     buildBouquet();
     const date = new Date(specimen.timestamp);
@@ -584,7 +591,7 @@
   async function shareBouquet() {
     if (sharing) return;
     const current = specimen;
-    const url = BouquetLink.create(window.location.href, current.timestamp, current.version ?? 1);
+    const url = BouquetLink.create(window.location.href, current.timestamp);
     if (!url) return;
 
     sharing = true;
@@ -620,6 +627,7 @@
   }
 
   function resize() {
+    if (contextLost) return;
     const { width, height } = stage.getBoundingClientRect();
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
@@ -679,8 +687,7 @@
   document.getElementById('grow').addEventListener('click', grow);
   document.getElementById('replay').addEventListener('click', replay);
   shareButton.addEventListener('click', shareBouquet);
-  document.getElementById('save').addEventListener('click', () => {
-    const { name, timestamp } = specimen;
+  function exportPostcard({ name, timestamp }) {
     start = performance.now() - DURATION;
     progress = 1;
     pose(1, performance.now());
@@ -700,28 +707,69 @@
     ctx.textAlign = 'center';
     ctx.fillStyle = '#354f3e'; ctx.font = '48px Georgia';
     ctx.fillText(name, 800, 1500);
-    ctx.fillStyle = '#7c8571'; ctx.font = '18px monospace';
+    ctx.fillStyle = '#5e6b55'; ctx.font = '20px monospace';
     ctx.fillText(`${BRAND.toUpperCase()} · ${new Date(timestamp).toISOString()}`, 800, 1560);
     ctx.font = 'italic 25px Georgia'; ctx.fillText('I picked these flowers for you.', 800, 1620);
-    image.toBlob(blob => {
-      if (!blob) return;
+    return new Promise((resolve, reject) => {
+      image.toBlob(blob => blob ? resolve(blob) : reject(new Error('PNG encoding failed.')), 'image/png');
+    });
+  }
+
+  saveButton.addEventListener('click', async () => {
+    if (saveButton.hasAttribute('aria-disabled')) return;
+    const current = specimen;
+    saveButton.setAttribute('aria-disabled', 'true');
+    saveStatus.textContent = '';
+    try {
+      const blob = await exportPostcard(current);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `flowers-for-you-${timestamp}.png`;
+      link.download = `flowers-for-you-${current.timestamp}.png`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }, 'image/png');
+    } catch {
+      if (current === specimen) saveStatus.textContent = 'Couldn’t save the postcard. Try downloading it again.';
+    } finally {
+      saveButton.removeAttribute('aria-disabled');
+    }
   });
 
   canvas.addEventListener('webglcontextlost', event => {
     event.preventDefault();
+    contextLost = true;
     if (frame !== null) cancelAnimationFrame(frame);
     frame = null;
-    message.hidden = false;
-    message.textContent = 'The garden’s renderer paused. Reload to bring your flower back.';
+    if (drag && canvas.hasPointerCapture(drag.id)) canvas.releasePointerCapture(drag.id);
+    drag = null;
+    canvas.classList.remove('is-dragging');
+    card.classList.remove('is-growing');
+    const active = document.activeElement;
+    interruptedFocus = active === canvas || renderControls.includes(active) ? active : null;
+    const address = BouquetLink.create(window.location.href, specimen.timestamp);
+    reloadBouquet.href = address ?? window.location.href;
+    reloadBouquet.hidden = !address;
+    fallback.hidden = false;
+    message.textContent = address
+      ? 'The 3D preview paused. You can still send this bouquet, or reload it if the preview doesn’t return.'
+      : 'The 3D preview paused. Wait a moment for it to return.';
+    status.textContent = 'PREVIEW PAUSED';
+    for (const button of renderControls) button.disabled = true;
+    if (interruptedFocus) message.focus();
   });
-  canvas.addEventListener('webglcontextrestored', () => window.location.reload());
+  canvas.addEventListener('webglcontextrestored', () => {
+    contextLost = false;
+    const restoreFocus = fallback.contains(document.activeElement);
+    fallback.hidden = true;
+    message.textContent = '';
+    for (const button of renderControls) button.disabled = false;
+    start = performance.now() - progress * DURATION;
+    updateStatus(progress);
+    resize();
+    wake();
+    if (restoreFocus) (interruptedFocus ?? canvas).focus();
+    interruptedFocus = null;
+  });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { if (frame !== null) cancelAnimationFrame(frame); frame = null; }
     else wake();
@@ -732,10 +780,9 @@
   const incoming = BouquetLink.read(window.location.search);
   if (incoming.status === 'valid') {
     introNote.textContent = 'Someone picked these flowers for you.';
-    showBouquet(incoming.timestamp, incoming.version);
+    showBouquet(incoming.timestamp);
   } else {
     if (incoming.status === 'invalid') linkNotice.textContent = 'This bouquet link is incomplete or invalid. We grew a fresh bouquet for you instead.';
-    if (incoming.status === 'unsupported') linkNotice.textContent = 'This garden can’t open that version of the bouquet link. We grew a fresh bouquet for you instead.';
     growFresh();
   }
   resize();

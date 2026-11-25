@@ -1,6 +1,6 @@
 /* The canvas keeps both drag axes. Controls and the postcard margin stay scrollable. */
 .flower-stage {
-  height: clamp(390px, calc(100svh - 435px), 560px);
+  height: clamp(20rem, calc(100svh - 27.5rem), 35rem);
   margin-top: 8px;
   position: relative;
   background: radial-gradient(ellipse at 50% 43%, #f3eddf80 0%, #fcfbf600 62%);
@@ -18,6 +18,7 @@
   left: 0;
   top: 50%;
   writing-mode: vertical-rl;
+  white-space: nowrap;
   transform: rotate(180deg) translateY(50%);
   font: .625rem var(--mono);
   letter-spacing: .12em;
@@ -29,7 +30,7 @@
   justify-content: space-between;
   gap: 4px 8px;
   flex-wrap: wrap;
-  padding: 3px 0 6px;
+  padding: 0 0 6px;
 }
 .interaction-hint { font-size: .75rem; color: var(--muted); line-height: 1.35; }
 .touch-hint { display: none; }
@@ -57,20 +58,30 @@
   font-size: .9375rem;
   line-height: 1.55;
 }
-.flower-stage:has(.render-message:not([hidden]), .fallback-note) {
+.render-fallback { text-align: center; }
+.render-fallback a:not([hidden]) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--green);
+  font-size: .875rem;
+  text-underline-offset: .2em;
+  touch-action: manipulation;
+}
+.flower-stage:has(.render-fallback:not([hidden]), .fallback-note) {
   height: auto;
   min-height: 11rem;
   display: grid;
   place-items: center;
 }
-.flower-stage:has(.render-message:not([hidden]), .fallback-note) :is(#flower, .side-note),
-.postcard:has(.render-message:not([hidden]), .fallback-note) :is(.stage-controls, .card-bottomline),
+.flower-stage:has(.render-fallback:not([hidden]), .fallback-note) :is(#flower, .side-note),
+.postcard:has(.render-fallback:not([hidden]), .fallback-note) :is(.stage-controls, .card-bottomline, .save-status),
 main:has(.fallback-note) .garden-controls { display: none; }
-.postcard:has(.render-message:not([hidden]), .fallback-note) { padding-bottom: 12px; }
+.postcard:has(.render-fallback:not([hidden]), .fallback-note) { padding-bottom: 12px; }
 .postcard:has(.fallback-note) .card-topline { display: none; }
 
 @media (max-width: 600px) {
-  .flower-stage { height: clamp(300px, 94vw, 435px); }
+  .flower-stage { height: clamp(14rem, min(94vw, calc(100svh - 25.5rem)), 27rem); }
   .side-note { display: none; }
 }
 @media (pointer: coarse) {

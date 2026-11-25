@@ -2,8 +2,7 @@
   'use strict';
 
   const PARAM = 'bouquet';
-  const CURRENT_VERSION = 2;
-  const isVersion = value => value === 1 || value === CURRENT_VERSION;
+  const HEX_TOKEN = /^(?:0|[1-9a-f][0-9a-f]{0,13})$/;
   const MAX_TIMESTAMP = 8640000000000000; // ECMAScript Date limit in milliseconds.
   const isTimestamp = value => Number.isSafeInteger(value) && value >= 0 && value <= MAX_TIMESTAMP;
 
@@ -13,24 +12,21 @@
     if (values.length !== 1) return { status: 'invalid' };
 
     const value = values[0];
-    const match = /^(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,15})$/.exec(value);
+    const match = HEX_TOKEN.exec(value);
     if (!match || match[0] !== value) return { status: 'invalid' };
-    const timestamp = Number(match[2]);
+    const timestamp = Number.parseInt(value, 16);
     if (!isTimestamp(timestamp)) return { status: 'invalid' };
-    const version = Number(match[1]);
-    if (!isVersion(version)) return { status: 'unsupported' };
-
-    return { status: 'valid', timestamp, version };
+    return { status: 'valid', timestamp };
   }
 
-  function create(address, timestamp, version = CURRENT_VERSION) {
+  function create(address, timestamp) {
     const url = new URL(address);
-    if (!['http:', 'https:'].includes(url.protocol) || !isTimestamp(timestamp) || !isVersion(version)) return null;
+    if (!['http:', 'https:'].includes(url.protocol) || !isTimestamp(timestamp)) return null;
     url.username = '';
     url.password = '';
     url.search = '';
     url.hash = '';
-    url.searchParams.set(PARAM, `${version}.${timestamp}`);
+    url.searchParams.set(PARAM, timestamp.toString(16));
     return url.href;
   }
 

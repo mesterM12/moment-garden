@@ -27,7 +27,7 @@ The postcard runs in desktop and mobile browsers and requires WebGL for the 3D s
 - Fresh bouquets are always a surprise. Keep flower-type and color selectors out of the experience.
 - Replay and sharing preserve the current arrangement. The recipient sees that bouquet bloom from the front, regardless of the sender’s viewing angle. The PNG preserves the viewing angle.
 - Flower geometry is generated in code rather than loaded from model files or photographs.
-- The app is a static site with no build step or backend. The [public site](https://mesterm12.github.io/moment-garden/) keeps its existing address so old links still open. The public source repository is [mesterM12/moment-garden](https://github.com/mesterM12/moment-garden).
+- The app is a [static site](https://mesterm12.github.io/moment-garden/) with no build step or backend. The public source repository is [mesterM12/moment-garden](https://github.com/mesterM12/moment-garden).
 
 ## Brand Commitments
 
