@@ -3,18 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f6f5ef" />
+    <meta name="theme-color" content="#f5e9e2" />
     <meta name="description" content="Send flowers to someone you love. Discover a surprise bouquet they can open and watch bloom, or save it as a postcard." />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Flowers for You" />
     <meta property="og:description" content="Send flowers to someone you love. Discover a surprise bouquet they can open and watch bloom, or save it as a postcard." />
     <meta property="og:image" content="https://mesterm12.github.io/moment-garden/docs/images/share-card.jpg" />
-    <meta property="og:image:alt" content="A bouquet on a botanical postcard titled Flowers for You." />
+    <meta property="og:image:alt" content="A bouquet on a postcard titled Flowers for You." />
     <title>Flowers for You</title>
     <link rel="icon" href="flowers.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600&family=IBM+Plex+Mono:wght@400;450;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="botanical.css" />
     <script src="vendor/three.min.js" defer></script>
@@ -28,31 +28,22 @@
   <body>
     <header class="masthead">
       <a class="wordmark" href="./" aria-label="Flowers for You home">
-        <img src="flowers.svg" width="25" height="25" alt="" />
-        Flowers for You
+        <img src="flowers.svg" width="28" height="28" alt="" />
       </a>
-      <span class="masthead-note">A botanical postcard</span>
     </header>
 
     <main>
       <section class="intro" aria-labelledby="page-title">
         <h1 id="page-title">Flowers <em>for You</em></h1>
-        <p id="intro-note">Find a bouquet to send to someone you love.</p>
+        <p id="intro-note">Find a bouquet for someone on your mind.</p>
         <p class="link-notice" id="link-notice" role="status"></p>
       </section>
 
       <section class="postcard" aria-label="Your surprise bouquet">
-        <div class="card-topline">
-          <span class="specimen-label"><span class="status-dot" aria-hidden="true"></span> <span id="growth-status" role="status">TAKING ROOT</span></span>
-          <span class="card-number" id="specimen-number"></span>
-        </div>
+        <span class="visually-hidden" id="growth-status" role="status">Taking root</span>
+        <span id="specimen-number" hidden></span>
 
         <div class="flower-stage">
-          <div class="registration registration-tl" aria-hidden="true"></div>
-          <div class="registration registration-tr" aria-hidden="true"></div>
-          <div class="registration registration-bl" aria-hidden="true"></div>
-          <div class="registration registration-br" aria-hidden="true"></div>
-          <span class="side-note" aria-hidden="true">A STUDY IN PASSING TIME</span>
           <canvas id="flower" role="img" aria-label="A full-color three-dimensional bouquet opening its petals"></canvas>
           <div class="render-fallback" id="render-fallback" hidden>
             <p class="render-message" id="render-message" role="status" tabindex="-1"></p>
@@ -68,13 +59,11 @@
         <div class="card-bottomline">
           <div class="flower-identity">
             <h2 id="flower-name">Your bouquet</h2>
+            <p class="flower-birthday">Grown on <time id="flower-time"></time></p>
           </div>
-          <div class="flower-birthday">
-            <span class="micro-label">Grown on</span>
-            <time id="flower-time"></time>
-          </div>
-          <button class="save-button" id="save" type="button" aria-label="Save this bouquet as a PNG image" title="Save bouquet as PNG">
+          <button class="save-button" id="save" type="button" aria-label="Save postcard as a PNG image">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 15v5h14v-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Save<span class="save-detail"> postcard</span></span>
           </button>
         </div>
         <p class="action-status save-status" id="save-status" role="status"></p>
@@ -83,7 +72,7 @@
       <div class="garden-controls">
         <button class="share-button" id="share" type="button" disabled><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M10 12V2.5M6.5 6l3.5-3.5L13.5 6M5 8H3.5v9h13V8H15" stroke-linecap="round" stroke-linejoin="round"/></svg>Send flowers</button>
         <div class="garden-secondary">
-          <button class="garden-action" id="grow" type="button"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 17V9m0 4C4 13 3 9 3 6c5 0 7 2 7 7Zm0-3c0-5 3-7 7-7 0 4-2 7-7 7Z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>Surprise me</button>
+          <button class="garden-action" id="grow" type="button"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 17V9m0 4C4 13 3 9 3 6c5 0 7 2 7 7Zm0-3c0-5 3-7 7-7 0 4-2 7-7 7Z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>Grow another</button>
           <button class="garden-action" id="replay" type="button"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M4 7a6.5 6.5 0 1 1-.3 5M4 3v4h4" stroke-linecap="round" stroke-linejoin="round"/></svg>Replay bloom</button>
         </div>
       </div>
@@ -94,7 +83,5 @@
       </div>
       <p class="garden-note" id="botanical-note"></p>
     </main>
-
-    <footer>A little different every time.</footer>
   </body>
 </html>
