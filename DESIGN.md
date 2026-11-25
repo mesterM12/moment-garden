@@ -172,7 +172,11 @@ The postcard and cover share gently rounded corners. The seal is a thin rose env
 
 ### Sealed cover and bouquet
 
-The cream cover centers the envelope, “A little something, just for you,” and a native **Open your flowers** button. While sealed, the bouquet and its controls keep their layout space but are hidden and inert. Pointer opening lifts and fades the cover (280ms, `translateY(-2%)`); focus moves to the canvas and the 4.6-second bloom starts without waiting for the transition. Keyboard/assistive activation and reduced motion remove the cover and show full bloom immediately; Grow another and Replay bloom also skip the animation in these cases. The bouquet can be turned by drag or arrow keys and reset with Home or Reset view. There is no ambient sway; frame scheduling stops once the bloom and any turn settle.
+The cream cover centers the envelope, “A little something, just for you,” and a native **Open your flowers** button. While sealed, the bouquet and its controls keep their layout space but are hidden and inert. On load, if focus is still on the page body, the opener takes focus only when fully in view. Opening moves focus to the canvas, scrolling instantly only if the canvas is entirely offscreen.
+
+Pointer opening lifts and fades the cover (280ms, `translateY(-2%)`) while the 4.6-second bloom starts without waiting for the transition. Keyboard or assistive activation, or a reduced-motion preference, skips both animations. **Grow another** likewise shows the finished bouquet immediately in these cases. **Replay bloom** explicitly plays the current bloom with any input method when motion is allowed; with reduced motion it is disabled and its title explains why.
+
+The bouquet can be turned by drag or arrow keys and reset with Home or Reset view. There is no ambient sway; frame scheduling stops once the bloom and any turn settle.
 
 ### Actions and focus
 
