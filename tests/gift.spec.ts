@@ -38,9 +38,36 @@ test('opens the exact shared bouquet and preserves it through replay and saving'
 test('reduced motion opens a complete bouquet with accessible controls', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await openGift(page)
-  await expect(page.getByRole('button', { name: 'Replay bloom', exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Replay bloom', exact: true })).not.toBeVisible()
+  await expect(page.getByText(/animation is off/i)).toBeVisible()
   await expect(page.getByRole('button', { name: /Reset view/ })).toBeEnabled()
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
+})
+
+test('copies the current link and offers manual recovery when clipboard access fails', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'share', { configurable: true, value: undefined })
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (text: string) => { (window as unknown as { copied: string }).copied = text } } })
+  })
+  await openGift(page)
+  await page.getByRole('button', { name: 'Send flowers', exact: true }).click()
+  await expect(page.getByText('Bouquet link copied.', { exact: true })).toBeVisible()
+  expect(await page.evaluate(() => (window as unknown as { copied: string }).copied)).toMatch(/bouquet=1970260fcfb$/)
+  await page.evaluate(() => { navigator.clipboard.writeText = async () => { throw new Error('Permission denied') } })
+  await page.getByRole('button', { name: 'Send flowers', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: 'Bouquet link', exact: true })).toHaveValue(/bouquet=1970260fcfb$/)
+})
+
+test('canceling native sharing never writes to the clipboard', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'share', { configurable: true, value: async () => { throw new DOMException('Canceled', 'AbortError') } })
+    Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true })
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { (window as unknown as { copied: boolean }).copied = true } } })
+  })
+  await openGift(page)
+  await page.getByRole('button', { name: 'Send flowers', exact: true }).click()
+  await expect(page.getByText('Sharing canceled.', { exact: true })).toBeVisible()
+  expect(await page.evaluate(() => (window as unknown as { copied?: boolean }).copied)).toBeUndefined()
 })
 
 test('shows an invalid-link notice without trapping the gift', async ({ page }) => {
