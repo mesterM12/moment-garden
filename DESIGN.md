@@ -20,21 +20,21 @@ typography:
     letterSpacing: "-.025em"
   headline:
     fontFamily: "Instrument Serif, Georgia, serif"
-    fontSize: "clamp(1.75rem, 1.3rem + 1.7vw, 2.5rem)"
+    fontSize: "clamp(1.9rem, 1.55rem + 1.7vw, 2.7rem)"
     fontWeight: 400
-    lineHeight: 1.06
+    lineHeight: 1
     letterSpacing: "-.02em"
   title:
     fontFamily: "Instrument Serif, Georgia, serif"
-    fontSize: "clamp(1.75rem, 1.5rem + .8vw, 2.125rem)"
+    fontSize: "clamp(1.75rem, 1.5rem + .8vw, 2.25rem)"
     fontWeight: 400
-    lineHeight: 1.05
+    lineHeight: 1.04
     letterSpacing: "-.01em"
   body:
     fontFamily: "DM Sans, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
-    lineHeight: 1.55
+    lineHeight: 1.5
   label:
     fontFamily: "DM Sans, sans-serif"
     fontSize: ".8125rem"
@@ -43,10 +43,17 @@ typography:
     fontFamily: "DM Sans, sans-serif"
     fontSize: ".875rem"
     fontWeight: 500
+    lineHeight: 1.25
+  action-reset:
+    fontFamily: "DM Sans, sans-serif"
+    fontSize: ".8125rem"
+    fontWeight: 500
+    lineHeight: 1.25
   action-primary:
     fontFamily: "DM Sans, sans-serif"
     fontSize: ".9375rem"
     fontWeight: 600
+    lineHeight: 1.25
 rounded:
   field: "6px"
   inset: "8px"
@@ -64,24 +71,28 @@ components:
     backgroundColor: "{colors.paper}"
     textColor: "{colors.ink}"
     rounded: "{rounded.postcard}"
-    padding: ".625rem clamp(1rem, 4vw, 2.25rem) 0"
+    padding: ".625rem clamp(.875rem, 4vw, 2rem) 0"
   sealed-cover:
     backgroundColor: "{colors.paper}"
     textColor: "{colors.ink}"
     rounded: "{rounded.postcard}"
-    padding: "{spacing.gutter}"
+    padding: "{spacing.compact-gutter}"
   button-open:
     backgroundColor: "{colors.rose}"
     textColor: "{colors.paper}"
     typography: "{typography.action-primary}"
     rounded: "{rounded.pill}"
-    padding: ".625rem 1.125rem"
+    padding: ".5rem 1.25rem"
+    height: "46px"
+  button-open-hover:
+    backgroundColor: "{colors.rose-hover}"
   button-send:
     backgroundColor: "{colors.rose}"
     textColor: "{colors.paper}"
     typography: "{typography.action-primary}"
     rounded: "{rounded.pill}"
-    padding: ".625rem 1.25rem"
+    padding: ".5rem 1.25rem"
+    height: "48px"
     width: "min(100%, 14rem)"
   button-send-hover:
     backgroundColor: "{colors.rose-hover}"
@@ -91,23 +102,27 @@ components:
     typography: "{typography.action}"
     rounded: "{rounded.pill}"
     padding: ".5rem .75rem"
+    height: "44px"
   button-save:
     backgroundColor: "transparent"
     textColor: "{colors.ink}"
     typography: "{typography.action}"
     rounded: "{rounded.pill}"
     padding: ".5rem .75rem"
+    height: "44px"
   button-reset:
     backgroundColor: "transparent"
     textColor: "{colors.ink}"
-    typography: "{typography.label}"
+    typography: "{typography.action-reset}"
     rounded: "{rounded.pill}"
-    padding: ".375rem .625rem"
+    padding: ".5rem .625rem"
+    height: "44px"
   manual-share-field:
     backgroundColor: "{colors.paper}"
     textColor: "{colors.ink}"
     rounded: "{rounded.field}"
     padding: ".5rem .75rem"
+    height: "44px"
     width: "100%"
   home-mark:
     textColor: "{colors.rose}"
@@ -134,7 +149,7 @@ Before opening, leave space around the invitation. After opening, the hand-tied 
 
 ### Primary
 
-- **Rose** carries “for You,” the envelope seal, the home mark, and filled actions. The darker **Rose Hover** is reserved for the Send flowers button on hover and press.
+- **Rose** carries “for You,” the envelope seal, the home mark, and filled actions. The darker **Rose Hover** is used on filled actions on fine-pointer hover and press.
 
 ### Neutral
 
@@ -149,45 +164,60 @@ Before opening, leave space around the invitation. After opening, the hand-tied 
 Instrument Serif (Georgia, serif fallback) gives the invitation and bouquet name their stationery character. DM Sans (sans-serif fallback) keeps notes and controls legible.
 
 - **Display:** The balanced page title uses the fluid display size; only “for You” is italic and rose.
-- **Headline and title:** The cover's balanced note stays within 18ch; the bouquet name uses the smaller title scale and can wrap to fit the footer.
-- **Body and labels:** The intro note uses the body role. Dates and drag hints use the small label size (line heights 1.4 and 1.35 respectively). Save, Grow another, and Replay bloom use medium weight; Reset view stays regular. Open your flowers and Send flowers use semibold. The stem note is muted italic Instrument Serif (1.125rem/1.4).
+- **Headline and title:** The cover note breaks after the comma. The bouquet name uses the smaller title scale and can wrap to fit the footer.
+- **Body and labels:** The intro note uses the body role. Dates, drag hints, and the reduced-motion note use the small label size; dates and hints use 1.4 and 1.35 line heights respectively. Quiet actions use medium weight, with Reset view at the smaller action size. Open your flowers and Send flowers use semibold. The stem note is muted italic Instrument Serif (1.125rem/1.4).
 
 ## Layout
 
-One centered column (40rem maximum, including gutters) holds the home mark, intro, postcard, and actions. Page gutters shrink at 600px and below; the gap below the intro is fluid (`clamp(1.25rem, 4vw, 1.875rem)`).
+One centered column (38rem maximum, excluding page padding) holds the home mark, intro, postcard, and actions. Each side has at least 1rem of page padding, or the device safe-area inset if larger; the top and bottom insets add to the vertical padding. The gap below the intro is fluid (`clamp(1.25rem, 4vw, 2rem)`).
 
-The artwork stage is `clamp(19rem, calc(100svh - 30.5rem), 33rem)` tall, switching at 600px and below to `clamp(16rem, min(92vw, calc(100svh - 27rem)), 28rem)`. The cover occupies that same postcard footprint, including the footer. The identity and Save row can wrap; at 430px and below “Save postcard” shortens visually to “Save.” Send flowers is centered on its own row, above the wrapping secondary actions.
+The artwork stage has a minimum height of `clamp(19rem, calc(100svh - 30rem), 32rem)`, switching at 600px and below to `clamp(16rem, min(88vw, calc(100svh - 26rem)), 27rem)`. The cover occupies the whole postcard footprint, including the controls and footer. The stage controls and the identity/Save row can wrap separately. At 430px and below “Save postcard” shortens visually to “Save,” keeping its full accessible name. Send flowers is centered on its own row, above the wrapping secondary actions.
 
 ## Elevation & Depth
 
-The postcard has a soft paper lift (`0 2px 4px #573b3d0a, 0 12px 32px -12px #573b3d26`); the cover inherits that lift rather than adding another shadow. The stage uses a faint radial blush wash behind the 3D stems, not a separate raised surface.
+The postcard has a soft paper lift (`0 2px 4px #573b3d0a, 0 14px 36px -16px #573b3d45`); the cover inherits that lift rather than adding another shadow. The stage uses a faint radial blush wash behind the 3D stems, not a separate raised surface.
 
 **The Paper Depth Rule.** Give the postcard one outer lift; use hairlines for the inset and internal separation, not an outer border plus shadow.
 
 ## Shapes
 
-The postcard and cover share gently rounded corners. The seal is a thin rose envelope outline with a filled circular stamp; a 1px hairline sits .5rem inside the cover edge. Compact controls are pills, the home mark has a circular hit area, and the link field and focused canvas have smaller radii. Supporting action icons are fine inline SVG linework.
+The postcard and cover share gently rounded corners. The seal is a thin rose envelope outline with a flower in its filled circular stamp; a rounded 1px hairline sits .5rem inside the cover edge. Compact controls are pills, the home mark has a circular hit area, and the link field and focused canvas have smaller radii. Supporting action icons use Lucide linework.
 
 ## Components
 
 ### Sealed cover and bouquet
 
-The cream cover centers the envelope, “A little something, just for you,” and a native **Open your flowers** button. While sealed, the bouquet and its controls keep their layout space but are hidden and inert. On load, if focus is still on the page body, the opener takes focus only when fully in view. Opening moves focus to the canvas, scrolling instantly only if the canvas is entirely offscreen.
+The cream cover centers the envelope, “A little something, just for you,” and a native **Open your flowers** button. While sealed, the bouquet and its controls keep their layout space but are hidden and inert. The cover reserves a line for “Getting your flowers ready…” while the bouquet loads. Once ready, the opener takes focus only if it's fully in view and focus is still on the body. Opening moves focus to the canvas, scrolling instantly if less than half of the canvas (or viewport height, if smaller) is visible.
 
-Pointer opening lifts and fades the cover (280ms, `translateY(-2%)`) while the 4.6-second bloom starts without waiting for the transition. Keyboard or assistive activation, or a reduced-motion preference, skips both animations. **Grow another** likewise shows the finished bouquet immediately in these cases. **Replay bloom** explicitly plays the current bloom with any input method when motion is allowed; with reduced motion it is disabled and its title explains why.
+Pointer opening lifts and fades the cover (280ms, `translateY(-2%)`) while the 4.6-second bloom starts without waiting for the transition. Keyboard or assistive activation, or a reduced-motion preference, skips both animations. **Grow another** likewise shows the finished bouquet immediately in these cases. **Replay bloom** explicitly plays the current bloom with any input method when motion is allowed. With reduced motion, omit Replay bloom and show this note below the actions when the bouquet is ready: “Bloom animation is off with your reduced-motion setting.”
 
-The bouquet can be turned by drag or arrow keys and reset with Home or Reset view. There is no ambient sway; frame scheduling stops once the bloom and any turn settle.
+Drag tracks pointer and touch movement 1:1, without spring lag. On release, an Apple-style spring carries the flick toward its projected resting angle (0.4s response, 0.8 damping ratio). Grabbing again interrupts the spring at the current angle. Pointer **Reset view** springs back by the shortest route (0.4s response, 1.0 damping ratio). Arrow-key steps, `Home`, and keyboard activation of Reset view are instant. Reduced motion also makes pointer reset instant and skips release momentum without removing direct drag. There is no ambient sway; frame scheduling stops once the bloom and any turn settle. On coarse pointers the canvas hint switches to touch wording.
 
 ### Actions and focus
 
-- **Open your flowers** is a 44px-minimum filled pill, with a fine-pointer hover underline and an ink focus outline. **Send flowers** is a 48px-minimum filled pill that deepens on fine-pointer hover and press. Disabled buttons dim to .55 opacity; busy share and save controls use a wait cursor.
-- **Save postcard** uses a hairline pill at the card footer. **Grow another**, **Replay bloom**, and **Reset view** are borderless ink controls with a wash on fine-pointer hover or press. Quiet controls and the home mark have a 44px minimum hit target. On coarse pointers the canvas hint switches to touch wording.
-- Buttons compress to 97% on press, except with reduced motion. Interactive focus uses a 2px rose outline with a 3px offset; the canvas draws it inward by 2px, and the opener uses ink instead of rose.
-- **Bouquet link** is a label and read-only cream URL field shown when manual sharing is offered. The field uses a 1px Muted Ink border, a rose caret, and a 44px minimum height.
+- **Open your flowers** (46px minimum height) and **Send flowers** (48px minimum) are filled pills that deepen on fine-pointer hover and press. **Save postcard** has a hairline outline; **Grow another**, **Replay bloom**, and **Reset view** have no visible border. Quiet controls and the home mark have a 44px minimum hit target and use a wash on fine-pointer hover and press. The button heights in the tokens are minimums, not fixed heights.
+- Buttons compress to 97% on press (140ms transform transition), except with reduced motion. Disabled buttons dim to .55 opacity. Interactive focus uses a 2px rose outline with a 3px offset; the canvas draws it inward by 2px, and the opener uses ink instead of rose.
+- **Send flowers** and **Save postcard** keep their labels while pending and use a wait cursor. The icon swaps in place: a spinner makes one turn every 800ms only while pending; a check replaces the original icon on success with a 160ms opacity transition. Reduced motion makes icon swaps instant and the pending icon still. Inline status text reports what actually happened (for example, that the link was copied or the download started). It never implies delivery.
+- **Bouquet link** is a labeled, read-only cream URL field shown inline for manual sharing. It uses a 1px Muted Ink border, a rose caret, and a 44px minimum height, with a note that anyone with the link can open the same bouquet. Native sharing uses the browser or system share sheet; the postcard has no custom popovers, dialogs, or top-layer surfaces.
+
+### React styling and behavior
+
+Use the ui-sdk `Button` for behavior and pass the local [shadcn `Button`](src/components/ui/button.tsx) via `render` so both apply to one native button. Share and save return promises; ui-sdk supplies the pending state and announcements, and the postcard styles the icon from that state. The postcard styles override primitive sizing, colors, radii, and shadows to keep the stationery treatment.
+
+Keep the start of [`src/styles/globals.css`](src/styles/globals.css) in this order:
+
+```css
+@layer ui-sdk;
+@import "tailwindcss";
+@import "@ui-sdk/core/web.css" layer(components);
+@import "./app.css";
+```
+
+[`src/styles/app.css`](src/styles/app.css) owns the postcard layout and visual states. [`src/App.tsx`](src/App.tsx) and [`src/components/`](src/components/) wire the controls and focus; [`src/garden/engine.ts`](src/garden/engine.ts) and [`src/garden/rotation.ts`](src/garden/rotation.ts) own bloom and turn updates outside React state.
 
 ### Saved postcard
 
-The 1600 × 1700 PNG places the finished bouquet at its current angle on cream paper. Centered Georgia type prints the bouquet name, date, and an italic rose gift line; interactive controls do not appear in the keepsake.
+The 1600 × 1700 PNG places the finished bouquet at its current angle on cream paper. Centered Georgia type prints the bouquet name, then the brand and date, then an italic rose gift line. Interactive controls do not appear in the keepsake.
 
 ## Do's and Don'ts
 
