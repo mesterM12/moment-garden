@@ -8,7 +8,7 @@
 
 <p align="center">
   Grow a surprise 3D bouquet, find one that feels right, and send it to someone you love.<br />
-  They can watch your bouquet bloom or keep it as a PNG postcard.
+  They open a personal cover, watch your bouquet bloom, and can keep it as a PNG postcard.
 </p>
 
 <p align="center">
@@ -28,7 +28,7 @@
 
 ## The garden
 
-The garden gathers **7–10 stems from at least three flower types**, brings them into bloom, and ties them into a little bouquet. Open the garden for a surprise or follow a shared link to watch someone’s chosen bouquet bloom. All geometry is generated in code—not loaded from photographs or model files.
+The garden gathers **7–10 stems from at least three flower types**, brings them into bloom, and ties them into a little bouquet. Open the garden for a surprise or follow a shared link to receive someone’s chosen bouquet. Tap **Open your flowers** to lift the cover and begin the bloom. All geometry is generated in code—not loaded from photographs or model files.
 
 <p align="center">
   <img src="docs/images/bloom.gif" width="630" alt="A procedurally generated bouquet growing its stems and opening its petals" />
@@ -41,7 +41,7 @@ The garden gathers **7–10 stems from at least three flower types**, brings the
 - **Different construction, not just recoloring.** Nested rose cups, rolled dahlia florets, trumpet-shaped calla lilies, ruffled irises, and hydrangea clusters.
 - **A full blooming sequence.** Staggered growth, unfolding leaves, opening petals, and gentle swaying.
 - **Unrestricted 360° rotation.** Explore above, below, and behind the bouquet with a mouse, touch, or keyboard.
-- **A gift.** Send a link that opens your exact bouquet and plays the bloom from the front.
+- **A gift to open.** Send a link that holds your exact bouquet behind a personal cover. Opening it begins the bloom from the front; keyboard opening and reduced-motion preferences show the finished arrangement immediately.
 - **A keepsake.** Download the current bouquet view as a PNG postcard.
 - **A quieter experience.** Reduced-motion preferences show the completed bouquet without the growth animation or idle sway.
 
@@ -88,10 +88,11 @@ Three.js is vendored locally, so rendering does not depend on a JavaScript CDN. 
 
 | Action | Control |
 | --- | --- |
+| Open the gift | **Open your flowers** (tap, click, or keyboard activation) |
 | Rotate in any direction | Drag the bouquet with a mouse or one finger |
 | Rotate with the keyboard | Focus the bouquet with `Tab`, then use the arrow keys |
 | Return to the front | **Reset view**, or `Home` while the bouquet is focused |
-| Generate a new bouquet | **Surprise me** |
+| Generate a new bouquet | **Grow another** |
 | Replay the same bouquet | **Replay bloom** |
 | Send the current bouquet | **Send flowers** |
 | Save a PNG postcard | Download icon at the bottom-right of the card |
@@ -122,7 +123,7 @@ flowchart TD
 
 `botany.js` turns a millisecond timestamp into a bouquet plan. Each stem gets a derived seed for its geometry, while repeated species share cultivar colors. Layout is chosen before tessellation. Flower-head envelopes keep the mature blooms apart in 3D. Stem paths make room around neighboring heads, and crowded leaves are shortened, redirected, or omitted.
 
-Replay, rotation, and PNG export keep the existing bouquet. **Surprise me** starts from a new timestamp and clears any bouquet seed from the address, so refreshing afterward is a fresh visit. The link carries the arrangement, not the sender’s camera angle. Browser/GPU rendering can vary. Messaging apps show a general preview image; the link itself opens the exact bouquet.
+Replay, rotation, and PNG export keep the existing bouquet. **Grow another** starts from a new timestamp and clears any bouquet seed from the address, so refreshing afterward is a fresh visit. The link carries the arrangement, not the sender’s camera angle. Browser/GPU rendering can vary. Messaging apps show a general preview image; the link itself opens the exact bouquet.
 
 #### Bouquet link contract
 
