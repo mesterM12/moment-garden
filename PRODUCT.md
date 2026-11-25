@@ -20,7 +20,7 @@ Flowers for You grows a full-color 3D arrangement from the timestamp rather than
 
 ## Operating Context
 
-The postcard runs in desktop and mobile browsers and requires WebGL for the 3D scene. A standard visit generates a new arrangement; a bouquet link restores the sender’s arrangement. The visitor can share a link, grow another surprise bouquet, replay the current bloom, rotate the bouquet, reset the view, or download the finished arrangement at its current angle as a PNG.
+The postcard runs in desktop and mobile browsers and requires WebGL for the 3D scene. A standard visit generates a new arrangement; a bouquet link restores the sender’s arrangement. A personal cover invites the visitor to open their flowers before the first bloom begins. After opening, the visitor can share a link, grow another surprise bouquet, replay the current bloom, rotate the bouquet, reset the view, or download the finished arrangement at its current angle as a PNG.
 
 ## Capabilities and Constraints
 
@@ -31,7 +31,7 @@ The postcard runs in desktop and mobile browsers and requires WebGL for the 3D s
 
 ## Brand Commitments
 
-The product is named **Flowers for You**. Speak directly to the sender and recipient without assuming a romantic relationship or a special occasion. Use **bouquet** for the gift, **postcard** for the experience or the saved keepsake, and **Send flowers** for the primary action.
+The product is named **Flowers for You**. The experience should feel warm and intimate enough to send to a partner: personal stationery rather than a botanical specimen sheet. Speak directly to the sender and recipient without inventing a sender’s identity, relationship, or special occasion. Use **bouquet** for the gift, **postcard** for the experience or the saved keepsake, and **Send flowers** for the primary action.
 
 ## Evidence on Hand
 
