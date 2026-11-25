@@ -8,7 +8,7 @@ web
 
 ## Users
 
-Moment Garden is for someone who wants to send another person flowers as a small digital gesture. The sender discovers a bouquet worth giving; the recipient gets the arrangement the sender chose, not a fresh random draw.
+Flowers for You is for someone who wants to give flowers to a person they love: a friend, a family member, a partner, or anyone on their mind. The sender discovers a bouquet worth giving; the recipient opens the arrangement the sender picked, not a fresh random draw.
 
 ## Product Purpose
 
@@ -16,7 +16,7 @@ Make it easy to give someone a one-of-a-kind botanical postcard. The gift works 
 
 ## Positioning
 
-Moment Garden grows a full-color 3D arrangement from the timestamp rather than asking the sender to compose one or pick a stock image. Each arrangement has 7–9 stems from at least three flower types. Species-aware shapes and colors should make the flowers recognizable, and the recipient can explore the live bouquet from any angle.
+Flowers for You grows a full-color 3D arrangement from the timestamp rather than asking the sender to compose one or pick a stock image. New bouquets use 7–10 stems from 3–4 flower types, drawn from 15 procedural varieties. Five arrangements and seven color stories give bouquets different silhouettes and moods, with a bow, twine, or paper wrap to finish. Species-aware shapes and colors should make the flowers recognizable, and the recipient can explore the live bouquet from any angle.
 
 ## Operating Context
 
@@ -26,12 +26,12 @@ The postcard runs in desktop and mobile browsers and requires WebGL for the 3D s
 
 - Fresh bouquets are always a surprise. Keep flower-type and color selectors out of the experience.
 - Replay and sharing preserve the current arrangement. The recipient sees that bouquet bloom from the front, regardless of the sender’s viewing angle. The PNG preserves the viewing angle.
-- Eight procedural flower recipes are available: rose, tulip, dahlia, sunflower, daisy, lily, poppy, and cosmos. The geometry is generated in code rather than loaded from model files or photographs.
-- The current app is a static site with no build step or backend. The public source repository is [mesterM12/moment-garden](https://github.com/mesterM12/moment-garden).
+- Flower geometry is generated in code rather than loaded from model files or photographs.
+- The app is a static site with no build step or backend. The [public site](https://mesterm12.github.io/moment-garden/) keeps its existing address so old links still open. The public source repository is [mesterM12/moment-garden](https://github.com/mesterM12/moment-garden).
 
 ## Brand Commitments
 
-The product is named **Moment Garden**. Its existing line is “A moment, in bloom.” Use **bouquet** for the gift and **postcard** for the experience or the saved keepsake.
+The product is named **Flowers for You**. Speak directly to the sender and recipient without assuming a romantic relationship or a special occasion. Use **bouquet** for the gift, **postcard** for the experience or the saved keepsake, and **Send flowers** for the primary action.
 
 ## Evidence on Hand
 

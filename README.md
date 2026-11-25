@@ -1,14 +1,14 @@
 <p align="center">
-  <img src="docs/images/logo.svg" width="96" height="96" alt="Moment Garden flower logo" />
+  <img src="flowers.svg" width="96" height="96" alt="Flowers for You logo" />
 </p>
 
-<h1 align="center">Moment Garden</h1>
+<h1 align="center">Flowers for You</h1>
 
-<p align="center"><em>A moment, in bloom.</em></p>
+<p align="center"><em>Give flowers to someone you love.</em></p>
 
 <p align="center">
-  A tiny botanical postcard that grows a surprise 3D bouquet from the current timestamp.<br />
-  No two arrivals quite alike. No settings to fuss with. Just flowers.
+  Grow a surprise 3D bouquet, find one that feels right, and send it to someone you love.<br />
+  They can watch your bouquet bloom or keep it as a PNG postcard.
 </p>
 
 <p align="center">
@@ -28,7 +28,7 @@
 
 ## The garden
 
-The garden gathers **7–9 stems from at least three flower types**, brings them into bloom, and ties them into a little bouquet. Open the garden for a surprise or follow a shared link to watch someone’s chosen bouquet bloom. All geometry is generated in code—not loaded from photographs or model files.
+The garden gathers **7–10 stems from at least three flower types**, brings them into bloom, and ties them into a little bouquet. Open the garden for a surprise or follow a shared link to watch someone’s chosen bouquet bloom. All geometry is generated in code—not loaded from photographs or model files.
 
 <p align="center">
   <img src="docs/images/bloom.gif" width="630" alt="A procedurally generated bouquet growing its stems and opening its petals" />
@@ -36,9 +36,9 @@ The garden gathers **7–9 stems from at least three flower types**, brings them
 
 ### Made to be explored
 
-- **Always a surprise.** Timestamp-seeded species, proportions, arrangement, and cultivar colors; no color or species selectors.
-- **Eight botanical recipes.** Roses, tulips, dahlias, sunflowers, daisies, lilies, poppies, and cosmos.
-- **Different construction, not just recoloring.** Nested rose cups, six tulip shells, rolled dahlia florets, broad poppy petals, recurved lily tepals, and golden-angle disk centers.
+- **Always a surprise.** Five bouquet silhouettes, seven color families, and three ties: bow, twine, or wrap. The timestamp chooses the combination; there are no flower or color selectors.
+- **15 botanical recipes.** Roses, tulips, dahlias, sunflowers, daisies, lilies, poppies, cosmos, ranunculus, calla lilies, orchids, irises, hydrangeas, anemones, and billy buttons.
+- **Different construction, not just recoloring.** Nested rose cups, rolled dahlia florets, trumpet-shaped calla lilies, ruffled irises, and hydrangea clusters.
 - **A full blooming sequence.** Staggered growth, unfolding leaves, opening petals, and gentle swaying.
 - **Unrestricted 360° rotation.** Explore above, below, and behind the bouquet with a mouse, touch, or keyboard.
 - **A gift.** Send a link that opens your exact bouquet and plays the bloom from the front.
@@ -47,7 +47,13 @@ The garden gathers **7–9 stems from at least three flower types**, brings them
 
 ### One garden, many bouquets
 
-These are actual browser renders of four timestamp-seeded arrangements—not concept art.
+Five silhouettes give the stems a different shape even before color and flower choice come into play.
+
+<p align="center">
+  <img src="docs/images/arrangements.jpg" width="950" alt="Five actual bouquet renders: open fan, round posy, side sweep, loose meadow, and high spire" />
+</p>
+
+These four studies show some of the original flowers, which are still in the mix.
 
 <p align="center">
   <img src="docs/images/bouquet-gallery.jpg" width="920" alt="Four procedural bouquets featuring roses, tulips, dahlias, and sunflowers, each with supporting flowers" />
@@ -86,11 +92,11 @@ Three.js is vendored locally, so rendering does not depend on a JavaScript CDN. 
 | Rotate with the keyboard | Focus the bouquet with `Tab`, then use the arrow keys |
 | Return to the front | **Reset view**, or `Home` while the bouquet is focused |
 | Generate a new bouquet | **Surprise me** |
-| Replay the same bouquet | **Watch them bloom** |
-| Send the current bouquet | **Share bouquet** |
+| Replay the same bouquet | **Replay bloom** |
+| Send the current bouquet | **Send flowers** |
 | Save a PNG postcard | Download icon at the bottom-right of the card |
 
-**Share bouquet** opens the system share sheet when available. Otherwise it copies the link or shows it for manual copying. Link sharing requires an HTTP(S) page; use the public garden to send links that others can open. When opened as a local file, the garden can still save a PNG.
+**Send flowers** opens the system share sheet when available. Otherwise it copies the link or shows it for manual copying. Link sharing requires an HTTP(S) page; use the public garden to send links that others can open. When opened as a local file, the garden can still save a PNG.
 
 Touch gestures inside the bouquet rotate it; scroll the page from outside the illustration. Saving completes the bloom and captures the current viewing angle.
 
@@ -101,7 +107,7 @@ flowchart TD
     A[Current timestamp or shared seed] --> B[Seeded pseudo-random generator]
     B --> C[Choose focal, supporting, and accent species]
     B --> D[Generate species-aware cultivar colors]
-    B --> E[Arrange 7–9 stems in depth]
+    B --> E[Pack 7–10 flower heads in 3D]
     C --> F[Build procedural botanical meshes]
     D --> F
     E --> G[Curve stems toward a shared ribbon tie]
@@ -114,13 +120,13 @@ flowchart TD
 
 ### A shared seed, independent details
 
-`botany.js` turns a millisecond timestamp into a bouquet plan. Each stem gets a derived seed for its geometry, while repeated species share cultivar colors. Layout is chosen before tessellation, so changing mesh detail does not reshuffle the arrangement.
+`botany.js` turns a millisecond timestamp into a bouquet plan. Each stem gets a derived seed for its geometry, while repeated species share cultivar colors. Layout is chosen before tessellation. Flower-head envelopes keep the mature blooms apart in 3D. Stem paths make room around neighboring heads, and crowded leaves are shortened, redirected, or omitted.
 
-Replay, rotation, and PNG export keep the existing bouquet. **Surprise me** starts from a new timestamp and clears any bouquet seed from the address, so refreshing afterward is a fresh visit. The link carries the arrangement, not the sender’s camera angle. Browser/GPU rendering can vary.
+Replay, rotation, and PNG export keep the existing bouquet. **Surprise me** starts from a new timestamp and clears any bouquet seed from the address, so refreshing afterward is a fresh visit. The link carries the arrangement, not the sender’s camera angle. Browser/GPU rendering can vary. Messaging apps show a general preview image; the link itself opens the exact bouquet.
 
 #### Bouquet link contract
 
-The share control adds `?bouquet=1.<timestamp>` to the current site path. Version `1` identifies the seeded plan and procedural geometry. The timestamp is a nonnegative integer in Unix epoch milliseconds, written in decimal without leading zeros (except `0`), and must be a valid JavaScript `Date`. A valid link restores its bouquet on every open and refresh. Malformed and unsupported links show a notice and grow a fresh bouquet instead. If a future recipe change breaks visual reproducibility, use a new version and keep the version 1 generator available for old links.
+The share control adds `?bouquet=<version>.<timestamp>` to the site path. New bouquets use version `2`; existing version `1` links still open their original arrangement. Re-sharing a bouquet preserves its version. The timestamp is a nonnegative integer in Unix epoch milliseconds, written in decimal without leading zeros (except `0`), and must be a valid JavaScript `Date`. Malformed and unsupported links show a notice and grow a fresh bouquet instead. Keep existing generators available when introducing a version with different recipes.
 
 ### Geometry with botanical cues
 
@@ -134,6 +140,13 @@ The share control adds `?bouquet=1.<timestamp>` to the current site path. Versio
 | Poppy | Broad, ruffled petals around a capsule and dark stamens |
 | Lily | Six recurved tepals, dark flecks, elongated anthers, and a central style |
 | Cosmos | Eight broad rays with shallow tip notches and a golden center |
+| Ranunculus | Tightly layered, rounded petals |
+| Calla lily | A curled spathe wrapped around a spadix |
+| Orchid | Broad petals and a distinct labellum |
+| Iris | Upright standards and outward falls |
+| Hydrangea | A rounded cluster of four-lobed florets |
+| Anemone | Broad petals and a dark central boss |
+| Billy button | A sphere of tiny golden florets |
 
 These are stylized procedural interpretations, not botanical simulations or photorealistic scanned models. Lighting, petal gradients, surface veins, and constrained pigment ranges help the species remain recognizable at postcard scale. Design observations and remaining refinement ideas are recorded in [`DESIGN-REVIEW.md`](DESIGN-REVIEW.md).
 
@@ -142,14 +155,16 @@ These are stylized procedural interpretations, not botanical simulations or phot
 The site is plain HTML, CSS, and JavaScript. **Node.js 18+** is only needed to run the tests.
 
 ```sh
-node --test botany.test.cjs bouquet-link.test.cjs
+node --test *.test.cjs
 node --check botany.js
+node --check botany-varieties.js
+node --check extra-blooms.js
 node --check bouquet-link.js
 node --check flower.js
 node --check petal-meshes.js
 ```
 
-The tests cover deterministic generation, distinct species recipes, bouquet size and diversity, geometry and pigment ranges, and the bouquet link contract. For a browser check, share a bouquet from the HTTP-served site, open the link in a private window, and confirm that the same bouquet blooms. Try **Surprise me** and refresh to check that the old bouquet doesn’t return.
+The tests cover deterministic generation, species meshes and bloom shapes, bouquet diversity, mature head clearance, and the bouquet link contract. For a browser check, share a bouquet from the HTTP-served site, open the link in a private window, and confirm that the same bouquet blooms. Try **Surprise me** and refresh to check that the old bouquet doesn’t return.
 
 ### Project map
 
@@ -158,12 +173,15 @@ moment-garden/
 ├── index.html             # Postcard markup and controls
 ├── style.css              # Paper, typography, layout, responsive styles
 ├── botanical.css          # Illustration and interaction styles
-├── botany.js              # Seeded species, pigments, and bouquet planning
+├── botany.js              # Versioned seeded bouquet planning
+├── botany-varieties.js    # Recipes and pigment ranges for additional varieties
 ├── bouquet-link.js        # Versioned bouquet URL contract
 ├── petal-meshes.js        # Dedicated rose, tulip, and dahlia surfaces
+├── extra-blooms.js        # Additional flower geometries
 ├── flower.js              # Scene, animation, input, sharing, and export
 ├── botany.test.cjs        # Seeded generation tests
 ├── bouquet-link.test.cjs  # Share URL contract tests
+├── extra-blooms.test.cjs  # Geometry and morph-target tests
 ├── DESIGN-REVIEW.md       # Botanical geometry review and refinement notes
 ├── docs/images/           # Logo, screenshots, gallery, and animated preview
 └── vendor/                # Three.js 0.160.1 and its license

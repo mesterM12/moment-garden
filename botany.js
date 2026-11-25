@@ -1,7 +1,8 @@
 /* Seeded botanical recipes. No meshes, photographs, or fixed color palettes. */
 (function (root) {
   'use strict';
-  const species = {
+  // Version 1 depends on both the values and the insertion order of these recipes.
+  const originalSpecies = {
     daisy: { label: 'Daisy', count: [19, 27], layers: [1, 2], length: 1.35, width: 0.14, shrink: 0.12, lift: 0.055, open: 0.04, curl: 0.03, cup: 0.04, shape: 0.48, ruffle: 0.008, disk: 0.35, center: 'gold', leaf: 'slender', tilt: 1.12 },
     sunflower: { label: 'Sunflower', count: [23, 31], layers: [2, 3], length: 1.18, width: 0.18, shrink: 0.10, lift: 0.045, open: 0.02, curl: -0.03, cup: 0.07, shape: 0.85, ruffle: 0.013, disk: 0.66, center: 'seeds', leaf: 'broad', tilt: 1.14 },
     poppy: { label: 'Poppy', count: [4, 6], layers: [1, 1], length: 1.45, width: 0.86, shrink: 0, lift: 0.07, open: -0.18, curl: 0.20, cup: 0.24, shape: 0.38, ruffle: 0.085, disk: 0.23, center: 'poppy', leaf: 'serrated', tilt: 1.00 },
@@ -11,6 +12,15 @@
     lily: { label: 'Lily', count: [3, 3], layers: [2, 2], length: 1.70, width: 0.42, shrink: 0.04, lift: 0.065, open: -0.08, curl: -0.55, cup: 0.16, shape: 0.85, ruffle: 0.02, disk: 0.13, center: 'stamens', leaf: 'slender', tilt: 0.95 },
     cosmos: { label: 'Cosmos', count: [8, 8], layers: [1, 1], length: 1.45, width: 0.49, shrink: 0, lift: 0.04, open: -0.03, curl: -0.06, cup: 0.09, shape: 0.30, ruffle: 0.025, disk: 0.24, center: 'gold', leaf: 'slender', tilt: 1.12 },
   };
+  const varieties = typeof module !== 'undefined' && module.exports ? require('./botany-varieties.js') : root.BotanyVarieties;
+  const species = { ...originalSpecies, ...varieties?.species };
+  const originalPigments = {
+    daisy: [[0, 12], [315, 355], [265, 295]], sunflower: [[32, 54], [15, 30]],
+    poppy: [[0, 22], [330, 355], [25, 42]], tulip: [[0, 18], [320, 355], [35, 55], [275, 305]],
+    rose: [[345, 365], [315, 340], [20, 40]], dahlia: [[0, 20], [315, 350], [265, 290], [25, 50]],
+    lily: [[325, 355], [15, 40], [40, 55]], cosmos: [[315, 350], [275, 305]],
+  };
+  const pigmentRanges = { ...originalPigments, ...varieties?.pigmentRanges };
   function seededRandom(seed) {
     let state = seed >>> 0;
     return () => {
@@ -24,16 +34,10 @@
   function hsl(h, s, l) { return `hsl(${wrap(h).toFixed(2)}, ${s.toFixed(2)}%, ${l.toFixed(2)}%)`; }
   function createSpecimen(timestamp, kind = 'random', mood = 'random') {
     const random = seededRandom(timestamp ^ Math.floor(timestamp / 4294967296));
-    const keys = Object.keys(species);
+    const keys = Object.keys(originalSpecies);
     const key = Object.hasOwn(species, kind) ? kind : keys[Math.floor(random() * keys.length)];
     const recipe = species[key];
     // Species-aware pigment ranges: no cyan sunflowers or green roses.
-    const pigmentRanges = {
-      daisy: [[0, 12], [315, 355], [265, 295]], sunflower: [[32, 54], [15, 30]],
-      poppy: [[0, 22], [330, 355], [25, 42]], tulip: [[0, 18], [320, 355], [35, 55], [275, 305]],
-      rose: [[345, 365], [315, 340], [20, 40]], dahlia: [[0, 20], [315, 350], [265, 290], [25, 50]],
-      lily: [[325, 355], [15, 40], [40, 55]], cosmos: [[315, 350], [275, 305]],
-    };
     const range = pigmentRanges[key][Math.floor(random() * pigmentRanges[key].length)];
     let hue = range[0] + random() * (range[1] - range[0]);
     let saturation = 58 + random() * 30;
@@ -53,10 +57,13 @@
       root: hsl(hue - 13, saturation, Math.max(18, lightness - 22)),
       fleck: hsl(hue - 15, saturation, 22),
     };
+    return shapeSpecimen(timestamp, random, key, recipe, palette, pattern, mood);
+  }
+  function shapeSpecimen(timestamp, random, key, recipe, palette, pattern, mood) {
     const integer = range => range[0] + Math.floor(random() * (range[1] - range[0] + 1));
     return {
       timestamp, random, palette, key, recipe, pattern, mood,
-      name: `${colorName} ${recipe.label}`,
+      name: `${palette.name} ${recipe.label}`,
       count: integer(recipe.count), layers: integer(recipe.layers),
       length: recipe.length * (0.94 + random() * 0.12),
       width: recipe.width * (0.94 + random() * 0.12),
@@ -65,9 +72,9 @@
       greenHue: 85 + random() * 50,
     };
   }
-  function createBouquet(timestamp) {
+  function createOriginalBouquet(timestamp) {
     const random = seededRandom(timestamp ^ Math.floor(timestamp / 4294967296));
-    const keys = Object.keys(species);
+    const keys = Object.keys(originalSpecies);
     // Three complementary roles: focal blooms, secondary blooms, airy accents.
     const focal = ['rose', 'dahlia', 'sunflower', 'tulip'][Math.floor(random() * 4)];
     const secondaryOptions = keys.filter(key => key !== focal && key !== 'sunflower');
@@ -101,7 +108,250 @@
     });
     return { timestamp, name: names[Math.floor(random() * names.length)], flowers, kinds: [...new Set(flowers.map(f => f.specimen.key))] };
   }
-  const api = { species, seededRandom, createSpecimen, createBouquet };
+  // V2's silhouettes are independent of its color stories. Slots run from the
+  // signature seven to up to three extras, in x/y/depth with a botanical role.
+  const arrangements = [
+    { id: 'fan', label: 'Open Fan', foliage: [3, .51], slots: [
+      ['f', -1.07, 1.65, -.33], ['f', .57, 2.05, -.54], ['c', 1.69, 1.20, -.12],
+      ['c', -.19, .75, .39], ['c', 1.06, .15, .55], ['a', -1.70, .73, .20], ['a', -.74, -.19, .78],
+      ['a', .63, 1.04, .27], ['e', -.07, 2.71, -.64], ['a', 1.82, .31, .39],
+    ] },
+    { id: 'cascade', label: 'Side Sweep', foliage: [2, .45], slots: [
+      ['f', 1.08, 1.98, -.42], ['f', -.50, 1.42, -.36], ['c', .38, .90, .32],
+      ['c', -1.70, .58, .20], ['c', -.78, -.25, .64], ['a', 1.75, 1.18, -.20], ['a', .32, 2.59, -.66],
+      ['a', 1.48, .39, .41], ['e', -1.89, -.27, .50], ['a', -.26, .10, .72],
+    ] },
+    { id: 'spire', label: 'High Spire', foliage: [2, .57], slots: [
+      ['f', .14, 2.17, -.58], ['f', -.63, 1.11, -.10], ['c', 1.13, 1.24, -.26],
+      ['c', .44, .39, .49], ['c', -1.01, -.04, .55], ['a', .84, 2.42, -.51], ['a', -1.46, .70, .18],
+      ['a', -.50, 2.42, -.58], ['e', 1.41, .43, .28], ['a', .02, -.51, .68],
+    ] },
+    { id: 'posy', label: 'Round Posy', foliage: [3, .61], slots: [
+      ['f', -.62, 1.63, -.39], ['f', .52, .88, .34], ['c', .67, 1.91, -.49],
+      ['c', -1.57, .82, .07], ['c', -.45, .15, .55], ['a', 1.47, .87, .07], ['a', .64, -.27, .68],
+      ['a', .08, 2.48, -.52], ['e', 1.33, .14, .42], ['a', -1.31, -.06, .47],
+    ] },
+    { id: 'meadow', label: 'Loose Meadow', foliage: [2, .50], slots: [
+      ['f', -.25, 1.76, -.42], ['f', .90, .72, .28], ['c', -1.55, 1.29, -.30],
+      ['c', 1.58, 1.84, -.39], ['c', -.79, .42, .42], ['a', -.91, 2.44, -.66], ['a', .12, -.42, .67],
+      ['a', 1.72, .04, .44], ['e', .78, 2.50, -.58], ['a', -1.57, -.31, .58],
+    ] },
+  ];
+
+  // A swatch carries preferred hue, saturation and lightness. Null hue means
+  // near-white; only naturally white cultivars are candidates for that swatch.
+  // The fourth swatch is reserved for a contrasting stem in the fuller cuts.
+  const colorStories = [
+    { id: 'rosewater', label: 'Rosewater', names: ['A Small Kindness', 'With Love', 'Remember This'], tie: { style: 'bow', color: '#bd7f85' }, swatches: [
+      ['Blush', 345, 55, 73], ['Cream', null, 31, 91], ['Berry', 329, 70, 54], ['Shell Pink', 352, 68, 82],
+    ] },
+    { id: 'golden-hour', label: 'Golden Hour', names: ['The Last Light', 'Warm as You', 'A Sunny Place'], tie: { style: 'twine', color: '#a66e45' }, swatches: [
+      ['Marigold', 43, 86, 54], ['Persimmon', 21, 83, 55], ['Honey', 48, 67, 63], ['Rust', 13, 67, 47],
+    ] },
+    { id: 'blue-hour', label: 'Blue Hour', names: ['Somewhere Quiet', 'Under the Same Sky', 'The Hour Before'], tie: { style: 'wrap', color: '#716e98' }, swatches: [
+      ['Periwinkle', 235, 63, 66], ['Violet', 269, 57, 62], ['Porcelain', null, 22, 93], ['Mauve', 302, 49, 69],
+    ] },
+    { id: 'fig-and-honey', label: 'Fig & Honey', names: ['A Good Surprise', 'The Long Way Home', 'Wish You Were Here'], tie: { style: 'twine', color: '#bc973f' }, swatches: [
+      ['Mulberry', 312, 68, 46], ['Apricot', 27, 82, 66], ['Buttercup', 49, 86, 60], ['Fuchsia', 328, 75, 62],
+    ] },
+    { id: 'lilac-orchard', label: 'Lilac Orchard', names: ['All the Little Things', 'A Little Wild', 'An Afternoon Together'], tie: { style: 'bow', color: '#987da9' }, swatches: [
+      ['Lavender', 280, 54, 72], ['Orchid Pink', 319, 61, 72], ['Lilac', 268, 58, 76], ['Cream', null, 30, 89],
+    ] },
+    { id: 'candlelight', label: 'Candlelight', names: ['An Unsaid Thing', 'Just Because', 'Yours, Always'], tie: { style: 'wrap', color: '#8a484e' }, swatches: [
+      ['Claret', 354, 78, 46], ['Soft Peach', 26, 69, 72], ['Chalk', null, 21, 92], ['Pomegranate', 342, 70, 48],
+    ] },
+    { id: 'glasshouse', label: 'Glasshouse', names: ['Here With You', 'A Place in the Sun', 'Sunday Morning'], tie: { style: 'bow', color: '#72835e' }, swatches: [
+      ['Ivory', null, 30, 91], ['Plum', 298, 67, 53], ['Citron', 53, 82, 69], ['Peach', 24, 66, 73],
+    ] },
+  ];
+  const roles = {
+    f: ['rose', 'dahlia', 'sunflower', 'ranunculus', 'iris', 'hydrangea', 'tulip', 'orchid', 'calla'],
+    c: ['tulip', 'lily', 'poppy', 'orchid', 'iris', 'calla', 'hydrangea', 'anemone', 'ranunculus'],
+    a: ['daisy', 'cosmos', 'billyButton', 'anemone', 'poppy'],
+    e: ['daisy', 'cosmos', 'billyButton', 'anemone', 'poppy'],
+  };
+  const whiteCultivars = ['daisy', 'tulip', 'rose', 'dahlia', 'lily', 'cosmos', 'ranunculus', 'calla', 'orchid', 'iris', 'hydrangea', 'anemone'];
+  const pick = (random, values) => values[Math.floor(random() * values.length)];
+  const clampTo = (value, start, end) => Math.max(start, Math.min(end, value));
+
+  function closestPigment(hue, ranges) {
+    let best = hue, distance = Infinity;
+    for (const [low, high] of ranges) {
+      for (const target of [hue - 360, hue, hue + 360]) {
+        const clamped = clampTo(target, low, high);
+        const delta = Math.abs(target - clamped);
+        if (delta < distance) { best = clamped; distance = delta; }
+      }
+    }
+    return { hue: best, distance };
+  }
+
+  function chooseCultivar(random, role, swatch, used, arrangement) {
+    const options = roles[role].filter(key => Object.hasOwn(species, key) && !used.has(key));
+    const [name, hue, saturation, lightness] = swatch;
+    const candidates = options.map(key => {
+      const ivory = hue === null && whiteCultivars.includes(key);
+      const pigment = ivory ? { hue: 46, distance: 0 } : closestPigment(hue ?? 45, pigmentRanges[key]);
+      const mismatch = hue === null && !ivory ? 65 : pigment.distance;
+      // Taller heads suit the central high line; radial or clustered blooms suit a posy.
+      const bias = role === 'f' && (arrangement === 'spire' && ['calla', 'iris', 'tulip'].includes(key)
+        || arrangement === 'posy' && ['rose', 'ranunculus', 'dahlia', 'hydrangea'].includes(key)) ? 13 : 0;
+      return { key, ivory, score: mismatch - bias + random() * 38 };
+    });
+    candidates.sort((a, b) => a.score - b.score);
+    const { key, ivory } = candidates[0];
+    const cultivarHue = ivory ? 38 + random() * 17 : closestPigment((hue ?? 45) + (random() - .5) * 16, pigmentRanges[key]).hue;
+    const sat = (ivory || hue !== null ? saturation : 76) + (random() - .5) * 12;
+    const light = (ivory || hue !== null ? lightness : 64) + (random() - .5) * 10;
+    const colorName = hue === null && !ivory ? 'Golden' : name;
+    const variation = random();
+    const pattern = key === 'lily' ? 'speckled' : variation < .26 && ['ranunculus', 'orchid', 'calla', 'iris', 'tulip', 'dahlia', 'rose'].includes(key) ? 'picotee' : 'gradient';
+    return { key, pattern, palette: {
+      name: colorName,
+      base: hsl(cultivarHue, sat, light),
+      tip: hsl(cultivarHue + (random() - .5) * 10, Math.max(18, sat - 12), Math.min(97, light + (ivory ? 5 : 13))),
+      root: hsl(cultivarHue - 10, sat, Math.max(18, light - (ivory ? 13 : 20))),
+      fleck: hsl(cultivarHue - 15, sat, 24),
+    } };
+  }
+
+  // Conservative mature-head spheroids measured from the renderer's meshes.
+  // [radial radius, axial half-height, axial center offset], in local head units.
+  const headProfiles = {
+    daisy: [2.08, .39, .07], sunflower: [2.08, .49, .07], poppy: [1.87, .76, .49], tulip: [1.24, 1.36, 1],
+    rose: [1.48, .76, .28], dahlia: [1.57, .99, .38], lily: [2.25, 1.08, -.09], cosmos: [2.08, .36, .07],
+    ranunculus: [1.48, .73, .36], calla: [1.30, 1.56, 1.20], orchid: [1.47, .64, .28], iris: [1.68, 1.34, .07],
+    hydrangea: [1.58, 1.13, .24], anemone: [1.34, .48, .12], billyButton: [.62, .81, .40],
+  };
+
+  function headEnvelope(entry) {
+    const { position, scale, turn, tiltOffset = 0, specimen } = entry;
+    const [radius, halfHeight, offset] = headProfiles[specimen.key];
+    const tilt = specimen.recipe.tilt + tiltOffset, roll = -turn * .5;
+    // The renderer applies an XYZ Euler rotation. Only the local Y axis matters.
+    const tx = -Math.sin(roll) * Math.cos(turn), ty = Math.cos(roll), tz = Math.sin(roll) * Math.sin(turn);
+    const axis = [tx, ty * Math.cos(tilt) - tz * Math.sin(tilt), ty * Math.sin(tilt) + tz * Math.cos(tilt)];
+    return { center: position.map((coord, i) => coord + axis[i] * offset * scale), axis, radius: radius * scale, halfHeight: halfHeight * scale };
+  }
+
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  function support(envelope, direction) {
+    const along = dot(envelope.axis, direction);
+    const { radius, halfHeight } = envelope;
+    return Math.sqrt(radius ** 2 + (halfHeight ** 2 - radius ** 2) * along ** 2);
+  }
+
+  function fitsFrame(envelope) {
+    const { center: [x, y] } = envelope;
+    return Math.abs(x) + support(envelope, [1, 0, 0]) <= 2.5
+      && y + support(envelope, [0, 1, 0]) <= 3.35 && y - support(envelope, [0, 1, 0]) >= -1.63;
+  }
+
+  function hasRoom(a, b) {
+    const delta = a.center.map((coord, i) => coord - b.center[i]);
+    const length = Math.hypot(...delta);
+    if (!length) return false;
+    const direction = delta.map(coord => coord / length);
+    // A separating plane along any of these normals proves there is a gap.
+    const separated = [direction, a.axis, b.axis].some(normal =>
+      Math.abs(dot(delta, normal)) >= support(a, normal) + support(b, normal) + .055);
+    if (!separated) return false;
+    // Keep both faces readable from the default front, not directly behind one another.
+    const projected = [delta[0] + .10 * delta[2], delta[1] - .15 * delta[2], 0];
+    const projectedLength = Math.hypot(projected[0], projected[1]);
+    if (!projectedLength) return false;
+    const front = projected.map(coord => coord / projectedLength);
+    return projectedLength >= .73 * Math.max(support(a, front), support(b, front)) + .065;
+  }
+
+  // Try the original cut first, then the least disruptive adjustments to the
+  // stem insertion. A second, slightly smaller cut repacks from scratch if a
+  // dense mix cannot be fitted at full scale, rather than dropping a stem.
+  const placementTrials = [];
+  for (const dx of [0, .15, -.15, .31, -.31, .48, -.48]) {
+    for (const dy of [0, .14, -.14, .29, -.29, .44, -.44]) {
+      for (const dz of [0, .26, -.26, .52, -.52]) {
+        for (const scale of [1, .94, .86, .77]) {
+          const cost = Math.hypot(dx, 1.16 * dy, .59 * dz) + (1 - scale) * 1.65;
+          placementTrials.push({ dx, dy, dz, scale, cost });
+        }
+      }
+    }
+  }
+  placementTrials.sort((a, b) => a.cost - b.cost);
+
+  function packHeads(flowers, mirror) {
+    for (const multiplier of [1, .88, .76, .64]) {
+      const packed = [], envelopes = [];
+      for (const [index, flower] of flowers.entries()) {
+        const [x, y, z] = flower.position;
+        for (const { dx, dy, dz, scale } of placementTrials) {
+          const position = [x + dx * mirror, y + dy, z + dz];
+          if (position[2] < -1.12 || position[2] > 1.13) continue;
+          const candidate = { ...flower, position, scale: flower.scale * multiplier * scale };
+          const envelope = headEnvelope(candidate);
+          if (fitsFrame(envelope) && envelopes.every(other => hasRoom(envelope, other))) {
+            packed.push(candidate);
+            envelopes.push(envelope);
+            break;
+          }
+        }
+        if (packed.length === index) break;
+      }
+      if (packed.length === flowers.length) return packed;
+    }
+    throw new Error('The bouquet layout cannot fit its blooms.');
+  }
+
+  function createExpandedBouquet(timestamp) {
+    if (!varieties) throw new Error('Bouquet version 2 requires BotanyVarieties.');
+    const seed = (timestamp ^ Math.floor(timestamp / 4294967296)) ^ 0x8E7A5F21;
+    const random = seededRandom(seed);
+    const design = pick(random, arrangements);
+    const story = pick(random, colorStories);
+    const count = 7 + Math.floor(random() * 4);
+    const mirror = random() < .5 ? -1 : 1;
+    const spread = .93 + random() * .12;
+    const height = .92 + random() * .11;
+    const greens = 98 + random() * 25;
+    const used = new Set();
+    const byRole = {};
+    for (const [i, role] of ['f', 'c', 'a', 'e'].entries()) {
+      byRole[role] = chooseCultivar(random, role, story.swatches[i], used, design.id);
+      used.add(byRole[role].key);
+    }
+    const flowers = design.slots.slice(0, count).map(([role, x, y, z], i) => {
+      const { key, palette, pattern } = byRole[role];
+      const stemTimestamp = timestamp + (i + 1) * 104729;
+      const recipe = species[key];
+      const specimen = shapeSpecimen(stemTimestamp, seededRandom(seed ^ Math.imul(i + 1, 0x9E3779B1)), key, recipe, { ...palette }, pattern, story.id);
+      specimen.greenHue = greens + (random() - .5) * 13;
+      const position = [mirror * (x * spread + (random() - .5) * .15), y * height + (random() - .5) * .15, z + (random() - .5) * .14];
+      const [radius] = headProfiles[key];
+      const focal = role === 'f', companion = role === 'c';
+      const upright = ['calla', 'iris', 'tulip'].includes(key);
+      const width = (focal ? .79 : companion ? .62 : .47) * (.91 + random() * .18);
+      const preferred = upright ? (focal ? .67 : .54) * (.94 + random() * .12) : width / radius;
+      const scale = Math.min(preferred, .68);
+      const [leaves, foliage] = design.foliage;
+      const leafCount = key === 'billyButton' ? 1 : Math.max(1, leaves - (recipe.leaf === 'strap' || !focal && !companion ? 1 : 0));
+      const leafScale = foliage * (.89 + random() * .22);
+      const tiltOffset = (random() - .5) * (upright ? .08 : .17);
+      return { specimen, position, scale, delay: random() * .1, turn: position[0] * .09 + (random() - .5) * .13, leafCount, leafScale, tiltOffset };
+    });
+    return {
+      timestamp, version: 2, name: pick(random, story.names), flowers: packHeads(flowers, mirror), kinds: [...new Set(flowers.map(f => f.specimen.key))],
+      arrangement: { id: design.id, label: design.label }, palette: { id: story.id, label: story.label }, tie: { ...story.tie },
+    };
+  }
+
+  function createBouquet(timestamp, version = 2) {
+    if (version === 1) return createOriginalBouquet(timestamp);
+    if (version === 2) return createExpandedBouquet(timestamp);
+    throw new RangeError('Unsupported bouquet version.');
+  }
+
+  const api = { species, seededRandom, createSpecimen, createBouquet, headEnvelope };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Botany = api;
 })(typeof window !== 'undefined' ? window : globalThis);

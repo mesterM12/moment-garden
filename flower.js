@@ -8,12 +8,14 @@
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const message = document.getElementById('render-message');
   const introNote = document.getElementById('intro-note');
+  const senderNote = introNote.textContent;
   const linkNotice = document.getElementById('link-notice');
   const shareButton = document.getElementById('share');
   const shareStatus = document.getElementById('share-status');
   const manualShare = document.getElementById('manual-share');
   const shareUrl = document.getElementById('share-url');
   const DURATION = 7800;
+  const BRAND = 'Flowers for You';
   let renderer;
 
   try {
@@ -24,7 +26,7 @@
     message.textContent = 'This little garden needs WebGL. Try a browser with hardware acceleration enabled, then reload.';
     status.textContent = 'GARDEN AT REST';
     document.getElementById('interaction-hint').hidden = true;
-    for (const id of ['grow', 'replay', 'save']) document.getElementById(id).disabled = true;
+    for (const id of ['grow', 'replay', 'save', 'share', 'reset-view']) document.getElementById(id).disabled = true;
     console.error(error);
     return;
   }
@@ -176,7 +178,41 @@
     scene.remove(plant);
   }
 
-  function buildBloom(entry) {
+  function routedStem(bottom, knot, middle, top, obstacles, earlierStems) {
+    const offsets = [0, 0.25, -0.25, 0.50, -0.50, 0.82, -0.82];
+    let best = null;
+    let bestScore = Infinity;
+    for (const depth of offsets) {
+      for (const side of [0, 0.22, -0.22, 0.42, -0.42]) {
+        const bend = middle.clone();
+        bend.x += side;
+        bend.z += depth;
+        const shoulder = top.clone().lerp(bend, 0.35);
+        shoulder.z += depth * 0.45;
+        const curve = new THREE.CatmullRomCurve3([bottom, knot, bend, shoulder, top]);
+        const samples = curve.getPoints(40).filter(point => point.y > -1.65);
+        let score = Math.abs(depth) * 0.3 + Math.abs(side) * 0.45;
+        for (const point of samples) {
+          for (const head of obstacles) {
+            const offset = point.clone().sub(head.center);
+            const axial = offset.dot(head.axis);
+            const radialSq = Math.max(0, offset.lengthSq() - axial * axial);
+            const clearance = radialSq / (head.radius + 0.034) ** 2 + axial ** 2 / (head.halfHeight + 0.034) ** 2;
+            if (clearance < 1) score += 12 + 14 * (1 - clearance);
+          }
+          for (const points of earlierStems) {
+            if (points.some(other => other.distanceToSquared(point) < 0.061 ** 2)) score += 1.8;
+          }
+          if (score >= bestScore) break;
+        }
+        if (score < bestScore) { best = curve; bestScore = score; }
+        if (bestScore === 0) return best;
+      }
+    }
+    return best;
+  }
+
+  function buildBloom(entry, index, bouquet, envelopes, earlierStems) {
     const specimen = entry.specimen;
     const { random, palette, recipe } = specimen;
     const petals = [], leaves = [], sepals = [];
@@ -195,21 +231,37 @@
     });
     const top = new THREE.Vector3(...entry.position);
     const bottom = new THREE.Vector3(entry.turn * 0.6, -3.2 + random() * 0.25, -entry.turn * 0.3);
-    const curve = new THREE.CatmullRomCurve3([
-      bottom,
-      new THREE.Vector3(entry.turn * 0.2, -1.9, 0),
-      new THREE.Vector3(top.x * 0.65 + specimen.bend, (top.y - 1.9) / 2, top.z * 0.65),
-      top,
-    ]);
+    const knot = new THREE.Vector3(entry.turn * 0.2, -1.9, 0);
+    const middle = new THREE.Vector3(top.x * 0.65 + specimen.bend, (top.y - 1.9) / 2, top.z * 0.65);
+    let curve;
+    if (bouquet.version === 2) {
+      // Give each stem its own position inside the binding instead of sending them
+      // through the same point. Keep the ordering from the binding to the cut ends.
+      const angle = index * Math.PI * (3 - Math.sqrt(5));
+      const radius = 0.105 * Math.sqrt((index + 0.5) / bouquet.flowers.length);
+      knot.x = radius * Math.cos(angle);
+      knot.z = radius * Math.sin(angle);
+      bottom.x = knot.x * 1.32;
+      bottom.z = knot.z * 1.32;
+      middle.x = top.x * 0.57 + specimen.bend * 0.55;
+      middle.z = top.z * 0.6 + knot.z;
+      curve = routedStem(bottom, knot, middle, top, envelopes.filter((_, other) => other !== index), earlierStems);
+      earlierStems.push(curve.getPoints(40).filter(point => point.y > -1.65));
+    } else {
+      curve = new THREE.CatmullRomCurve3([bottom, knot, middle, top]);
+    }
     const stem = new THREE.Mesh(new THREE.TubeGeometry(curve, 40, 0.024, 7, false), green);
     group.add(stem);
 
     const leafColors = { base: `hsl(${specimen.greenHue}, 42%, 30%)`, tip: `hsl(${specimen.greenHue - 12}, 40%, 47%)`, root: '#244e2b' };
     const leafWidth = { slender: 0.12, broad: 0.47, serrated: 0.31, strap: 0.22 }[recipe.leaf];
     const leafLength = recipe.leaf === 'strap' ? 1.9 : 1.15;
-    for (let i = 0; i < (recipe.leaf === 'strap' ? 2 : 3); i++) {
+    const leafCount = entry.leafCount ?? (recipe.leaf === 'strap' ? 2 : 3);
+    for (let i = 0; i < leafCount; i++) {
       const pivot = new THREE.Group();
-      pivot.position.copy(curve.getPoint((recipe.leaf === 'strap' ? 0.43 : 0.46) + i * 0.14));
+      const stemPosition = (recipe.leaf === 'strap' ? 0.43 : 0.46) + i * 0.14;
+      pivot.position.copy(curve.getPoint(stemPosition));
+      pivot.userData.stemPosition = stemPosition;
       pivot.rotation.y = i % 2 ? 1.45 : -1.45;
       pivot.rotation.x = 0.8;
       const leaf = new THREE.Mesh(botanicalGeometry(leafLength + random() * 0.3, leafWidth * (0.9 + random() * 0.2), leafColors, random, specimen, true), leafMaterial);
@@ -222,10 +274,12 @@
 
     const head = new THREE.Group();
     head.position.copy(top);
-    head.rotation.set(recipe.tilt, entry.turn, -entry.turn * 0.5);
+    head.rotation.set(recipe.tilt + (entry.tiltOffset ?? 0), entry.turn, -entry.turn * 0.5);
     group.add(head);
-    const dedicated = ['rose', 'tulip', 'dahlia'].includes(specimen.key);
-    if (dedicated) petals.push(...PetalMeshes.build(specimen, head, petalMaterial));
+    const custom = window.ExtraBlooms?.has(specimen.key);
+    const dedicated = custom || ['rose', 'tulip', 'dahlia'].includes(specimen.key);
+    if (custom) petals.push(...ExtraBlooms.build(specimen, head, petalMaterial));
+    else if (dedicated) petals.push(...PetalMeshes.build(specimen, head, petalMaterial));
     for (let layer = 0; !dedicated && layer < specimen.layers; layer++) {
       const count = Math.max(3, specimen.count - (specimen.key === 'rose' ? Math.floor(layer / 2) : 0));
       const size = 1 - layer * recipe.shrink;
@@ -245,7 +299,7 @@
         petals.push({ pivot, layer, offset: random() * 0.04, open: recipe.open - layer * layerCurl + (random() - 0.5) * 0.05 });
       }
     }
-    const sepalCount = ['tulip', 'lily', 'poppy'].includes(specimen.key) ? 0 : 5;
+    const sepalCount = recipe.sepalCount ?? (['tulip', 'lily', 'poppy'].includes(specimen.key) ? 0 : 5);
     for (let i = 0; i < sepalCount; i++) {
       const ring = new THREE.Group();
       ring.rotation.y = i * Math.PI * 2 / sepalCount;
@@ -328,18 +382,82 @@
       center.add(stigma);
     }
     center.visible = recipe.center !== 'hidden' && specimen.key !== 'dahlia';
-    return { group, head, center, petals, leaves, sepals, entry };
+    return { group, head, center, petals, leaves, sepals, entry, curve };
+  }
+
+  // Lay out foliage once at full bloom, not every frame. The thin leaf surfaces
+  // may overlap in projection, but don't send them into another plant's volume.
+  function settleFoliage() {
+    pose(1, 0);
+    plant.rotation.set(0, 0, 0);
+    plant.updateMatrixWorld(true);
+    const headBounds = blooms.map(({ head }) => new THREE.Box3().setFromObject(head).expandByScalar(0.018));
+    const stemPoints = blooms.map(({ curve }) => curve.getPoints(32));
+    const placed = [];
+    const bounds = new THREE.Box3();
+    blooms.forEach(({ leaves, curve, entry }, index) => {
+      leaves.forEach(leaf => {
+        const initialYaw = leaf.rotation.y;
+        const initialT = leaf.userData.stemPosition;
+        const scale = entry.leafScale;
+        const sign = Math.sign(entry.position[0]) || Math.sign(initialYaw);
+        for (const size of [1, 0.8, 0.63]) {
+          leaf.scale.setScalar(scale * size);
+          for (const t of [initialT, initialT - 0.08, initialT + 0.045, initialT - 0.15]) {
+            leaf.position.copy(curve.getPoint(t));
+            for (const angle of [initialYaw, sign * 1.29, sign * 2.12, sign * 0.54]) {
+              leaf.rotation.y = angle;
+              leaf.updateWorldMatrix(false, true);
+              bounds.setFromObject(leaf).expandByScalar(0.009);
+              if (bounds.min.y < -1.72 || headBounds.some(box => box.intersectsBox(bounds)) || placed.some(box => box.intersectsBox(bounds))) continue;
+              if (stemPoints.some((points, other) => other !== index && points.some(point => bounds.containsPoint(point)))) continue;
+              leaf.userData.clearanceScale = size;
+              placed.push(bounds.clone());
+              return;
+            }
+          }
+        }
+        leaf.visible = false;
+      });
+    });
   }
 
   function buildBouquet() {
     clearPlant();
     plant = new THREE.Group();
     scene.add(plant);
-    blooms = specimen.flowers.map(buildBloom);
+    const envelopes = specimen.version === 2 && Botany.headEnvelope
+      ? specimen.flowers.map(entry => {
+        const envelope = Botany.headEnvelope(entry);
+        return { ...envelope, center: new THREE.Vector3(...envelope.center), axis: new THREE.Vector3(...envelope.axis) };
+      }) : [];
+    const earlierStems = [];
+    blooms = specimen.flowers.map((entry, index) => buildBloom(entry, index, specimen, envelopes, earlierStems));
     // A real binding point makes the stems read as a hand-tied bouquet.
     ribbon = new THREE.Group();
-    ribbon.position.set(0, -1.9, 0.13);
-    const material = new THREE.MeshStandardMaterial({ color: '#c79779', roughness: 0.92, side: THREE.DoubleSide });
+    const legacy = specimen.version === undefined;
+    ribbon.position.set(0, -1.9, legacy ? 0.13 : 0);
+    const style = specimen.tie?.style ?? 'bow';
+    const material = new THREE.MeshStandardMaterial({ color: specimen.tie?.color ?? '#c79779', roughness: 0.92, side: THREE.DoubleSide });
+    if (style === 'twine') {
+      for (let i = 0; i < 4; i++) {
+        const strand = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.020, 7, 32), material);
+        strand.position.set(0, i * 0.040 - 0.060, 0);
+        strand.rotation.set(Math.PI / 2, i % 2 ? 0.13 : -0.13, 0);
+        ribbon.add(strand);
+      }
+    } else if (style === 'wrap') {
+      const wrap = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.155, 0.34, 32, 1, true), material);
+      ribbon.add(wrap);
+    }
+    if (style === 'bow') addBow(material);
+    plant.add(ribbon);
+    yaw = targetYaw = -0.10;
+    pitch = targetPitch = 0;
+    if (!legacy) settleFoliage();
+  }
+
+  function addBow(material) {
     const tie = new THREE.Mesh(new THREE.TorusGeometry(0.20, 0.045, 8, 36), material);
     tie.rotation.x = Math.PI / 2;
     ribbon.add(tie);
@@ -354,15 +472,13 @@
       tail.rotation.z = direction * 0.28;
       ribbon.add(tail);
     }
-    plant.add(ribbon);
-    yaw = targetYaw = -0.10;
-    pitch = targetPitch = 0;
   }
 
   function pose(p, time) {
     blooms.forEach(({ group, head, center, petals, leaves, sepals, entry }, index) => {
       const local = clamp((p - entry.delay) / (1 - entry.delay));
-      const growth = ease(local / 0.4);
+      // Raise the packed arrangement together; only the opening is staggered.
+      const growth = ease((specimen.version === 2 ? p : local) / 0.4);
       group.scale.setScalar(Math.max(0.001, growth));
       group.position.y = -3.2 * (1 - growth);
       const unfurl = ease((local - 0.23) / 0.77);
@@ -376,7 +492,7 @@
         }
       });
       leaves.forEach((leaf, i) => {
-        leaf.scale.setScalar(0.55 * Math.max(0.001, ease((local - 0.13 - i * 0.07) / 0.36)));
+        leaf.scale.setScalar((entry.leafScale ?? 0.55) * (leaf.userData.clearanceScale ?? 1) * Math.max(0.001, ease((local - 0.13 - i * 0.07) / 0.36)));
       });
       sepals.forEach(sepal => { sepal.rotation.x = -1.3 + 1.5 * unfurl; });
       center.scale.setScalar(Math.max(0.001, ease((local - 0.60) / 0.30)));
@@ -421,7 +537,7 @@
     const cleanAddress = BouquetLink.withoutBouquet(window.location.href);
     if (cleanAddress !== window.location.href) history.replaceState(history.state, '', cleanAddress);
     linkNotice.textContent = '';
-    introNote.textContent = 'A new surprise, every moment.';
+    introNote.textContent = senderNote;
     growFresh();
   }
 
@@ -432,11 +548,11 @@
     showBouquet(lastFreshTimestamp);
   }
 
-  function showBouquet(timestamp) {
-    specimen = Botany.createBouquet(timestamp);
+  function showBouquet(timestamp, version) {
+    specimen = Botany.createBouquet(timestamp, version);
     manualShare.hidden = true;
     shareUrl.value = '';
-    shareButton.disabled = !BouquetLink.create(window.location.href, timestamp);
+    shareButton.disabled = !BouquetLink.create(window.location.href, timestamp, specimen.version ?? 1);
     shareStatus.textContent = shareButton.disabled ? 'Open the garden on a website to share a link.' : '';
     buildBouquet();
     const date = new Date(specimen.timestamp);
@@ -448,8 +564,9 @@
     canvas.dataset.species = specimen.kinds.join(',');
     canvas.dataset.flowerCount = String(specimen.flowers.length);
     canvas.dataset.seed = String(specimen.timestamp);
+    canvas.dataset.version = String(specimen.version ?? 1);
     const kinds = specimen.kinds.map(key => Botany.species[key].label.toLowerCase());
-    document.getElementById('botanical-note').textContent = `${specimen.flowers.length} stems · ${kinds.join(', ')} · just for this moment.`;
+    document.getElementById('botanical-note').textContent = `${specimen.flowers.length} stems · ${new Intl.ListFormat('en').format(kinds)}`;
     canvas.setAttribute('aria-label', `A hand-tied bouquet of ${specimen.flowers.length} procedurally generated flowers: ${kinds.join(', ')}. Drag in any direction for a full 360-degree view, or use the arrow keys. Press Home or Reset view to return to the front.`);
     replay();
   }
@@ -467,7 +584,7 @@
   async function shareBouquet() {
     if (sharing) return;
     const current = specimen;
-    const url = BouquetLink.create(window.location.href, current.timestamp);
+    const url = BouquetLink.create(window.location.href, current.timestamp, current.version ?? 1);
     if (!url) return;
 
     sharing = true;
@@ -475,7 +592,7 @@
     shareStatus.textContent = '';
     manualShare.hidden = true;
     try {
-      const data = { title: 'Moment Garden', url };
+      const data = { title: BRAND, text: 'I picked these flowers for you.', url };
       try {
         if (navigator.share && (!navigator.canShare || navigator.canShare(data))) {
           await navigator.share(data);
@@ -584,14 +701,14 @@
     ctx.fillStyle = '#354f3e'; ctx.font = '48px Georgia';
     ctx.fillText(name, 800, 1500);
     ctx.fillStyle = '#7c8571'; ctx.font = '18px monospace';
-    ctx.fillText(`MOMENT GARDEN · ${new Date(timestamp).toISOString()}`, 800, 1560);
-    ctx.font = 'italic 25px Georgia'; ctx.fillText('A moment, in bloom.', 800, 1620);
+    ctx.fillText(`${BRAND.toUpperCase()} · ${new Date(timestamp).toISOString()}`, 800, 1560);
+    ctx.font = 'italic 25px Georgia'; ctx.fillText('I picked these flowers for you.', 800, 1620);
     image.toBlob(blob => {
       if (!blob) return;
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `moment-garden-${timestamp}.png`;
+      link.download = `flowers-for-you-${timestamp}.png`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }, 'image/png');
@@ -614,8 +731,8 @@
 
   const incoming = BouquetLink.read(window.location.search);
   if (incoming.status === 'valid') {
-    introNote.textContent = 'Sent to you from Moment Garden.';
-    showBouquet(incoming.timestamp);
+    introNote.textContent = 'Someone picked these flowers for you.';
+    showBouquet(incoming.timestamp, incoming.version);
   } else {
     if (incoming.status === 'invalid') linkNotice.textContent = 'This bouquet link is incomplete or invalid. We grew a fresh bouquet for you instead.';
     if (incoming.status === 'unsupported') linkNotice.textContent = 'This garden can’t open that version of the bouquet link. We grew a fresh bouquet for you instead.';

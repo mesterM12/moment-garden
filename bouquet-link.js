@@ -2,8 +2,8 @@
   'use strict';
 
   const PARAM = 'bouquet';
-  // Version 1 identifies the existing timestamp-seeded recipe and geometry.
-  const VERSION = '1';
+  const CURRENT_VERSION = 2;
+  const isVersion = value => value === 1 || value === CURRENT_VERSION;
   const MAX_TIMESTAMP = 8640000000000000; // ECMAScript Date limit in milliseconds.
   const isTimestamp = value => Number.isSafeInteger(value) && value >= 0 && value <= MAX_TIMESTAMP;
 
@@ -17,19 +17,20 @@
     if (!match || match[0] !== value) return { status: 'invalid' };
     const timestamp = Number(match[2]);
     if (!isTimestamp(timestamp)) return { status: 'invalid' };
-    if (match[1] !== VERSION) return { status: 'unsupported' };
+    const version = Number(match[1]);
+    if (!isVersion(version)) return { status: 'unsupported' };
 
-    return { status: 'valid', timestamp };
+    return { status: 'valid', timestamp, version };
   }
 
-  function create(address, timestamp) {
+  function create(address, timestamp, version = CURRENT_VERSION) {
     const url = new URL(address);
-    if (!['http:', 'https:'].includes(url.protocol) || !isTimestamp(timestamp)) return null;
+    if (!['http:', 'https:'].includes(url.protocol) || !isTimestamp(timestamp) || !isVersion(version)) return null;
     url.username = '';
     url.password = '';
     url.search = '';
     url.hash = '';
-    url.searchParams.set(PARAM, `${VERSION}.${timestamp}`);
+    url.searchParams.set(PARAM, `${version}.${timestamp}`);
     return url.href;
   }
 

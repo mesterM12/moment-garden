@@ -19,8 +19,10 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check botany.js
+          node --check botany-varieties.js
+          node --check extra-blooms.js
           node --check bouquet-link.js
           node --check flower.js
           node --check petal-meshes.js
-      - name: Test seeded generation and bouquet links
-        run: node --test botany.test.cjs bouquet-link.test.cjs
+      - name: Test generation, flower geometry, and bouquet links
+        run: node --test *.test.cjs
