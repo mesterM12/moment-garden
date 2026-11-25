@@ -1,4 +1,4 @@
-name: Test procedural garden
+name: Test and build Flowers for You
 
 on:
   push:
@@ -15,14 +15,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-      - name: Check JavaScript syntax
-        run: |
-          node --check botany.js
-          node --check botany-varieties.js
-          node --check extra-blooms.js
-          node --check bouquet-link.js
-          node --check flower.js
-          node --check petal-meshes.js
-      - name: Test generation, flower geometry, and bouquet links
-        run: node --test *.test.cjs
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
