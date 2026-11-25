@@ -39,11 +39,11 @@ The garden gathers **7–10 stems from at least three flower types**, brings the
 - **Always a surprise.** Five bouquet silhouettes, seven color families, and three ties: bow, twine, or wrap. The timestamp chooses the combination; there are no flower or color selectors.
 - **15 botanical recipes.** Roses, tulips, dahlias, sunflowers, daisies, lilies, poppies, cosmos, ranunculus, calla lilies, orchids, irises, hydrangeas, anemones, and billy buttons.
 - **Different construction, not just recoloring.** Nested rose cups, rolled dahlia florets, trumpet-shaped calla lilies, ruffled irises, and hydrangea clusters.
-- **A full blooming sequence.** Staggered growth, unfolding leaves, opening petals, and gentle swaying.
+- **A full blooming sequence.** Staggered growth, unfolding leaves, and opening petals. The bouquet rests once it has bloomed.
 - **Unrestricted 360° rotation.** Explore above, below, and behind the bouquet with a mouse, touch, or keyboard.
 - **A gift to open.** Send a link that holds your exact bouquet behind a personal cover. Opening it begins the bloom from the front; keyboard opening and reduced-motion preferences show the finished arrangement immediately.
 - **A keepsake.** Download the current bouquet view as a PNG postcard.
-- **A quieter experience.** Reduced-motion preferences show the completed bouquet without the growth animation or idle sway.
+- **A quieter experience.** Reduced-motion preferences show the completed bouquet without the growth animation. Keyboard-activated opening, replay, and generation also show the finished arrangement immediately.
 
 ### One garden, many bouquets
 
@@ -165,7 +165,7 @@ node --check flower.js
 node --check petal-meshes.js
 ```
 
-The tests cover deterministic generation, species meshes and bloom shapes, bouquet diversity, mature head clearance, and the bouquet link contract. For a browser check, share a bouquet from the HTTP-served site, open the link in a private window, and confirm that the same bouquet blooms. Try **Surprise me** and refresh to check that the old bouquet doesn’t return.
+The tests cover deterministic generation, species meshes and bloom shapes, bouquet diversity, mature head clearance, the bouquet link contract, and the opening cover’s focus and inert-state lifecycle. For a browser check, share a bouquet from the HTTP-served site, open the link in a private window, and confirm that the same bouquet blooms. Try **Grow another** and refresh to check that the old bouquet doesn’t return.
 
 ### Project map
 
