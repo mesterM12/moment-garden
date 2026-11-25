@@ -1,5 +1,5 @@
 import { Button as ActionButton } from '@ui-sdk/react/button'
-import { useEffect, useRef, type MouseEvent } from 'react'
+import { useEffect, useRef } from 'react'
 import { Button } from './ui/button'
 
 export const COVER_EXIT_MS = 280
@@ -55,7 +55,7 @@ export function GiftCover({ ready, exiting, reducedMotion, onOpen, onExit }: Gif
         ref={opener}
         disabled={!ready}
         aria-describedby="flower-cover-note"
-        onClick={(event: MouseEvent<HTMLButtonElement>) => onOpen(event.detail === 0)}
+        onClick={(event) => onOpen(event.detail === 0)}
         render={<Button className="flower-control flower-primary flower-open" />}
       >
         Open your flowers

@@ -43,7 +43,6 @@ export default function App() {
   const lastFreshSeed = useRef(initial.incoming.status === 'valid' ? 0 : initial.seed)
   const opened = useRef(false)
   const focusTarget = useRef<'preview' | 'fallback' | null>(null)
-  const bloomOnRestore = useRef(false)
   const lastStatus = useRef('')
   const dismissCover = useCallback(() => setCover('gone'), [])
 
@@ -79,14 +78,8 @@ export default function App() {
           },
           onContextChange(lost) {
             if (canceled) return
-            if (lost) {
-              bloomOnRestore.current = !opened.current
-              uncoverForFailure()
-            } else {
-              if (fallback.current?.contains(document.activeElement)) focusTarget.current = 'preview'
-              if (bloomOnRestore.current) garden?.bloom({ instant: true })
-              bloomOnRestore.current = false
-            }
+            if (lost) uncoverForFailure()
+            else if (fallback.current?.contains(document.activeElement)) focusTarget.current = 'preview'
             setContextLost(lost)
           },
         })
@@ -99,7 +92,7 @@ export default function App() {
         garden?.dispose()
         garden = undefined
         uncoverForFailure()
-        setError(previewError)
+        setError((current) => current ?? previewError)
       }
     }
 
