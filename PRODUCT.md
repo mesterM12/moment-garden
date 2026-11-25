@@ -28,7 +28,7 @@ The postcard runs in desktop and mobile browsers and requires WebGL for the 3D s
 - Replay and sharing preserve the current arrangement. The recipient opens it from the front, regardless of the sender’s viewing angle. The PNG preserves the viewing angle.
 - **Send flowers** opens the native share sheet when available, otherwise copies the link or offers it for manual copying. Feedback confirms that the link was copied or the postcard is ready; don’t imply that a gift was delivered.
 - Flower geometry is generated in code rather than loaded from model files or photographs. Bouquet state stays in the browser; the lowercase hexadecimal timestamp in the URL reproduces the same arrangement without a server lookup, including for existing links.
-- The React and TypeScript source is built with Vite and deployed as a [static site](https://mesterm12.github.io/moment-garden/). Hosting serves the built files; there is no application server or backend. The public source repository is [mesterM12/moment-garden](https://github.com/mesterM12/moment-garden).
+- The React and TypeScript source builds with Vite to `dist/` for static hosting at the existing [public site URL](https://mesterm12.github.io/moment-garden/); the migrated build must be published there before rollout. Hosting serves the built files; there is no application server or backend. The public source repository is [mesterM12/moment-garden](https://github.com/mesterM12/moment-garden).
 
 ## Brand Commitments
 
@@ -49,4 +49,4 @@ The product is named **Flowers for You**. The experience should feel warm and in
 
 ## Accessibility & Inclusion
 
-Pointer and touch drags turn the bouquet directly. A flick settles with momentum, and pointer reset takes the shortest route back to the front. On the focused bouquet, arrow keys turn in steps and `Home` resets instantly. Reduced motion skips bloom, release momentum, and reset animation without removing direct drag or keyboard rotation. Keyboard activation opens or generates the finished bouquet immediately. **Replay bloom** explicitly requests the animation with either input method and is disabled when reduced motion is on. At rest, the bouquet does not sway. Keep the gift usable without dragging or waiting for motion.
+Pointer and touch drags turn the bouquet directly. A flick settles with momentum, and pointer reset takes the shortest route back to the front. On the focused bouquet, arrow keys turn in steps and `Home` resets instantly. Reduced motion skips bloom, release momentum, and reset animation without removing direct drag or keyboard rotation. Keyboard activation opens or generates the finished bouquet immediately. **Replay bloom** explicitly requests the animation with either input method and is omitted with an explanation when reduced motion is on. At rest, the bouquet does not sway. Keep the gift usable without dragging or waiting for motion.

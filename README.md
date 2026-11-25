@@ -188,7 +188,7 @@ npm run test:e2e                 # Starts its own preview server on port 4175
 
 Run `npm ci` and `npm run build`, then publish the contents of **`dist/`**, not the repository root. The result is a static site: no Next.js or Node.js runtime server, backend, database, API keys, or runtime settings are required.
 
-Vite’s relative asset base (`./`) lets the same build run at a domain root or a subpath such as `/moment-garden/`. For GitHub Pages, select **GitHub Actions** as the Pages source and use a deployment workflow that builds the site and uploads `dist/` as the Pages artifact. The test workflow checks the build but does not publish it.
+Vite’s relative asset base (`./`) lets the same build run at a domain root or a subpath such as `/moment-garden/`. For GitHub Pages, select **GitHub Actions** as the Pages source in repository Settings → Pages before publishing the migration. The included [Pages workflow](.github/workflows/pages.yml) tests and builds the site, uploads `dist/`, and deploys that artifact on pushes to `main` or manual dispatch. The separate test workflow does not publish. Keep the existing site path so previously shared bouquet links keep working. No live deployment or Pages settings change is performed by local setup.
 
 ### Contributing
 
