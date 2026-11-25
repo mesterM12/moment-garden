@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-25T13:04:11Z",
+  "title": "Design System: Flowers for You",
+  "extensions": {
+    "colorMeta": {
+      "rose": {
+        "role": "primary",
+        "displayName": "Rose",
+        "tonalRamp": ["oklch(15% 0.033 9)", "oklch(27% 0.069 9)", "oklch(39% 0.094 9)", "oklch(51% 0.104 9)", "oklch(63% 0.104 9)", "oklch(75% 0.085 9)", "oklch(87% 0.057 9)", "oklch(95% 0.025 9)"]
+      },
+      "rose-hover": {
+        "role": "primary",
+        "displayName": "Rose Hover",
+        "tonalRamp": ["oklch(15% 0.030 8)", "oklch(27% 0.063 8)", "oklch(39% 0.085 8)", "oklch(51% 0.093 8)", "oklch(63% 0.093 8)", "oklch(75% 0.077 8)", "oklch(87% 0.051 8)", "oklch(95% 0.025 8)"]
+      },
+      "page": {
+        "role": "neutral",
+        "displayName": "Blush Page",
+        "tonalRamp": ["oklch(15% 0.005 53)", "oklch(27% 0.011 53)", "oklch(39% 0.015 53)", "oklch(51% 0.016 53)", "oklch(63% 0.016 53)", "oklch(75% 0.013 53)", "oklch(87% 0.009 53)", "oklch(95% 0.005 53)"]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Cream Paper",
+        "tonalRamp": ["oklch(15% 0.004 72)", "oklch(27% 0.008 72)", "oklch(39% 0.010 72)", "oklch(51% 0.011 72)", "oklch(63% 0.011 72)", "oklch(75% 0.009 72)", "oklch(87% 0.006 72)", "oklch(95% 0.003 72)"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Warm Ink",
+        "tonalRamp": ["oklch(15% 0.013 14)", "oklch(27% 0.027 14)", "oklch(39% 0.036 14)", "oklch(51% 0.040 14)", "oklch(63% 0.040 14)", "oklch(75% 0.033 14)", "oklch(87% 0.022 14)", "oklch(95% 0.012 14)"]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "tonalRamp": ["oklch(15% 0.011 13)", "oklch(27% 0.024 13)", "oklch(39% 0.032 13)", "oklch(51% 0.036 13)", "oklch(63% 0.036 13)", "oklch(75% 0.029 13)", "oklch(87% 0.020 13)", "oklch(95% 0.011 13)"]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Paper Line",
+        "tonalRamp": ["oklch(15% 0.007 34)", "oklch(27% 0.016 34)", "oklch(39% 0.021 34)", "oklch(51% 0.023 34)", "oklch(63% 0.023 34)", "oklch(75% 0.019 34)", "oklch(87% 0.013 34)", "oklch(95% 0.007 34)"]
+      },
+      "wash": {
+        "role": "neutral",
+        "displayName": "Blush Wash",
+        "tonalRamp": ["oklch(15% 0.006 30)", "oklch(27% 0.013 30)", "oklch(39% 0.017 30)", "oklch(51% 0.019 30)", "oklch(63% 0.019 30)", "oklch(75% 0.016 30)", "oklch(87% 0.011 30)", "oklch(95% 0.006 30)"]
+      },
+      "selection": {
+        "role": "neutral",
+        "displayName": "Rose Selection",
+        "tonalRamp": ["oklch(15% 0.012 8)", "oklch(27% 0.025 8)", "oklch(39% 0.034 8)", "oklch(51% 0.038 8)", "oklch(63% 0.038 8)", "oklch(75% 0.031 8)", "oklch(87% 0.021 8)", "oklch(95% 0.011 8)"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page title, with ‘for You’ set in rose italic." },
+      "headline": { "displayName": "Cover Note", "purpose": "A short, balanced note inside the sealed cover." },
+      "title": { "displayName": "Bouquet Name", "purpose": "The name in the postcard footer." },
+      "body": { "displayName": "Body", "purpose": "The short note beneath the page title." },
+      "label": { "displayName": "Small Label", "purpose": "Dates, drag hints, and Reset view." },
+      "action": { "displayName": "Quiet Action", "purpose": "Save postcard, Grow another, and Replay bloom." },
+      "action-primary": { "displayName": "Filled Action", "purpose": "Open your flowers and Send flowers." }
+    },
+    "shadows": [
+      { "name": "postcard-lift", "value": "0 2px 4px #573b3d0a, 0 12px 32px -12px #573b3d26", "purpose": "One soft outer lift separates the postcard from the page." }
+    ],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(.23, 1, .32, 1)", "purpose": "Easing for the cover lift and button press transitions." },
+      { "name": "cover-lift", "value": "280ms", "purpose": "The cover fades and lifts by 2% on pointer activation; keyboard activation and reduced motion dismiss it immediately." },
+      { "name": "open-press", "value": "130ms", "purpose": "The opener scales to .97 on pointer press, with no transform in reduced motion." },
+      { "name": "button-press", "value": "140ms", "purpose": "Other buttons scale to .97 on press, with no transform in reduced motion." },
+      { "name": "bloom", "value": "4600ms", "purpose": "Authored growth and petal unfurling; no waiting for keyboard activation or reduced motion, and no idle motion once settled." }
+    ],
+    "breakpoints": [
+      { "name": "compact (max-width)", "value": "600px" },
+      { "name": "short save label (max-width)", "value": "430px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Open your flowers",
+      "kind": "button",
+      "refersTo": "button-open",
+      "description": "The filled rose action on the sealed cover.",
+      "html": "<button type=\"button\" class=\"ds-open\">Open your flowers</button>",
+      "css": ".ds-open { min-height: 44px; padding: .625rem 1.125rem; border: 1px solid var(--rose, #9a4d5c); border-radius: 999px; background: var(--rose, #9a4d5c); color: var(--paper, #fff9f2); font: 600 .9375rem 'DM Sans', sans-serif; cursor: pointer; touch-action: manipulation; transition: transform 130ms var(--ease-out, cubic-bezier(.23, 1, .32, 1)); } .ds-open:focus-visible { outline: 2px solid var(--ink, #573b3d); outline-offset: 3px; } @media (hover: hover) and (pointer: fine) { .ds-open:hover { text-decoration: underline; text-underline-offset: .18em; } } @media (prefers-reduced-motion: no-preference) { .ds-open:active { transform: scale(.97); } } @media (prefers-reduced-motion: reduce) { .ds-open { transition: none; } }"
+    },
+    {
+      "name": "Send flowers",
+      "kind": "button",
+      "refersTo": "button-send",
+      "description": "The primary action after opening the postcard.",
+      "html": "<button type=\"button\" class=\"ds-send\"><svg viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.3\" aria-hidden=\"true\"><path d=\"M10 12V2.5M6.5 6l3.5-3.5L13.5 6M5 8H3.5v9h13V8H15\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>Send flowers</button>",
+      "css": ".ds-send { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; width: min(100%, 14rem); min-height: 48px; padding: .625rem 1.25rem; border: 0; border-radius: 999px; background: var(--rose, #9a4d5c); color: var(--paper, #fff9f2); font: 600 .9375rem 'DM Sans', sans-serif; cursor: pointer; touch-action: manipulation; transition: transform 140ms var(--ease-out, cubic-bezier(.23, 1, .32, 1)); } .ds-send svg { width: 1rem; height: 1rem; flex: none; } .ds-send:focus-visible { outline: 2px solid var(--rose, #9a4d5c); outline-offset: 3px; } .ds-send:disabled { opacity: .55; cursor: not-allowed; } .ds-send[aria-disabled='true'] { cursor: wait; } .ds-send:not(:disabled, [aria-disabled='true']):active { background: var(--rose-hover, #803d4b); transform: scale(.97); } @media (hover: hover) and (pointer: fine) { .ds-send:not(:disabled, [aria-disabled='true']):hover { background: var(--rose-hover, #803d4b); } } @media (prefers-reduced-motion: reduce) { .ds-send { transition: none; } .ds-send:not(:disabled, [aria-disabled='true']):active { transform: none; } }"
+    },
+    {
+      "name": "Save postcard",
+      "kind": "button",
+      "refersTo": "button-save",
+      "description": "The outlined action in the postcard footer.",
+      "html": "<button type=\"button\" class=\"ds-save\" aria-label=\"Save postcard as a PNG image\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" aria-hidden=\"true\"><path d=\"M12 3v12m-4-4 4 4 4-4M5 15v5h14v-5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg><span>Save<span class=\"ds-save-detail\"> postcard</span></span></button>",
+      "css": ".ds-save { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 44px; padding: .5rem .75rem; border: 1px solid var(--line, #e7d3ce); border-radius: 999px; background: transparent; color: var(--ink, #573b3d); font: 500 .875rem 'DM Sans', sans-serif; cursor: pointer; touch-action: manipulation; transition: transform 140ms var(--ease-out, cubic-bezier(.23, 1, .32, 1)); } .ds-save svg { width: 1rem; height: 1rem; flex: none; } .ds-save:focus-visible { outline: 2px solid var(--rose, #9a4d5c); outline-offset: 3px; } .ds-save:disabled { opacity: .55; cursor: not-allowed; } .ds-save[aria-disabled='true'] { cursor: wait; } .ds-save:not(:disabled, [aria-disabled='true']):active { background: var(--wash, #f3e2df); transform: scale(.97); } @media (hover: hover) and (pointer: fine) { .ds-save:not(:disabled, [aria-disabled='true']):hover { background: var(--wash, #f3e2df); } } @media (max-width: 430px) { .ds-save-detail { display: none; } } @media (prefers-reduced-motion: reduce) { .ds-save { transition: none; } .ds-save:not(:disabled, [aria-disabled='true']):active { transform: none; } }"
+    },
+    {
+      "name": "Grow another / Replay bloom",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Quiet, borderless actions beneath Send flowers.",
+      "html": "<div class=\"ds-secondary-row\"><button type=\"button\" class=\"ds-secondary\"><svg viewBox=\"0 0 20 20\" fill=\"none\" aria-hidden=\"true\"><path d=\"M10 17V9m0 4C4 13 3 9 3 6c5 0 7 2 7 7Zm0-3c0-5 3-7 7-7 0 4-2 7-7 7Z\" stroke=\"currentColor\" stroke-width=\"1.3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>Grow another</button><button type=\"button\" class=\"ds-secondary\"><svg viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.3\" aria-hidden=\"true\"><path d=\"M4 7a6.5 6.5 0 1 1-.3 5M4 3v4h4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>Replay bloom</button></div>",
+      "css": ".ds-secondary-row { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .125rem .625rem; } .ds-secondary { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 44px; padding: .5rem .75rem; border: 0; border-radius: 999px; background: transparent; color: var(--ink, #573b3d); font: 500 .875rem 'DM Sans', sans-serif; cursor: pointer; touch-action: manipulation; transition: transform 140ms var(--ease-out, cubic-bezier(.23, 1, .32, 1)); } .ds-secondary svg { width: 1rem; height: 1rem; flex: none; } .ds-secondary:focus-visible { outline: 2px solid var(--rose, #9a4d5c); outline-offset: 3px; } .ds-secondary:disabled { opacity: .55; cursor: not-allowed; } .ds-secondary:not(:disabled):active { background: var(--wash, #f3e2df); transform: scale(.97); } @media (hover: hover) and (pointer: fine) { .ds-secondary:not(:disabled):hover { background: var(--wash, #f3e2df); } } @media (prefers-reduced-motion: reduce) { .ds-secondary { transition: none; } .ds-secondary:not(:disabled):active { transform: none; } }"
+    },
+    {
+      "name": "Reset view",
+      "kind": "button",
+      "refersTo": "button-reset",
+      "description": "The small quiet control paired with the stage hint.",
+      "html": "<button type=\"button\" class=\"ds-reset\" title=\"Return to the front view (Home key)\"><svg viewBox=\"0 0 20 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.3\" aria-hidden=\"true\"><path d=\"M4 7a6.5 6.5 0 1 1-.3 5M4 3v4h4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>Reset view</button>",
+      "css": ".ds-reset { display: inline-flex; align-items: center; justify-content: center; gap: .375rem; min-height: 44px; padding: .375rem .625rem; border: 0; border-radius: 999px; background: transparent; color: var(--ink, #573b3d); font: 400 .8125rem 'DM Sans', sans-serif; cursor: pointer; touch-action: manipulation; transition: transform 140ms var(--ease-out, cubic-bezier(.23, 1, .32, 1)); } .ds-reset svg { width: .875rem; height: .875rem; flex: none; } .ds-reset:focus-visible { outline: 2px solid var(--rose, #9a4d5c); outline-offset: 3px; } .ds-reset:disabled { opacity: .55; cursor: not-allowed; } .ds-reset:not(:disabled):active { background: var(--wash, #f3e2df); transform: scale(.97); } @media (hover: hover) and (pointer: fine) { .ds-reset:not(:disabled):hover { background: var(--wash, #f3e2df); } } @media (prefers-reduced-motion: reduce) { .ds-reset { transition: none; } .ds-reset:not(:disabled):active { transform: none; } }"
+    },
+    {
+      "name": "Home mark",
+      "kind": "nav",
+      "refersTo": "home-mark",
+      "description": "The small flower-shaped home link above the title.",
+      "html": "<a class=\"ds-home\" href=\"./\" aria-label=\"Flowers for You home\"><svg width=\"28\" height=\"28\" viewBox=\"0 0 32 32\" aria-hidden=\"true\"><path d=\"M16 13C7-1 2 11 13 16 0 23 11 30 16 19c5 11 16 4 3-3C30 11 25-1 16 13Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linejoin=\"round\"/><circle cx=\"16\" cy=\"16\" r=\"2.5\" fill=\"currentColor\"/></svg></a>",
+      "css": ".ds-home { display: inline-grid; place-items: center; min-width: 44px; min-height: 44px; border-radius: 50%; color: var(--rose, #9a4d5c); touch-action: manipulation; } .ds-home:focus-visible { outline: 2px solid var(--rose, #9a4d5c); outline-offset: 3px; } .ds-home:active { background: var(--wash, #f3e2df); } @media (hover: hover) and (pointer: fine) { .ds-home:hover { background: var(--wash, #f3e2df); } }"
+    },
+    {
+      "name": "Bouquet link",
+      "kind": "input",
+      "refersTo": "manual-share-field",
+      "description": "The read-only URL field shown when manual sharing is offered.",
+      "html": "<div class=\"ds-manual\"><label for=\"ds-share-url\">Bouquet link</label><input class=\"ds-share-url\" id=\"ds-share-url\" type=\"url\" readonly inputmode=\"none\" value=\"https://example.com/\" /></div>",
+      "css": ".ds-manual { max-width: 28rem; color: var(--ink, #573b3d); font: 400 .875rem 'DM Sans', sans-serif; } .ds-manual label { display: block; margin-bottom: .3125rem; } .ds-share-url { box-sizing: border-box; display: block; width: 100%; min-height: 44px; padding: .5rem .75rem; border: 1px solid var(--muted, #765b5d); border-radius: 6px; background: var(--paper, #fff9f2); color: var(--ink, #573b3d); caret-color: var(--rose, #9a4d5c); font: 400 1rem 'DM Sans', sans-serif; } .ds-share-url:focus-visible { outline: 2px solid var(--rose, #9a4d5c); outline-offset: 3px; } .ds-share-url::selection { background: #eac9ce; color: var(--ink, #573b3d); }"
+    },
+    {
+      "name": "Sealed cover",
+      "kind": "custom",
+      "refersTo": "sealed-cover",
+      "description": "Static preview of the cover's envelope, note, and opener on cream paper.",
+      "html": "<div class=\"ds-cover\"><svg class=\"ds-seal\" viewBox=\"0 0 80 56\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" aria-hidden=\"true\"><rect x=\"7.5\" y=\"7.5\" width=\"65\" height=\"41\" rx=\"3\"/><path d=\"M8 10l32 23 32-23M8 46l24-19m40 19L48 27\"/><circle cx=\"40\" cy=\"32\" r=\"6.5\" fill=\"currentColor\"/></svg><p class=\"ds-cover-note\" id=\"ds-cover-note\">A little something, just for you.</p><button type=\"button\" class=\"ds-cover-open\" aria-describedby=\"ds-cover-note\">Open your flowers</button></div>",
+      "css": ".ds-cover { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 16rem; padding: 1.5rem; border-radius: 14px; text-align: center; background: var(--paper, #fff9f2); color: var(--ink, #573b3d); box-shadow: 0 2px 4px #573b3d0a, 0 12px 32px -12px #573b3d26; } .ds-cover::before { content: ''; position: absolute; inset: .5rem; border: 1px solid var(--line, #e7d3ce); border-radius: inherit; pointer-events: none; } .ds-seal { display: block; width: 5rem; color: var(--rose, #9a4d5c); } .ds-cover-note { max-width: 18ch; margin: .625rem 0 1.25rem; font: 400 clamp(1.75rem, 1.3rem + 1.7vw, 2.5rem)/1.06 var(--serif, 'Instrument Serif', Georgia, serif); letter-spacing: -.02em; text-wrap: balance; } .ds-cover-open { min-height: 44px; padding: .625rem 1.125rem; border: 1px solid var(--rose, #9a4d5c); border-radius: 999px; background: var(--rose, #9a4d5c); color: var(--paper, #fff9f2); font: 600 .9375rem 'DM Sans', sans-serif; touch-action: manipulation; cursor: pointer; transition: transform 130ms var(--ease-out, cubic-bezier(.23, 1, .32, 1)); } .ds-cover-open:focus-visible { outline: 2px solid var(--ink, #573b3d); outline-offset: 3px; } @media (hover: hover) and (pointer: fine) { .ds-cover-open:hover { text-decoration: underline; text-underline-offset: .18em; } } @media (prefers-reduced-motion: no-preference) { .ds-cover-open:active { transform: scale(.97); } } @media (prefers-reduced-motion: reduce) { .ds-cover-open { transition: none; } }"
+    },
+    {
+      "name": "Postcard footer",
+      "kind": "card",
+      "refersTo": "postcard",
+      "description": "The card's paper, lift, footer rule, and bouquet identity; the live 3D stage is not part of this sample.",
+      "html": "<section class=\"ds-postcard\" aria-label=\"Your surprise bouquet\"><div class=\"ds-bottomline\"><div class=\"ds-identity\"><h2>The Last Light</h2><p>Grown on <time datetime=\"2025-05-24\">May 24, 2025</time></p></div><button type=\"button\" class=\"ds-card-save\" aria-label=\"Save postcard as a PNG image\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" aria-hidden=\"true\"><path d=\"M12 3v12m-4-4 4 4 4-4M5 15v5h14v-5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg><span>Save<span class=\"ds-card-save-detail\"> postcard</span></span></button></div></section>",
+      "css": ".ds-postcard { padding: .625rem clamp(1rem, 4vw, 2.25rem) 0; border-radius: 14px; background: var(--paper, #fff9f2); color: var(--ink, #573b3d); box-shadow: 0 2px 4px #573b3d0a, 0 12px 32px -12px #573b3d26; font: 400 1rem 'DM Sans', sans-serif; } .ds-bottomline { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; border-top: 1px solid var(--line, #e7d3ce); padding: .9375rem 0 1.125rem; } .ds-identity { flex: 1 1 9rem; min-width: 0; } .ds-identity h2 { margin: 0; font: 400 clamp(1.75rem, 1.5rem + .8vw, 2.125rem)/1.05 var(--serif, 'Instrument Serif', Georgia, serif); letter-spacing: -.01em; overflow-wrap: anywhere; } .ds-identity p { margin: .3rem 0 0; color: var(--muted, #765b5d); font-size: .8125rem; line-height: 1.4; } .ds-card-save { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 44px; padding: .5rem .75rem; border: 1px solid var(--line, #e7d3ce); border-radius: 999px; background: transparent; color: var(--ink, #573b3d); font: 500 .875rem 'DM Sans', sans-serif; cursor: pointer; touch-action: manipulation; transition: transform 140ms var(--ease-out, cubic-bezier(.23, 1, .32, 1)); } .ds-card-save svg { width: 1rem; height: 1rem; flex: none; } .ds-card-save:focus-visible { outline: 2px solid var(--rose, #9a4d5c); outline-offset: 3px; } .ds-card-save:disabled { opacity: .55; cursor: not-allowed; } .ds-card-save[aria-disabled='true'] { cursor: wait; } .ds-card-save:not(:disabled, [aria-disabled='true']):active { background: var(--wash, #f3e2df); transform: scale(.97); } @media (hover: hover) and (pointer: fine) { .ds-card-save:not(:disabled, [aria-disabled='true']):hover { background: var(--wash, #f3e2df); } } @media (max-width: 430px) { .ds-card-save-detail { display: none; } } @media (prefers-reduced-motion: reduce) { .ds-card-save { transition: none; } .ds-card-save:not(:disabled, [aria-disabled='true']):active { transform: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "like something you'd send to your partner",
+    "overview": "The postcard feels like personal stationery rather than a botanical specimen sheet. A blush page frames a single cream card, and the envelope mark and short note make the closed card feel addressed to someone.\n\nBefore opening, leave space around the invitation. After opening, the hand-tied bouquet supplies the color and detail; the stationery and controls stay quiet.",
+    "keyCharacteristics": [
+      "Blush surroundings, cream paper, and rose accents.",
+      "Expressive serif lettering and plain sans-serif controls.",
+      "A deliberate opening and a bloom that settles to stillness."
+    ],
+    "rules": [
+      { "name": "The Rose Accent Rule", "body": "Use rose on the invitation, the primary action, and focus, not as a tint over the whole card or the bouquet.", "section": "colors" },
+      { "name": "The Paper Depth Rule", "body": "Give the postcard one outer lift; use hairlines for the inset and internal separation, not an outer border plus shadow.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do let the bouquet carry the strongest colors and most of the detail.",
+      "Do keep the opening explicit and make the finished bouquet available immediately for keyboard activation or reduced motion.",
+      "Do keep an obvious focus outline, including when focus moves from the cover to the bouquet."
+    ],
+    "donts": [
+      "Don't bring back visible specimen numbers or registration marks on the postcard.",
+      "Don't animate the bouquet at rest or make turning it a prerequisite for enjoying it."
+    ]
+  }
+}
