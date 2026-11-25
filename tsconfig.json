@@ -6,8 +6,9 @@
     "moduleResolution": "Bundler",
     "jsx": "react-jsx",
     "strict": true,
-    "allowJs": true,
-    "checkJs": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "allowJs": false,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
@@ -15,6 +16,5 @@
     "paths": { "@/*": ["./src/*"] },
     "types": ["vite/client"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.js"],
-  "exclude": ["src/**/*.test.*"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "*.mts"]
 }

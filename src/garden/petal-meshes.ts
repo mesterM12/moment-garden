@@ -1,14 +1,17 @@
 /* Dedicated botanical surfaces: rose cups, tulip shells, and rolled dahlia florets. */
 import * as THREE from 'three';
+import type { MorphPetal, Specimen } from './types';
 
-const lerp = (a, b, t) => a + (b - a) * t;
-const smooth = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
-function profile(values, t) {
+type Sample = (t: number, s: number) => number[];
+
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const smooth = (t: number) => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+function profile(values: readonly number[], t: number) {
   const stops = [0, 0.22, 0.50, 0.78, 1];
   let i = 0;
   while (i < 3 && t > stops[i + 1]) i++;
-  const slope = k => (values[k + 1] - values[k]) / (stops[k + 1] - stops[k]);
-  const tangent = k => {
+  const slope = (k: number) => (values[k + 1] - values[k]) / (stops[k + 1] - stops[k]);
+  const tangent = (k: number) => {
     if (k === 0) return slope(0);
     if (k === 4) return slope(3);
     const a = slope(k - 1), b = slope(k);
@@ -19,8 +22,8 @@ function profile(values, t) {
   return (2 * u ** 3 - 3 * u * u + 1) * values[i] + (u ** 3 - 2 * u * u + u) * width * tangent(i)
     + (-2 * u ** 3 + 3 * u * u) * values[i + 1] + (u ** 3 - u * u) * width * tangent(i + 1);
 }
-function surface(specimen, sample) {
-  const positions = [], bud = [], colors = [], uvs = [], indices = [];
+function surface(specimen: Specimen, sample: Sample) {
+  const positions: number[] = [], bud: number[] = [], colors: number[] = [], uvs: number[] = [], indices: number[] = [];
   const across = 12, along = 22;
   const base = new THREE.Color(specimen.palette.base);
   const tip = new THREE.Color(specimen.palette.tip);
@@ -58,12 +61,12 @@ function surface(specimen, sample) {
   closed.dispose();
   return geometry;
 }
-function build(specimen, head, material) {
-  const meshes = [];
-  function add(geometry, layer) {
+function build(specimen: Specimen, head: THREE.Group, material: THREE.Material): MorphPetal[] {
+  const meshes: MorphPetal[] = [];
+  function add(geometry: THREE.BufferGeometry, layer: number) {
     const mesh = new THREE.Mesh(geometry, material);
     head.add(mesh);
-    meshes.push({ mesh, layer, offset: 0, shell: true });
+    meshes.push({ mesh, layer, offset: 0 });
   }
   const R = specimen.length;
   if (specimen.key === 'rose') {
@@ -136,4 +139,3 @@ function build(specimen, head, material) {
 }
 
 export { build };
-export default { build };

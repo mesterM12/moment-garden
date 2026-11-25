@@ -1,6 +1,6 @@
 # Botanical design review
 
-> Historical geometry review from the pre-React implementation. References to `flower.js` describe the renderer at that time; the current implementation lives in `src/garden/engine.ts`, `src/garden/petal-meshes.js`, and `src/garden/extra-blooms.js`. Some `/tmp/` captures cited below were temporary and are not repository assets. Use `DESIGN.md` for the current interface system and the committed screenshots in `docs/images/` for its present appearance. The findings below are not an unresolved implementation checklist or a review of the current release.
+> Historical geometry review from the pre-React implementation. References to `flower.js` describe the renderer at that time; the current implementation lives in `src/garden/engine.ts`, `src/garden/petal-meshes.ts`, and `src/garden/extra-blooms.ts`. Some `/tmp/` captures cited below were temporary and are not repository assets. Use `DESIGN.md` for the current interface system and the committed screenshots in `docs/images/` for its present appearance. The findings below are not an unresolved implementation checklist or a review of the current release.
 
 ## Final visual follow-up
 

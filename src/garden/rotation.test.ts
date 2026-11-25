@@ -1,17 +1,17 @@
-const assert = require('node:assert/strict');
-const { test } = require('node:test');
-// Node 26 loads this module with native TypeScript stripping; no build needed.
-const { BouquetRotation } = require('./rotation.ts');
+// @vitest-environment node
+import assert from 'node:assert/strict';
+import { test } from 'vitest';
+import { BouquetRotation } from './rotation';
 
 const TURN = 2 * Math.PI;
 const FRONT_YAW = -0.10;
 const PROJECTION = 0.099; // (1 / 1000) * 0.99 / (1 - 0.99)
 
-function near(actual, expected, tolerance = 1e-10) {
+function near(actual: number, expected: number, tolerance = 1e-10) {
   assert.ok(Math.abs(actual - expected) <= tolerance, `expected ${actual} ≈ ${expected}`);
 }
 
-function settle(rotation, start, hz = 60) {
+function settle(rotation: BouquetRotation, start: number, hz = 60) {
   for (let i = 0; i <= 2 * hz; i++) {
     if (!rotation.step(start + i * 1000 / hz)) {
       assert.equal(rotation.moving, false);
@@ -21,7 +21,7 @@ function settle(rotation, start, hz = 60) {
   assert.fail('rotation was still scheduling frames after two seconds');
 }
 
-function flick(rotation) {
+function flick(rotation: BouquetRotation) {
   rotation.grab(40, 50, 0);
   rotation.move(50, 45, 20, 0.01);
   rotation.move(60, 40, 40, 0.01);
@@ -89,7 +89,7 @@ test('release caps angular speed without changing a diagonal flick’s direction
 });
 
 test('identical frame timestamps at 60 and 120 Hz give the same momentum and Reset poses', () => {
-  for (const startMotion of [flick, (rotation) => {
+  for (const startMotion of [flick, (rotation: BouquetRotation) => {
     rotation.nudge(1.7, -2.3);
     rotation.reset();
     rotation.step(40);
@@ -135,7 +135,7 @@ test('zero, same-timestamp and paused releases do not throw', () => {
 });
 
 test('a large frame pause settles safely rather than restarting or exploding', () => {
-  for (const startMotion of [flick, (rotation) => {
+  for (const startMotion of [flick, (rotation: BouquetRotation) => {
     rotation.nudge(1, -1);
     rotation.reset();
     rotation.step(40);

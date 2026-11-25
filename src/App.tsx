@@ -4,9 +4,11 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { ActionFeedback, ActionIcon } from './components/ActionFeedback'
 import { GiftCover } from './components/GiftCover'
 import { ShareFlowers } from './components/ShareFlowers'
+import { SoundToggle } from './components/SoundToggle'
 import { Button } from './components/ui/button'
 import type { BouquetInfo, GardenEngine } from './garden/types'
 import { getReducedMotion, useReducedMotion } from './hooks/useReducedMotion'
+import { useOpeningSound } from './hooks/useOpeningSound'
 import { create, read, withoutBouquet } from './lib/bouquet-link'
 
 const dates = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
@@ -30,11 +32,13 @@ export default function App() {
   const [linkStatus, setLinkStatus] = useState(initial.incoming.status)
   const [bouquet, setBouquet] = useState<BouquetInfo | null>(null)
   const [cover, setCover] = useState<'closed' | 'exiting' | 'gone'>('closed')
+  const [pointerOpened, setPointerOpened] = useState(false)
   const [status, setStatus] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [contextLost, setContextLost] = useState(false)
   const [saveResult, setSaveResult] = useState<'downloaded' | 'failed' | null>(null)
   const reducedMotion = useReducedMotion()
+  const openingSound = useOpeningSound()
 
   const canvas = useRef<HTMLCanvasElement>(null)
   const fallback = useRef<HTMLDivElement>(null)
@@ -127,7 +131,9 @@ export default function App() {
     if (!ready || opened.current || !engine.current) return
     const instant = nonPointer || reducedMotion
     opened.current = true
+    openingSound.play()
     focusTarget.current = 'preview'
+    setPointerOpened(!nonPointer)
     setCover(instant ? 'gone' : 'exiting')
     engine.current.bloom({ instant })
   }
@@ -217,8 +223,8 @@ export default function App() {
           <div className="flower-postcard-details" data-sealed={sealed ? '' : undefined} inert={sealed}>
             <p className="sr-only" role="status">{unavailable ? null : status}</p>
             <div className="flower-stage-controls" data-unavailable={unavailable ? '' : undefined}>
-              <p id="flower-turn-instructions" className="sr-only">Drag or use the arrow keys to turn the bouquet. Press Home or Reset view to return to the front.</p>
-              <span aria-hidden="true" className="flower-turn-hint"><span className="flower-pointer-hint">Drag or use arrow keys to turn</span><span className="flower-touch-hint">Drag to turn the bouquet</span></span>
+              <p id="flower-turn-instructions" className="sr-only">Drag left or right or use the arrow keys to turn the bouquet. Scroll vertically to move down the page. Press Home or Reset view to return to the front.</p>
+              <span aria-hidden="true" className="flower-turn-hint"><span className="flower-pointer-hint">Drag or use arrow keys to turn</span><span className="flower-touch-hint">Drag sideways to turn</span></span>
               <ActionButton
                 disabled={!ready}
                 onClick={(event) => engine.current?.resetView({ instant: event.detail === 0 || reducedMotion })}
@@ -246,7 +252,7 @@ export default function App() {
           {cover === 'gone' ? null : <GiftCover ready={ready} exiting={cover === 'exiting'} reducedMotion={reducedMotion} onOpen={openFlowers} onExit={dismissCover} />}
         </section>
 
-        <div className="flower-garden" data-sealed={sealed ? '' : undefined} inert={sealed}>
+        <div className="flower-garden" data-sealed={sealed ? '' : undefined} data-pointer-opened={pointerOpened ? '' : undefined} inert={sealed}>
           <ShareFlowers key={shareSeed} url={shareUrl} isCurrent={() => activeSeed.current === shareSeed && canvas.current !== null} />
           <div className="flower-secondary">
             <ActionButton
@@ -265,6 +271,9 @@ export default function App() {
           {reducedMotion && ready ? <p className="flower-motion-note">Bloom animation is off with your reduced-motion setting.</p> : null}
           {bouquet ? <p className="flower-stem-note">{bouquet.flowerCount} stems with {kinds}</p> : null}
         </div>
+        <footer className="flower-app-options" aria-label="App options">
+          <SoundToggle enabled={openingSound.enabled} onChange={openingSound.changeEnabled} />
+        </footer>
       </main>
     </div>
   )

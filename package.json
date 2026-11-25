@@ -6,16 +6,15 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "npm run test:unit && npm run test:react",
-    "test:unit": "node --test *.test.cjs src/**/*.test.cjs",
-    "test:react": "vitest run",
-    "test:e2e": "playwright test"
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:react": "vitest run --project react",
+    "test:e2e": "playwright test",
+    "pwa:icons": "node src/pwa/generate-icons.ts"
   },
   "dependencies": {
-    "@radix-ui/react-slot": "^1.5.0",
     "@ui-sdk/core": "^0.1.0-beta.17",
     "@ui-sdk/react": "^0.1.0-beta.17",
-    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.80.0",
     "react": "^19.3.1",
@@ -29,6 +28,7 @@
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.13",
+    "@types/node": "^26.6.10",
     "@types/react": "^19.3.2",
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.160.0",
@@ -37,6 +37,10 @@
     "tailwindcss": "^4.3.5",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
-    "vitest": "^5.1.2"
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.1.2",
+    "workbox-core": "^7.4.1",
+    "workbox-precaching": "^7.4.1",
+    "workbox-routing": "^7.4.1"
   }
 }

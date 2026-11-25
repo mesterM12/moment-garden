@@ -28,7 +28,12 @@
   --input: #a4787c;
   --ring: var(--rose);
   --destructive: #a12f3b;
-  --radius: .875rem;
+  --radius: 1rem;
+  --corner-card: 1.75rem;
+  --corner-inset: 1.25rem;
+  --corner-control: 1rem;
+  --corner-field: .75rem;
+  --paper-shadow: 0 2px 3px #573b3d04, 0 12px 28px -12px #573b3d12, 0 32px 64px -28px #573b3d26;
   --ui-background: var(--paper);
   --ui-foreground: var(--ink);
   --ui-primary: var(--rose);
@@ -44,6 +49,8 @@
   --ui-font-size: .9375rem;
   font-family: 'DM Sans', sans-serif;
   font-synthesis: none;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
   color: var(--ink);
   background: var(--page);
 }
@@ -66,9 +73,11 @@
 
 html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
 body { margin: 0; min-width: 280px; min-height: 100svh; }
+html, body { overscroll-behavior-y: none; }
 ::selection { background: #eac9ce; color: var(--ink); }
 button, a, input { touch-action: manipulation; }
-button { user-select: none; -webkit-user-select: none; }
+button, .flower-home { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.flower-home img { pointer-events: none; -webkit-user-drag: none; }
 button:not(:disabled, [aria-disabled="true"]):active { transform: scale(.97); }
 :is(button, a, input):focus-visible { outline: 2px solid var(--rose); outline-offset: 3px; }
 input { font-size: 1rem; caret-color: var(--rose); }

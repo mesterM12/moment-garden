@@ -1,11 +1,9 @@
 import * as THREE from 'three';
-import Botany from './botany.js';
-import ExtraBlooms from './extra-blooms.js';
-import PetalMeshes from './petal-meshes.js';
+import * as Botany from './botany';
+import * as ExtraBlooms from './extra-blooms';
+import * as PetalMeshes from './petal-meshes';
 import { BouquetRotation } from './rotation';
-import type { BouquetInfo, GardenEngine, GardenEngineOptions } from './types';
-
-export type { BouquetInfo, GardenEngine, GardenEngineOptions } from './types';
+import type { ExpandedBouquetPlan as BouquetPlan, GardenEngine, GardenEngineOptions, Specimen, StemEntry } from './types';
 
 const DURATION = 4600;
 const BRAND = 'Flowers for You';
@@ -17,12 +15,6 @@ const formatDate = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numer
 const clamp = (value: number) => Math.max(0, Math.min(1, value));
 const ease = (value: number) => { const t = clamp(value); return t * t * (3 - 2 * t); };
 
-type BouquetPlan = ReturnType<typeof Botany.createBouquet> & {
-  version?: number;
-  tie?: { style: string; color: string };
-};
-type StemEntry = BouquetPlan['flowers'][number];
-type Specimen = StemEntry['specimen'];
 type PetalPalette = { base: string; tip: string; root: string; fleck?: string };
 type Random = () => number;
 type HeadEnvelope = { center: THREE.Vector3; axis: THREE.Vector3; radius: number; halfHeight: number };
@@ -99,10 +91,10 @@ function botanicalGeometry(length: number, width: number, palette: PetalPalette,
       positions.push(x, y, z);
       uvs.push(u, t);
       const color = root.clone().lerp(base, ease(t / 0.35));
-      const pattern: string = isLeaf ? 'gradient' : specimen.pattern;
+      const pattern = isLeaf ? 'gradient' : specimen.pattern;
       const tipBlend = pattern === 'picotee'
         ? ease((Math.abs(s) - 0.65) / 0.35) * 0.85 + ease((t - 0.82) / 0.18) * 0.5
-        : pattern === 'bicolor' ? ease((t - 0.48) / 0.14) : ease((t - 0.35) / 0.65) * 0.86;
+        : ease((t - 0.35) / 0.65) * 0.86;
       color.lerp(tip, Math.min(1, tipBlend));
       if (!isLeaf && (pattern === 'speckled' || specimen.key === 'lily') && t > 0.15 && t < 0.7) {
         const spots = Math.sin(u * 93 + phase) * Math.sin(t * 127 + phase);
@@ -188,29 +180,24 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
   const bottom = new THREE.Vector3(entry.turn * 0.6, -3.2 + random() * 0.25, -entry.turn * 0.3);
   const knot = new THREE.Vector3(entry.turn * 0.2, -1.9, 0);
   const middle = new THREE.Vector3(top.x * 0.65 + specimen.bend, (top.y - 1.9) / 2, top.z * 0.65);
-  let curve;
-  if (bouquet.version === 2) {
-    // Give each stem its own position inside the binding instead of sending them
-    // through the same point. Keep the ordering from the binding to the cut ends.
-    const angle = index * Math.PI * (3 - Math.sqrt(5));
-    const radius = 0.105 * Math.sqrt((index + 0.5) / bouquet.flowers.length);
-    knot.x = radius * Math.cos(angle);
-    knot.z = radius * Math.sin(angle);
-    bottom.x = knot.x * 1.32;
-    bottom.z = knot.z * 1.32;
-    middle.x = top.x * 0.57 + specimen.bend * 0.55;
-    middle.z = top.z * 0.6 + knot.z;
-    curve = routedStem(bottom, knot, middle, top, envelopes.filter((_, other) => other !== index), earlierStems);
-    earlierStems.push(curve.getPoints(40).filter(point => point.y > -1.65));
-  } else {
-    curve = new THREE.CatmullRomCurve3([bottom, knot, middle, top]);
-  }
+  // Give each stem its own position inside the binding instead of sending them
+  // through the same point. Keep the ordering from the binding to the cut ends.
+  const angle = index * Math.PI * (3 - Math.sqrt(5));
+  const radius = 0.105 * Math.sqrt((index + 0.5) / bouquet.flowers.length);
+  knot.x = radius * Math.cos(angle);
+  knot.z = radius * Math.sin(angle);
+  bottom.x = knot.x * 1.32;
+  bottom.z = knot.z * 1.32;
+  middle.x = top.x * 0.57 + specimen.bend * 0.55;
+  middle.z = top.z * 0.6 + knot.z;
+  const curve = routedStem(bottom, knot, middle, top, envelopes.filter((_, other) => other !== index), earlierStems);
+  earlierStems.push(curve.getPoints(40).filter(point => point.y > -1.65));
   const stem = new THREE.Mesh(new THREE.TubeGeometry(curve, 40, 0.024, 7, false), green);
   group.add(stem);
 
   const leafColors = { base: `hsl(${specimen.greenHue}, 42%, 30%)`, tip: `hsl(${specimen.greenHue - 12}, 40%, 47%)`, root: '#244e2b' };
   const leafWidths = { slender: 0.12, broad: 0.47, serrated: 0.31, strap: 0.22 };
-  const leafWidth = leafWidths[recipe.leaf as keyof typeof leafWidths];
+  const leafWidth = leafWidths[recipe.leaf];
   const leafLength = recipe.leaf === 'strap' ? 1.9 : 1.15;
   const leafCount = entry.leafCount ?? (recipe.leaf === 'strap' ? 2 : 3);
   for (let i = 0; i < leafCount; i++) {
@@ -237,10 +224,10 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
   if (custom) petals.push(...ExtraBlooms.build(specimen, head, petalMaterial));
   else if (dedicated) petals.push(...PetalMeshes.build(specimen, head, petalMaterial));
   for (let layer = 0; !dedicated && layer < specimen.layers; layer++) {
-    const count = Math.max(3, specimen.count - (specimen.key === 'rose' ? Math.floor(layer / 2) : 0));
+    const count = Math.max(3, specimen.count);
     const size = 1 - layer * recipe.shrink;
     for (let i = 0; i < count; i++) {
-      const stagger = specimen.key === 'rose' ? layer * 2.3999632297 : layer * Math.PI / count;
+      const stagger = layer * Math.PI / count;
       const angle = i / count * Math.PI * 2 + specimen.rotation + stagger;
       const ring = new THREE.Group();
       ring.rotation.y = angle;
@@ -251,7 +238,7 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
       pivot.add(petal);
       ring.add(pivot);
       head.add(ring);
-      const layerCurl = specimen.key === 'rose' ? 0.22 : specimen.key === 'dahlia' ? 0.11 : 0.035;
+      const layerCurl = 0.035;
       petals.push({ pivot, layer, offset: random() * 0.04, open: recipe.open - layer * layerCurl + (random() - 0.5) * 0.05 });
     }
   }
@@ -395,11 +382,11 @@ function addBow(ribbon: THREE.Group, material: THREE.Material) {
   }
 }
 
-function pose({ blooms, ribbon, plan }: BuiltBouquet, p: number) {
+function pose({ blooms, ribbon }: BuiltBouquet, p: number) {
   blooms.forEach(({ group, head, center, petals, leaves, sepals, entry }) => {
     const local = clamp((p - entry.delay) / (1 - entry.delay));
     // Raise the packed arrangement together; only the opening is staggered.
-    const growth = ease((plan.version === 2 ? p : local) / 0.4);
+    const growth = ease(p / 0.4);
     group.scale.setScalar(Math.max(0.001, growth));
     group.position.y = -3.2 * (1 - growth);
     const unfurl = ease((local - 0.23) / 0.77);
@@ -442,17 +429,16 @@ function buildBouquet(plan: BouquetPlan, textures: Textures): BuiltBouquet {
   const materials = new Set<THREE.Material>();
   const bouquet: BuiltBouquet = { plant, ribbon, plan, materials, blooms: [] };
   try {
-    const envelopes = plan.version === 2 ? plan.flowers.map(entry => {
+    const envelopes = plan.flowers.map(entry => {
       const envelope = Botany.headEnvelope(entry);
       return { ...envelope, center: new THREE.Vector3(...envelope.center), axis: new THREE.Vector3(...envelope.axis) };
-    }) : [];
+    });
     const earlierStems: THREE.Vector3[][] = [];
     bouquet.blooms = plan.flowers.map((entry, index) => buildBloom(entry, index, plan, envelopes, earlierStems, plant, materials, textures));
     // A real binding point makes the stems read as a hand-tied bouquet.
-    const legacy = plan.version === undefined;
-    ribbon.position.set(0, -1.9, legacy ? 0.13 : 0);
-    const style = plan.tie?.style ?? 'bow';
-    const material = new THREE.MeshStandardMaterial({ color: plan.tie?.color ?? '#c79779', roughness: 0.92, side: THREE.DoubleSide });
+    ribbon.position.set(0, -1.9, 0);
+    const style = plan.tie.style;
+    const material = new THREE.MeshStandardMaterial({ color: plan.tie.color, roughness: 0.92, side: THREE.DoubleSide });
     materials.add(material);
     plant.add(ribbon);
     if (style === 'twine') {
@@ -467,7 +453,7 @@ function buildBouquet(plan: BouquetPlan, textures: Textures): BuiltBouquet {
       ribbon.add(wrap);
     }
     if (style === 'bow') addBow(ribbon, material);
-    if (!legacy) settleFoliage(bouquet);
+    settleFoliage(bouquet);
     return bouquet;
   } catch (error) {
     disposeBouquet(bouquet);
@@ -815,7 +801,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
         const plan: BouquetPlan = Botany.createBouquet(timestamp);
         const next = buildBouquet(plan, { petal: petalTexture!, leaf: leafTexture! });
         const flowerCount = plan.flowers.length;
-        const kinds = plan.kinds.map(key => Botany.species[key as keyof typeof Botany.species].label.toLowerCase());
+        const kinds = plan.kinds.map(key => Botany.species[key].label.toLowerCase());
         cancelFrame();
         endDrag(view.performance.now(), true);
         rotation.reset(true);
@@ -828,7 +814,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
         canvas.dataset.species = plan.kinds.join(',');
         canvas.dataset.flowerCount = String(flowerCount);
         canvas.dataset.seed = String(plan.timestamp);
-        canvas.dataset.version = String(plan.version ?? 1);
+        canvas.dataset.version = String(plan.version);
         if (available()) {
           draw();
           announceProgress();

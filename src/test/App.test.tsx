@@ -11,30 +11,35 @@ const mocks = vi.hoisted(() => {
     bloom: vi.fn(), resetView: vi.fn(), setReducedMotion: vi.fn(),
     exportPng: vi.fn(async () => new Blob(['postcard'], { type: 'image/png' })), dispose: vi.fn(),
   }
-  return { engine, createGarden: vi.fn(() => engine) }
+  const sound = { play: vi.fn(), stop: vi.fn(), dispose: vi.fn() }
+  return { engine, sound, createGarden: vi.fn(() => engine) }
 })
 vi.mock('../garden/engine', () => ({ createGarden: mocks.createGarden }))
+vi.mock('../lib/bloom-sound', () => ({ createBloomSound: () => mocks.sound }))
 const agent = createAgent()
 
 beforeEach(() => {
   vi.clearAllMocks()
+  localStorage.clear()
   history.replaceState(null, '', '/?bouquet=1970260fcfb')
 })
 
 it('opens the shared bouquet with keyboard, exposes named actions, and preserves the seed on replay', async () => {
   const user = userEvent.setup()
   render(<App />)
-  const open = await screen.findByRole('button', { name: 'Open your flowers', exact: true })
+  const open = await screen.findByRole('button', { name: 'Open your flowers' })
   await waitFor(() => expect((open as HTMLButtonElement).disabled).toBe(false))
   expect(mocks.engine.show).toHaveBeenCalledWith(1748091600123)
   open.focus()
   await user.keyboard('{Enter}')
   expect(mocks.engine.bloom).toHaveBeenCalledWith({ instant: true })
-  await waitFor(() => expect(screen.queryByRole('button', { name: 'Open your flowers', exact: true })).toBeNull())
+  expect(mocks.sound.play).toHaveBeenCalledTimes(1)
+  expect(document.querySelector('.flower-garden')?.hasAttribute('data-pointer-opened')).toBe(false)
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Open your flowers' })).toBeNull())
   const components = agent.snapshot().filter(entry => !entry.offPage && entry.component !== 'more')
   for (const entry of components) expect(entry.label, `${entry.component} must have an accessible name`).toBeTruthy()
   const labels = components.map(entry => entry.label)
-  for (const label of ['Send flowers', 'Grow another', 'Replay bloom', 'Reset view']) {
+  for (const label of ['Send flowers', 'Grow another', 'Replay bloom', 'Reset view', 'Opening sound']) {
     expect(labels).toContain(label)
   }
   expect(labels.some(label => label?.includes('Save'))).toBe(true)
@@ -44,14 +49,62 @@ it('opens the shared bouquet with keyboard, exposes named actions, and preserves
   })
   expect(mocks.engine.bloom).toHaveBeenCalled()
   expect(mocks.engine.show).toHaveBeenCalledTimes(1)
-  await user.click(screen.getByRole('button', { name: 'Reset view', exact: true }))
+  await user.click(screen.getByRole('button', { name: 'Reset view' }))
   expect(mocks.engine.resetView).toHaveBeenCalled()
   const sharedAction = await agent.act({ steps: [{ ref: 'Send flowers', action: 'press' }] })
   expect(sharedAction.ok).toBe(false)
-  await user.click(screen.getByRole('button', { name: 'Grow another', exact: true }))
+  await user.click(screen.getByRole('button', { name: 'Grow another' }))
   expect(mocks.engine.show).toHaveBeenCalledTimes(2)
   expect(mocks.engine.show.mock.calls[1][0]).not.toBe(1748091600123)
   expect(new URL(window.location.href).searchParams.has('bouquet')).toBe(false)
+})
+
+it('marks only pointer opening for the action reveal and keeps the group interactive', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  const open = await screen.findByRole('button', { name: 'Open your flowers' })
+  await waitFor(() => expect((open as HTMLButtonElement).disabled).toBe(false))
+  await user.click(open)
+  const actions = document.querySelector('.flower-garden')!
+  expect(actions.hasAttribute('data-pointer-opened')).toBe(true)
+  expect(actions.hasAttribute('data-sealed')).toBe(false)
+  expect(actions.hasAttribute('inert')).toBe(false)
+  expect(mocks.engine.bloom).toHaveBeenCalledWith({ instant: false })
+  await user.click(screen.getByRole('button', { name: 'Grow another' }))
+  expect(actions.hasAttribute('data-pointer-opened')).toBe(true)
+  expect(mocks.engine.show).toHaveBeenCalledTimes(2)
+})
+
+it('lets people mute before opening, remembers the choice, and never plays on replay', async () => {
+  const user = userEvent.setup()
+  const view = render(<App />)
+  const sound = screen.getByRole('button', { name: 'Opening sound' })
+  expect(sound.getAttribute('aria-pressed')).toBe('true')
+  sound.focus()
+  await user.keyboard(' ')
+  expect(sound.getAttribute('aria-pressed')).toBe('false')
+  expect(localStorage.getItem('flowers-opening-sound')).toBe('off')
+  const open = await screen.findByRole('button', { name: 'Open your flowers' })
+  await waitFor(() => expect((open as HTMLButtonElement).disabled).toBe(false))
+  open.focus()
+  await user.keyboard('{Enter}')
+  await user.click(screen.getByRole('button', { name: 'Replay bloom' }))
+  expect(mocks.sound.play).not.toHaveBeenCalled()
+  expect(mocks.sound.stop).toHaveBeenCalled()
+  view.unmount()
+  render(<App />)
+  expect(screen.getByRole('button', { name: 'Opening sound' }).getAttribute('aria-pressed')).toBe('false')
+})
+
+it('stops the opening sound when the page is hidden', async () => {
+  render(<App />)
+  Object.defineProperty(document, 'hidden', { configurable: true, value: true })
+  try {
+    act(() => document.dispatchEvent(new Event('visibilitychange')))
+    expect(mocks.sound.stop).toHaveBeenCalledTimes(1)
+  } finally {
+    Reflect.deleteProperty(document, 'hidden')
+  }
 })
 
 it('disposes the renderer when its React owner unmounts', async () => {
@@ -59,4 +112,5 @@ it('disposes the renderer when its React owner unmounts', async () => {
   await waitFor(() => expect(mocks.createGarden).toHaveBeenCalled())
   view.unmount()
   expect(mocks.engine.dispose).toHaveBeenCalled()
+  expect(mocks.sound.dispose).toHaveBeenCalledTimes(2)
 })

@@ -1,8 +1,27 @@
 /* Seeded botanical recipes. No meshes, photographs, or fixed color palettes. */
-import * as varieties from './botany-varieties.js';
+import * as varieties from './botany-varieties';
+import type { BouquetPlan, ExpandedBouquetPlan, FlowerRecipe, HeadEnvelope, OriginalSpeciesKey, PetalPalette, PetalPattern, Random, Range, SpeciesKey, Specimen, StemEntry } from './types';
+
+type Role = 'f' | 'c' | 'a' | 'e';
+type Swatch = [name: string, hue: number | null, saturation: number, lightness: number];
+interface Arrangement {
+  id: string;
+  label: string;
+  foliage: [leaves: number, scale: number];
+  slots: [role: Role, x: number, y: number, z: number][];
+}
+interface ColorStory {
+  id: string;
+  label: string;
+  names: string[];
+  tie: ExpandedBouquetPlan['tie'];
+  swatches: Swatch[];
+}
+interface Cultivar { key: SpeciesKey; pattern: PetalPattern; palette: PetalPalette }
+const isSpecies = (key: string): key is SpeciesKey => Object.hasOwn(species, key);
 
 // Version 1 depends on both the values and the insertion order of these recipes.
-const originalSpecies = {
+const originalSpecies: Record<OriginalSpeciesKey, FlowerRecipe> = {
   daisy: { label: 'Daisy', count: [19, 27], layers: [1, 2], length: 1.35, width: 0.14, shrink: 0.12, lift: 0.055, open: 0.04, curl: 0.03, cup: 0.04, shape: 0.48, ruffle: 0.008, disk: 0.35, center: 'gold', leaf: 'slender', tilt: 1.12 },
   sunflower: { label: 'Sunflower', count: [23, 31], layers: [2, 3], length: 1.18, width: 0.18, shrink: 0.10, lift: 0.045, open: 0.02, curl: -0.03, cup: 0.07, shape: 0.85, ruffle: 0.013, disk: 0.66, center: 'seeds', leaf: 'broad', tilt: 1.14 },
   poppy: { label: 'Poppy', count: [4, 6], layers: [1, 1], length: 1.45, width: 0.86, shrink: 0, lift: 0.07, open: -0.18, curl: 0.20, cup: 0.24, shape: 0.38, ruffle: 0.085, disk: 0.23, center: 'poppy', leaf: 'serrated', tilt: 1.00 },
@@ -13,14 +32,14 @@ const originalSpecies = {
   cosmos: { label: 'Cosmos', count: [8, 8], layers: [1, 1], length: 1.45, width: 0.49, shrink: 0, lift: 0.04, open: -0.03, curl: -0.06, cup: 0.09, shape: 0.30, ruffle: 0.025, disk: 0.24, center: 'gold', leaf: 'slender', tilt: 1.12 },
 };
 const species = { ...originalSpecies, ...varieties.species };
-const originalPigments = {
+const originalPigments: Record<OriginalSpeciesKey, Range[]> = {
   daisy: [[0, 12], [315, 355], [265, 295]], sunflower: [[32, 54], [15, 30]],
   poppy: [[0, 22], [330, 355], [25, 42]], tulip: [[0, 18], [320, 355], [35, 55], [275, 305]],
   rose: [[345, 365], [315, 340], [20, 40]], dahlia: [[0, 20], [315, 350], [265, 290], [25, 50]],
   lily: [[325, 355], [15, 40], [40, 55]], cosmos: [[315, 350], [275, 305]],
 };
 const pigmentRanges = { ...originalPigments, ...varieties.pigmentRanges };
-function seededRandom(seed) {
+function seededRandom(seed: number): Random {
   let state = seed >>> 0;
   return () => {
     state += 0x6D2B79F5;
@@ -29,12 +48,12 @@ function seededRandom(seed) {
     return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
   };
 }
-const wrap = value => ((value % 360) + 360) % 360;
-function hsl(h, s, l) { return `hsl(${wrap(h).toFixed(2)}, ${s.toFixed(2)}%, ${l.toFixed(2)}%)`; }
-function createSpecimen(timestamp, kind = 'random', mood = 'random') {
+const wrap = (value: number) => ((value % 360) + 360) % 360;
+function hsl(h: number, s: number, l: number) { return `hsl(${wrap(h).toFixed(2)}, ${s.toFixed(2)}%, ${l.toFixed(2)}%)`; }
+function createSpecimen(timestamp: number, kind = 'random', mood = 'random'): Specimen {
   const random = seededRandom(timestamp ^ Math.floor(timestamp / 4294967296));
-  const keys = Object.keys(originalSpecies);
-  const key = Object.hasOwn(species, kind) ? kind : keys[Math.floor(random() * keys.length)];
+  const keys = Object.keys(originalSpecies).filter(isSpecies);
+  const key = isSpecies(kind) ? kind : keys[Math.floor(random() * keys.length)];
   const recipe = species[key];
   // Species-aware pigment ranges: no cyan sunflowers or green roses.
   const range = pigmentRanges[key][Math.floor(random() * pigmentRanges[key].length)];
@@ -58,8 +77,8 @@ function createSpecimen(timestamp, kind = 'random', mood = 'random') {
   };
   return shapeSpecimen(timestamp, random, key, recipe, palette, pattern, mood);
 }
-function shapeSpecimen(timestamp, random, key, recipe, palette, pattern, mood) {
-  const integer = range => range[0] + Math.floor(random() * (range[1] - range[0] + 1));
+function shapeSpecimen(timestamp: number, random: Random, key: SpeciesKey, recipe: FlowerRecipe, palette: PetalPalette, pattern: PetalPattern, mood: string): Specimen {
+  const integer = (range: Range) => range[0] + Math.floor(random() * (range[1] - range[0] + 1));
   return {
     timestamp, random, palette, key, recipe, pattern, mood,
     name: `${palette.name} ${recipe.label}`,
@@ -71,14 +90,15 @@ function shapeSpecimen(timestamp, random, key, recipe, palette, pattern, mood) {
     greenHue: 85 + random() * 50,
   };
 }
-function createOriginalBouquet(timestamp) {
+function createOriginalBouquet(timestamp: number): BouquetPlan {
   const random = seededRandom(timestamp ^ Math.floor(timestamp / 4294967296));
-  const keys = Object.keys(originalSpecies);
+  const keys = Object.keys(originalSpecies).filter(isSpecies);
   // Three complementary roles: focal blooms, secondary blooms, airy accents.
-  const focal = ['rose', 'dahlia', 'sunflower', 'tulip'][Math.floor(random() * 4)];
+  const focal = pick<SpeciesKey>(random, ['rose', 'dahlia', 'sunflower', 'tulip']);
   const secondaryOptions = keys.filter(key => key !== focal && key !== 'sunflower');
   const secondary = secondaryOptions[Math.floor(random() * secondaryOptions.length)];
-  const accent = ['daisy', 'cosmos', 'poppy'].filter(key => key !== secondary);
+  const accents: SpeciesKey[] = ['daisy', 'cosmos', 'poppy'];
+  const accent = accents.filter(key => key !== secondary);
   const filler = accent[Math.floor(random() * accent.length)];
   const mood = random() < 0.4 ? 'pastel' : 'random';
   const count = 7 + Math.floor(random() * 3);
@@ -109,7 +129,7 @@ function createOriginalBouquet(timestamp) {
 }
 // V2's silhouettes are independent of its color stories. Slots run from the
 // signature seven to up to three extras, in x/y/depth with a botanical role.
-const arrangements = [
+const arrangements: Arrangement[] = [
   { id: 'fan', label: 'Open Fan', foliage: [3, .51], slots: [
     ['f', -1.07, 1.65, -.33], ['f', .57, 2.05, -.54], ['c', 1.69, 1.20, -.12],
     ['c', -.19, .75, .39], ['c', 1.06, .15, .55], ['a', -1.70, .73, .20], ['a', -.74, -.19, .78],
@@ -140,7 +160,7 @@ const arrangements = [
 // A swatch carries preferred hue, saturation and lightness. Null hue means
 // near-white; only naturally white cultivars are candidates for that swatch.
 // The fourth swatch is reserved for a contrasting stem in the fuller cuts.
-const colorStories = [
+const colorStories: ColorStory[] = [
   { id: 'rosewater', label: 'Rosewater', names: ['A Small Kindness', 'With Love', 'Remember This'], tie: { style: 'bow', color: '#bd7f85' }, swatches: [
     ['Blush', 345, 55, 73], ['Cream', null, 31, 91], ['Berry', 329, 70, 54], ['Shell Pink', 352, 68, 82],
   ] },
@@ -163,17 +183,17 @@ const colorStories = [
     ['Ivory', null, 30, 91], ['Plum', 298, 67, 53], ['Citron', 53, 82, 69], ['Peach', 24, 66, 73],
   ] },
 ];
-const roles = {
+const roles: Record<Role, SpeciesKey[]> = {
   f: ['rose', 'dahlia', 'sunflower', 'ranunculus', 'iris', 'hydrangea', 'tulip', 'orchid', 'calla'],
   c: ['tulip', 'lily', 'poppy', 'orchid', 'iris', 'calla', 'hydrangea', 'anemone', 'ranunculus'],
   a: ['daisy', 'cosmos', 'billyButton', 'anemone', 'poppy'],
   e: ['daisy', 'cosmos', 'billyButton', 'anemone', 'poppy'],
 };
 const whiteCultivars = ['daisy', 'tulip', 'rose', 'dahlia', 'lily', 'cosmos', 'ranunculus', 'calla', 'orchid', 'iris', 'hydrangea', 'anemone'];
-const pick = (random, values) => values[Math.floor(random() * values.length)];
-const clampTo = (value, start, end) => Math.max(start, Math.min(end, value));
+const pick = <T>(random: Random, values: readonly T[]): T => values[Math.floor(random() * values.length)];
+const clampTo = (value: number, start: number, end: number) => Math.max(start, Math.min(end, value));
 
-function closestPigment(hue, ranges) {
+function closestPigment(hue: number, ranges: readonly Range[]) {
   let best = hue, distance = Infinity;
   for (const [low, high] of ranges) {
     for (const target of [hue - 360, hue, hue + 360]) {
@@ -185,7 +205,7 @@ function closestPigment(hue, ranges) {
   return { hue: best, distance };
 }
 
-function chooseCultivar(random, role, swatch, used, arrangement) {
+function chooseCultivar(random: Random, role: Role, swatch: Swatch, used: Set<SpeciesKey>, arrangement: string): Cultivar {
   const options = roles[role].filter(key => Object.hasOwn(species, key) && !used.has(key));
   const [name, hue, saturation, lightness] = swatch;
   const candidates = options.map(key => {
@@ -216,14 +236,14 @@ function chooseCultivar(random, role, swatch, used, arrangement) {
 
 // Conservative mature-head spheroids measured from the renderer's meshes.
 // [radial radius, axial half-height, axial center offset], in local head units.
-const headProfiles = {
+const headProfiles: Record<SpeciesKey, [radius: number, halfHeight: number, offset: number]> = {
   daisy: [2.08, .39, .07], sunflower: [2.08, .49, .07], poppy: [1.87, .76, .49], tulip: [1.24, 1.36, 1],
   rose: [1.48, .76, .28], dahlia: [1.57, .99, .38], lily: [2.25, 1.08, -.09], cosmos: [2.08, .36, .07],
   ranunculus: [1.48, .73, .36], calla: [1.30, 1.56, 1.20], orchid: [1.47, .64, .28], iris: [1.68, 1.34, .07],
   hydrangea: [1.58, 1.13, .24], anemone: [1.34, .48, .12], billyButton: [.62, .81, .40],
 };
 
-function headEnvelope(entry) {
+function headEnvelope(entry: StemEntry): HeadEnvelope {
   const { position, scale, turn, tiltOffset = 0, specimen } = entry;
   const [radius, halfHeight, offset] = headProfiles[specimen.key];
   const tilt = specimen.recipe.tilt + tiltOffset, roll = -turn * .5;
@@ -233,20 +253,20 @@ function headEnvelope(entry) {
   return { center: position.map((coord, i) => coord + axis[i] * offset * scale), axis, radius: radius * scale, halfHeight: halfHeight * scale };
 }
 
-const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-function support(envelope, direction) {
+const dot = (a: readonly number[], b: readonly number[]) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+function support(envelope: HeadEnvelope, direction: readonly number[]) {
   const along = dot(envelope.axis, direction);
   const { radius, halfHeight } = envelope;
   return Math.sqrt(radius ** 2 + (halfHeight ** 2 - radius ** 2) * along ** 2);
 }
 
-function fitsFrame(envelope) {
+function fitsFrame(envelope: HeadEnvelope) {
   const { center: [x, y] } = envelope;
   return Math.abs(x) + support(envelope, [1, 0, 0]) <= 2.5
     && y + support(envelope, [0, 1, 0]) <= 3.35 && y - support(envelope, [0, 1, 0]) >= -1.63;
 }
 
-function hasRoom(a, b) {
+function hasRoom(a: HeadEnvelope, b: HeadEnvelope) {
   const delta = a.center.map((coord, i) => coord - b.center[i]);
   const length = Math.hypot(...delta);
   if (!length) return false;
@@ -266,7 +286,7 @@ function hasRoom(a, b) {
 // Try the original cut first, then the least disruptive adjustments to the
 // stem insertion. A second, slightly smaller cut repacks from scratch if a
 // dense mix cannot be fitted at full scale, rather than dropping a stem.
-const placementTrials = [];
+const placementTrials: { dx: number; dy: number; dz: number; scale: number; cost: number }[] = [];
 for (const dx of [0, .15, -.15, .31, -.31, .48, -.48]) {
   for (const dy of [0, .14, -.14, .29, -.29, .44, -.44]) {
     for (const dz of [0, .26, -.26, .52, -.52]) {
@@ -279,9 +299,9 @@ for (const dx of [0, .15, -.15, .31, -.31, .48, -.48]) {
 }
 placementTrials.sort((a, b) => a.cost - b.cost);
 
-function packHeads(flowers, mirror) {
+function packHeads(flowers: StemEntry[], mirror: number): StemEntry[] {
   for (const multiplier of [1, .88, .76, .64]) {
-    const packed = [], envelopes = [];
+    const packed: StemEntry[] = [], envelopes: HeadEnvelope[] = [];
     for (const [index, flower] of flowers.entries()) {
       const [x, y, z] = flower.position;
       for (const { dx, dy, dz, scale } of placementTrials) {
@@ -302,7 +322,7 @@ function packHeads(flowers, mirror) {
   throw new Error('The bouquet layout cannot fit its blooms.');
 }
 
-function createExpandedBouquet(timestamp) {
+function createExpandedBouquet(timestamp: number): ExpandedBouquetPlan {
   const seed = (timestamp ^ Math.floor(timestamp / 4294967296)) ^ 0x8E7A5F21;
   const random = seededRandom(seed);
   const design = pick(random, arrangements);
@@ -312,12 +332,13 @@ function createExpandedBouquet(timestamp) {
   const spread = .93 + random() * .12;
   const height = .92 + random() * .11;
   const greens = 98 + random() * 25;
-  const used = new Set();
-  const byRole = {};
-  for (const [i, role] of ['f', 'c', 'a', 'e'].entries()) {
-    byRole[role] = chooseCultivar(random, role, story.swatches[i], used, design.id);
-    used.add(byRole[role].key);
-  }
+  const used = new Set<SpeciesKey>();
+  const choose = (role: Role, index: number) => {
+    const cultivar = chooseCultivar(random, role, story.swatches[index], used, design.id);
+    used.add(cultivar.key);
+    return cultivar;
+  };
+  const byRole: Record<Role, Cultivar> = { f: choose('f', 0), c: choose('c', 1), a: choose('a', 2), e: choose('e', 3) };
   const flowers = design.slots.slice(0, count).map(([role, x, y, z], i) => {
     const { key, palette, pattern } = byRole[role];
     const stemTimestamp = timestamp + (i + 1) * 104729;
@@ -343,11 +364,13 @@ function createExpandedBouquet(timestamp) {
   };
 }
 
-function createBouquet(timestamp, version = 2) {
+function createBouquet(timestamp: number, version?: 2): ExpandedBouquetPlan;
+function createBouquet(timestamp: number, version: 1): BouquetPlan;
+function createBouquet(timestamp: number, version: number): BouquetPlan | ExpandedBouquetPlan;
+function createBouquet(timestamp: number, version = 2): BouquetPlan | ExpandedBouquetPlan {
   if (version === 1) return createOriginalBouquet(timestamp);
   if (version === 2) return createExpandedBouquet(timestamp);
   throw new RangeError('Unsupported bouquet version.');
 }
 
-export { species, seededRandom, createSpecimen, createBouquet, headEnvelope };
-export default { species, seededRandom, createSpecimen, createBouquet, headEnvelope };
+export { species, createSpecimen, createBouquet, headEnvelope };

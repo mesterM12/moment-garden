@@ -45,6 +45,7 @@ The garden gathers **7–10 stems from at least three flower types**, brings the
 - **A gift to open.** Send a link that holds your exact bouquet behind a sealed cover. Tapping or clicking the opener starts the bloom from the front.
 - **A keepsake.** Download the finished bouquet at its current angle as a PNG postcard.
 - **A quieter experience.** Opening or growing a bouquet by keyboard shows the finished arrangement immediately. Reduced motion also skips the bloom and rotation momentum without disabling drag or keyboard rotation. **Replay bloom** is available only when motion is allowed.
+- **A garden to keep nearby.** Install the app from a supported browser, or use its Add to Home Screen option. After the first complete online load, the app shell and bouquet engine work offline—even for a shared bouquet URL you haven’t opened before.
 
 ### One garden, many bouquets
 
@@ -92,6 +93,16 @@ Open the URL Vite prints, usually **http://127.0.0.1:5173**. Stop the server wit
 
 The build bundles Three.js from npm; rendering does not depend on a JavaScript CDN. Google Fonts are optional; system fonts are used if they are unavailable.
 
+### Install and use offline
+
+On the production HTTPS site (or a localhost production preview), use your browser’s **Install** or **Add to Home Screen** menu option. On iPhone or iPad in Safari, choose **Share → Add to Home Screen**. Installation availability and presentation are controlled by the browser. The postcard adds no installation button or custom prompt.
+
+Let the first online load finish before going offline. The production service worker precaches the complete local application, including the lazy garden engine, Three.js, and app icons. It does not depend on a previously visited bouquet: query tokens still generate their exact arrangements offline. Google Fonts remain optional and fall back to system fonts. Native sharing and sending a link to another person still need the relevant platform/network capabilities. Browser storage can be cleared or evicted; installation is not a permanent backup.
+
+Opening the home-screen app grows a fresh surprise. To keep a particular bouquet, save its shared URL or PNG; the installed app’s identity and launch URL never include a bouquet seed. Updates wait until all existing app windows/tabs are closed, so a release does not reload the gift someone is viewing.
+
+The service worker is deliberately disabled in `npm run dev`. Test offline behavior using `npm run build` followed by `npm run preview`. A first-ever offline visit, an insecure HTTP deployment, and opening files directly from disk are not supported offline entry paths. Physical iOS/Android installation still needs real-device verification.
+
 ### Controls
 
 | Action | Control |
@@ -129,7 +140,7 @@ flowchart TD
 
 ### A shared seed, independent details
 
-[`src/garden/botany.js`](src/garden/botany.js) turns a millisecond timestamp into a bouquet plan. Each stem gets a derived seed for its geometry, while repeated species share cultivar colors. Layout is chosen before tessellation. Flower-head envelopes keep the mature blooms apart in 3D. Stem paths make room around neighboring heads, and crowded leaves are shortened, redirected, or omitted.
+[`src/garden/botany.ts`](src/garden/botany.ts) turns a millisecond timestamp into a bouquet plan. Each stem gets a derived seed for its geometry, while repeated species share cultivar colors. Layout is chosen before tessellation. Flower-head envelopes keep the mature blooms apart in 3D. Stem paths make room around neighboring heads, and crowded leaves are shortened, redirected, or omitted.
 
 Replay, rotation, and PNG export keep the existing bouquet. **Grow another** starts from a new timestamp and clears any bouquet seed from the address, so refreshing afterward is a fresh visit. The link carries the arrangement, not the sender’s camera angle. Browser/GPU rendering can vary. Messaging apps show a general preview image; the link itself opens the exact bouquet.
 
@@ -163,12 +174,14 @@ These are stylized procedural interpretations, not botanical simulations or phot
 
 The browser app uses React 19.3 and TypeScript, built with Vite 8 and Tailwind CSS 4. The ui-sdk React 0.1 beta handles interaction behavior, including pending states for async actions; local shadcn buttons provide presentation, with Lucide icons. Three.js 0.160.1 renders the procedural geometry in WebGL.
 
+Application code, unit tests, React tests, browser tests, and build/test configuration are TypeScript and checked in strict mode by the build. `npm run test:unit` runs the Node-environment botanical/link suites; `npm run test:react` runs the jsdom component suite. The former root JavaScript implementations and test-only vendored Three.js have been removed; rendering and geometry tests both use the pinned npm Three.js dependency.
+
 React owns the renderer lifecycle, including disposal of the renderer, textures, listeners, and observers on unmount and during development Strict Mode remounts. Per-frame geometry and rotation stay outside React state. Dragging updates rotation 1:1 at the configured sensitivity. Release projects the drag velocity into a spring target (0.4 s response, 0.8 damping ratio); pointer reset springs to the nearest equivalent front angle (0.4 s response, 1.0 damping ratio). Keyboard and reduced-motion controls do not add momentum.
 
 After `npm ci`:
 
 ```sh
-npm test                         # Node and React tests
+npm test                         # Vitest unit and React tests
 npm run build                    # Type-check and build dist/
 npm run preview                  # Serve dist/ locally for a smoke check
 ```
@@ -189,8 +202,11 @@ npm run test:e2e                 # Starts its own preview server on port 4175
 - [`src/garden/engine.ts`](src/garden/engine.ts) and [`src/garden/rotation.ts`](src/garden/rotation.ts): disposable Three.js rendering and frame-independent gesture physics.
 - [`src/lib/bouquet-link.ts`](src/lib/bouquet-link.ts): the deterministic share-link contract.
 - [`src/components/ui/`](src/components/ui/) and [`src/styles/`](src/styles/): local UI primitives and stationery styling.
-- Root-level generators and their `.test.cjs` files: deterministic compatibility fixtures for bouquet plans, geometry, and links.
-- [`tests/`](tests/): browser tests against the production build.
+- [`src/garden/`](src/garden/): strictly typed botanical recipes, mesh builders, and deterministic unit tests. [`golden-fixtures.json`](src/garden/golden-fixtures.json) freezes pre-TypeScript v1/v2 plans, per-stem geometry streams, head envelopes, and custom mesh buffers; it is deliberately not regenerated by the test suite.
+- [`src/lib/bouquet-link.compat.test.ts`](src/lib/bouquet-link.compat.test.ts): the original shared-URL compatibility and seeded round-trip checks against the single TypeScript implementation.
+- [`src/pwa/`](src/pwa/): production registration, the Workbox service worker, and deterministic icon generation. `npm run pwa:icons` regenerates the committed PNGs from `public/flowers.svg` using ImageMagick; it is not required for a normal build.
+- [`public/icons/`](public/icons/): cream-and-rose flower-brand PNGs, including separate maskable and Apple home-screen assets. Manifest identity, scope, and launch path are relative and seed-independent.
+- [`tests/`](tests/): browser tests against the production build, including manifest/icons, offline unseen-seed links, subpath hosting, and waiting updates.
 - [`DESIGN.md`](DESIGN.md) and [`PRODUCT.md`](PRODUCT.md): the current visual system and product constraints.
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md): publishing, verification, troubleshooting, and rollback.
 - [`docs/images/`](docs/images/) and [`DESIGN-REVIEW.md`](DESIGN-REVIEW.md): current screenshots, earlier flower studies, and historical botanical geometry notes.

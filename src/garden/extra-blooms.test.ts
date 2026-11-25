@@ -1,32 +1,30 @@
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-const { test } = require('node:test');
-const vm = require('node:vm');
-const THREE = require('./vendor/three.min.js');
-const varieties = require('./botany-varieties.js');
+// @vitest-environment node
+import assert from 'node:assert/strict';
+import { afterAll, test } from 'vitest';
+import * as THREE from 'three';
+import * as varieties from './botany-varieties';
+import * as ExtraBlooms from './extra-blooms';
+import { createSpecimen } from './botany';
+import type { ExtraSpeciesKey, PetalPattern, Specimen } from './types';
 
-const window = { THREE };
-for (const script of ['botany-varieties.js', 'extra-blooms.js']) {
-  vm.runInNewContext(fs.readFileSync(path.join(__dirname, script), 'utf8'), { window }, { filename: script });
-}
-const { ExtraBlooms } = window;
-const keys = Object.keys(varieties.species);
+const isExtraSpecies = (key: string): key is ExtraSpeciesKey => Object.hasOwn(varieties.species, key);
+const keys = Object.keys(varieties.species).filter(isExtraSpecies);
 const material = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide });
+afterAll(() => material.dispose());
 
-function specimen(key, phase, end) {
+function specimen(key: ExtraSpeciesKey, phase: number, end: 0 | 1): Specimen {
   const recipe = varieties.species[key];
   const size = end ? 1.06 : 0.94;
   return {
+    ...createSpecimen(0, key),
     key, recipe, rotation: phase, length: recipe.length * size, width: recipe.width * size,
     count: recipe.count[end], layers: recipe.layers[end],
-    palette: { base: '#ad5b8e', tip: '#df9dc5', root: '#773f60', fleck: '#5a2b54' },
+    palette: { name: 'Test cultivar', base: '#ad5b8e', tip: '#df9dc5', root: '#773f60', fleck: '#5a2b54' },
     random() { assert.fail('Building a head should not advance the specimen PRNG'); },
   };
 }
 
-test('additional recipes work in the browser and CommonJS; all have custom meshes', () => {
-  assert.deepEqual(JSON.parse(JSON.stringify(window.BotanyVarieties)), varieties);
+test('all additional recipes have custom meshes and valid pigment ranges', () => {
   assert.deepEqual(Object.keys(varieties.pigmentRanges), keys);
   assert.equal(keys.length, 7);
   for (const key of keys) {
@@ -37,6 +35,7 @@ test('additional recipes work in the browser and CommonJS; all have custom meshe
   const head = new THREE.Group();
   for (const key of ['rose', 'unknown', 'constructor', '__proto__']) {
     assert.equal(ExtraBlooms.has(key), false, key);
+    // @ts-expect-error Unknown/prototype keys are intentional runtime-boundary probes.
     assert.equal(ExtraBlooms.build({ key }, head, material).length, 0);
   }
   assert.equal(head.children.length, 0);
@@ -51,10 +50,9 @@ for (const key of keys) {
       assert.equal(entries.length, head.children.length);
       let vertices = 0;
       let maxRadius = 0;
-      for (const { mesh, layer, offset, shell } of entries) {
+      for (const { mesh, layer, offset } of entries) {
         assert.equal(mesh.parent, head);
         assert.equal(mesh.material, material);
-        assert.equal(shell, true);
         assert.ok(Number.isInteger(layer) && layer >= 0 && layer <= 6);
         assert.ok(offset >= 0 && offset <= 0.04);
         assert.deepEqual(mesh.morphTargetInfluences, [0]);
@@ -66,6 +64,7 @@ for (const key of keys) {
           assert.equal(attribute.count, position.count);
           assert.ok(attribute.array.every(Number.isFinite));
         }
+        assert.ok(mesh.geometry.index);
         assert.ok(mesh.geometry.index.array.every(index => index < position.count));
         for (let i = 0; i < position.count; i++) {
           const open = Math.hypot(position.getX(i), position.getZ(i));
@@ -82,9 +81,10 @@ for (const key of keys) {
 }
 
 test('picotee uses the palette to tint rims without changing petal positions', () => {
-  for (const key of ['ranunculus', 'calla', 'orchid', 'iris']) {
+  const picoteeKinds: ExtraSpeciesKey[] = ['ranunculus', 'calla', 'orchid', 'iris'];
+  for (const key of picoteeKinds) {
     const sample = specimen(key, 0.38, 1);
-    const render = pattern => ExtraBlooms.build({ ...sample, pattern }, new THREE.Group(), material)[0].mesh.geometry;
+    const render = (pattern: PetalPattern) => ExtraBlooms.build({ ...sample, pattern }, new THREE.Group(), material)[0].mesh.geometry;
     const plain = render('gradient'), rimmed = render('picotee');
     assert.deepEqual(plain.attributes.position.array, rimmed.attributes.position.array, key);
     assert.notDeepEqual(plain.attributes.color.array, rimmed.attributes.color.array, key);

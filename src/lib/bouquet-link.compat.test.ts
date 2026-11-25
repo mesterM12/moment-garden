@@ -1,7 +1,8 @@
-const { test } = require('node:test');
-const assert = require('node:assert/strict');
-const BouquetLink = require('./bouquet-link.js');
-const { createBouquet } = require('./botany.js');
+// @vitest-environment node
+import { test } from 'vitest';
+import assert from 'node:assert/strict';
+import * as BouquetLink from './bouquet-link';
+import { createBouquet } from '../garden/botany';
 
 const site = 'https://example.com/moment-garden/';
 const timestamp = 1748091600123;
@@ -14,6 +15,8 @@ test('a share URL round-trips the bouquet plan and per-stem geometry streams', (
   assert.deepEqual(incoming, { status: 'valid', timestamp });
 
   const sender = createBouquet(timestamp);
+  assert.equal(incoming.status, 'valid');
+  if (incoming.status !== 'valid') assert.fail('Expected a valid bouquet link');
   const recipient = createBouquet(incoming.timestamp);
   assert.equal(JSON.stringify(sender), JSON.stringify(recipient));
   sender.flowers.forEach((entry, i) => {
@@ -49,10 +52,13 @@ test('the URL contract distinguishes a fresh visit from an invalid link', () => 
 test('seeds must be nonnegative whole timestamps within the Date range', () => {
   const max = 8640000000000000;
   for (const value of [0, max]) {
-    assert.deepEqual(BouquetLink.read(new URL(BouquetLink.create(site, value)).search), { status: 'valid', timestamp: value });
+    const address = BouquetLink.create(site, value);
+    assert.ok(address);
+    assert.deepEqual(BouquetLink.read(new URL(address).search), { status: 'valid', timestamp: value });
     assert.doesNotThrow(() => new Date(value).toISOString());
   }
   for (const value of [-1, max + 1, NaN, Infinity, 1.5, '99', undefined]) {
+    // @ts-expect-error Invalid types intentionally test the public runtime boundary.
     assert.equal(BouquetLink.create(site, value), null);
   }
 });

@@ -1,20 +1,29 @@
 /* Procedural cut-flower heads. Batches share the renderer's petal material and bloom pose. */
 import * as THREE from 'three';
+import type { ExtraSpeciesKey, MorphPetal, Specimen } from './types';
+
+type Point = number[];
+type Sample = (t: number, s: number) => Point;
+type Paint = (t: number, s: number) => THREE.Color;
+type Fold = (point: Point, t: number) => Point;
+type Batch = ReturnType<typeof createBatch>;
+type Batches = (layer: number, offset?: number) => Batch;
+type Palette = ReturnType<typeof palette>;
 
 const TAU = 2 * Math.PI;
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
-const lerp = (a, b, t) => a + (b - a) * t;
-const bell = n => Math.exp(-(n * n));
-const smooth = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
-const scale = (point, factor) => point.map(n => n * factor);
-const sum = (a, b) => a.map((n, i) => n + b[i]);
-const polar = (angle, radius, height, side = 0) => [
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const bell = (n: number) => Math.exp(-(n * n));
+const smooth = (t: number) => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+const scale = (point: Point, factor: number) => point.map(n => n * factor);
+const sum = (a: Point, b: Point) => a.map((n, i) => n + b[i]);
+const polar = (angle: number, radius: number, height: number, side = 0): Point => [
   Math.sin(angle) * radius + Math.cos(angle) * side,
   height,
   Math.cos(angle) * radius - Math.sin(angle) * side,
 ];
 // Smooth outline through five evenly spaced samples, with no overshoot at extrema.
-function profile(values, t) {
+function profile(values: readonly number[], t: number) {
   const i = Math.min(3, Math.floor(t * 4));
   const u = t * 4 - i;
   const a = values[i], b = values[i + 1], d = b - a;
@@ -25,12 +34,12 @@ function profile(values, t) {
   return lerp(a, b, smooth(u)) + u * (1 - u) * (m0 * (1 - u) - m1 * u);
 }
 // Radial cupping is one morph across all panels in a layer, not a mesh per petal.
-const bud = (point, t) => [point[0] * 0.28, point[1] * 0.63 + t * 0.53, point[2] * 0.28];
-const compact = point => [point[0] * 0.38, point[1] * 0.72 + 0.03, point[2] * 0.38];
+const bud: Fold = (point, t) => [point[0] * 0.28, point[1] * 0.63 + t * 0.53, point[2] * 0.28];
+const compact = (point: Point): Point => [point[0] * 0.38, point[1] * 0.72 + 0.03, point[2] * 0.38];
 
-function createBatch(head, material, layer, offset) {
-  const positions = [], closed = [], colors = [], uvs = [], indices = [];
-  function surface(along, across, sample, paint, fold = bud) {
+function createBatch(head: THREE.Group, material: THREE.Material, layer: number, offset: number) {
+  const positions: number[] = [], closed: number[] = [], colors: number[] = [], uvs: number[] = [], indices: number[] = [];
+  function surface(along: number, across: number, sample: Sample, paint: Paint, fold: Fold = bud) {
     const first = positions.length / 3;
     for (let j = 0; j <= along; j++) {
       const t = j / along;
@@ -49,7 +58,7 @@ function createBatch(head, material, layer, offset) {
       }
     }
   }
-  function ellipsoid(center, dimensions, paint, fold = compact, along = 8, across = 16) {
+  function ellipsoid(center: Point, dimensions: Point, paint: Paint, fold: Fold = compact, along = 8, across = 16) {
     surface(along, across, (t, s) => {
       const theta = t * Math.PI, phi = s * Math.PI;
       return sum(center, [
@@ -59,7 +68,7 @@ function createBatch(head, material, layer, offset) {
       ]);
     }, paint, fold);
   }
-  function twig(from, to, width, paint) {
+  function twig(from: Point, to: Point, width: number, paint: Paint) {
     const axis = new THREE.Vector3(...to).sub(new THREE.Vector3(...from)).normalize();
     const u = new THREE.Vector3().crossVectors(axis, new THREE.Vector3(1, 0, 0)).normalize().toArray();
     const v = new THREE.Vector3().crossVectors(axis, new THREE.Vector3(...u)).toArray();
@@ -88,16 +97,16 @@ function createBatch(head, material, layer, offset) {
     geometry.setAttribute('normal', openNormal);
     const panel = new THREE.Mesh(geometry, material);
     head.add(panel);
-    return { mesh: panel, layer, offset, shell: true };
+    return { mesh: panel, layer, offset };
   }
   return { surface, ellipsoid, twig, mesh };
 }
-function palette(specimen) {
-  const color = value => new THREE.Color(value);
+function palette(specimen: Specimen) {
+  const color = (value: string) => new THREE.Color(value);
   const base = color(specimen.palette.base), tip = color(specimen.palette.tip);
   const shade = color(specimen.palette.root), fleck = color(specimen.palette.fleck);
   const tint = new THREE.Color();
-  const petal = (t, s) => {
+  const petal = (t: number, s: number) => {
     const rim = specimen.pattern === 'picotee' ? 0.56 * smooth((t - 0.82) / 0.18) * (0.64 + 0.36 * s * s) : 0;
     return tint.copy(shade).lerp(base, smooth(t / 0.31))
       .lerp(tip, smooth((t - 0.33) / 0.67) * 0.66).lerp(tip, rim)
@@ -107,7 +116,7 @@ function palette(specimen) {
 }
 
 // Layer upon layer of fine, overlapping, almost circular petal edges.
-function ranunculus(specimen, batch, { petal, tip, base, shade, tint }) {
+function ranunculus(specimen: Specimen, batch: Batches, { petal, tip, base, shade, tint }: Palette) {
   const R = specimen.length;
   const rings = specimen.layers + 1;
   for (let layer = 0; layer < rings; layer++) {
@@ -143,12 +152,12 @@ function ranunculus(specimen, batch, { petal, tip, base, shade, tint }) {
 }
 
 // One asymmetric, wrapping spathe; the golden spadix is exposed by its low front rim.
-function calla(specimen, batch, { color, petal, tint, tip }) {
+function calla(specimen: Specimen, batch: Batches, { color, petal, tint, tip }: Palette) {
   const R = specimen.length;
   const yaw = 0.7 * (specimen.rotation / TAU - 0.5);
   const green = color('#91a356'), cream = color('#fff4c8');
   // Fold the entire flower with one transform so the spadix stays inside the wrap.
-  const fold = point => [point[0] * 0.34, point[1] * 0.99, point[2] * 0.34];
+  const fold: Fold = point => [point[0] * 0.34, point[1] * 0.99, point[2] * 0.34];
   const spathe = batch(0);
   spathe.surface(28, 64, (t, s) => {
     const u = (s + 1) * 0.5;
@@ -177,7 +186,7 @@ function calla(specimen, batch, { color, petal, tint, tip }) {
 }
 
 // A moth orchid's two broad wings frame three sepals and a projecting, forked lip.
-function orchid(specimen, batch, { color, petal, base, shade, tip, fleck, tint }) {
+function orchid(specimen: Specimen, batch: Batches, { color, petal, base, shade, tip, fleck, tint }: Palette) {
   const R = specimen.length;
   const twist = (specimen.rotation / TAU - 0.5) * 0.38;
   const sepals = batch(0), wings = batch(1), lip = batch(2, 0.022);
@@ -219,7 +228,7 @@ function orchid(specimen, batch, { color, petal, base, shade, tip, fleck, tint }
 }
 
 // Three ruffled, drooping falls alternate with three tall upright standards.
-function iris(specimen, batch, { color, petal, tint, fleck, tip }) {
+function iris(specimen: Specimen, batch: Batches, { color, petal, tint, fleck, tip }: Palette) {
   const R = specimen.length;
   const twist = (specimen.rotation / TAU - 0.5) * 0.64;
   const falls = batch(0), standards = batch(1);
@@ -227,7 +236,7 @@ function iris(specimen, batch, { color, petal, tint, fleck, tip }) {
   falls.ellipsoid([0, 0.082, 0], [0.102, 0.14, 0.10], t => tint.copy(green).lerp(tip, 0.64 * (1 - t)));
   for (let i = 0; i < 3; i++) {
     const angle = twist + i * TAU / 3;
-    const fall = (t, s) => {
+    const fall: Sample = (t, s) => {
       const width = specimen.width * profile([0.08, 0.30, 0.79, 1, 0.56], t);
       const wave = 0.041 * Math.sin(t * 29 + s * 3.4 + i * 2) * t ** 0.8 * s ** 4;
       const y = 0.082 + 0.24 * Math.sin(t * Math.PI) - 0.36 * t ** 2 + 0.14 * s * s * Math.sin(Math.PI * t) + wave;
@@ -255,7 +264,7 @@ function iris(specimen, batch, { color, petal, tint, fleck, tip }) {
 }
 
 // A mophead cluster: four rounded showy sepals per floret on a branching dome.
-function hydrangea(specimen, batch, { color, petal, tint, tip, base, shade }) {
+function hydrangea(specimen: Specimen, batch: Batches, { color, petal, tint, tip, base, shade }: Palette) {
   const R = specimen.length;
   const ivory = color('#eee9ca'), spring = color('#a2b36b'), stalk = color('#56703d');
   const branches = batch(0);
@@ -272,7 +281,7 @@ function hydrangea(specimen, batch, { color, petal, tint, tip, base, shade }) {
       const fork = polar(angle, r * 0.27, y * 0.58);
       branches.twig([0, 0, 0], fork, 0.019, () => stalk);
       branches.twig(fork, center, 0.014, () => stalk);
-      const fold = (point, t) => {
+      const fold: Fold = (point, t) => {
         const node = compact(center);
         return sum(node, [(point[0] - center[0]) * 0.24, (point[1] - center[1]) * 0.38 + t * 0.10, (point[2] - center[2]) * 0.24]);
       };
@@ -293,7 +302,7 @@ function hydrangea(specimen, batch, { color, petal, tint, tip, base, shade }) {
 }
 
 // Broad satin petals around a dark, button-shaped eye and a visible ring of stamens.
-function anemone(specimen, batch, { color, petal, tint, tip, base, shade }) {
+function anemone(specimen: Specimen, batch: Batches, { color, petal, tint, tip, base, shade }: Palette) {
   const R = specimen.length;
   const petals = batch(0), eye = batch(2, 0.032);
   const ink = color('#18172b'), blue = color('#484161'), collar = color('#a9b9a4');
@@ -326,7 +335,7 @@ function anemone(specimen, batch, { color, petal, tint, tip, base, shade }) {
 }
 
 // Craspedia: a small gold globe of fused five-point florets, not a daisy in miniature.
-function billyButton(specimen, batch, { color, tint, base, tip }) {
+function billyButton(specimen: Specimen, batch: Batches, { color, tint, base, tip }: Palette) {
   const radius = specimen.length * 0.82;
   const middle = radius * 1.16;
   const count = specimen.count;
@@ -357,11 +366,11 @@ function billyButton(specimen, batch, { color, tint, base, tip }) {
 }
 
 const forms = { ranunculus, calla, orchid, iris, hydrangea, anemone, billyButton };
-const has = key => Object.hasOwn(forms, key);
-function build(specimen, head, material) {
+const has = (key: string): key is ExtraSpeciesKey => Object.hasOwn(forms, key);
+function build(specimen: Specimen, head: THREE.Group, material: THREE.Material): MorphPetal[] {
   if (!has(specimen.key)) return [];
-  const batches = [];
-  const batch = (layer, offset = 0) => {
+  const batches: Batch[] = [];
+  const batch: Batches = (layer, offset = 0) => {
     const builder = createBatch(head, material, layer, offset);
     batches.push(builder);
     return builder;
@@ -371,4 +380,3 @@ function build(specimen, head, material) {
 }
 
 export { has, build };
-export default { has, build };

@@ -5,9 +5,25 @@ export default defineConfig({
   plugins: [react()],
   resolve: { alias: { '@': new URL('./src', import.meta.url).pathname } },
   test: {
-    environment: 'jsdom',
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
-    setupFiles: ['./src/test/setup.ts'],
-    css: false,
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          environment: 'node',
+          include: ['src/garden/**/*.test.ts', 'src/lib/**/*.test.ts'],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'react',
+          environment: 'jsdom',
+          include: ['src/test/**/*.test.tsx'],
+          setupFiles: ['./src/test/setup.ts'],
+          css: false,
+        },
+      },
+    ],
   },
 })
