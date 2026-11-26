@@ -121,6 +121,18 @@ export function foldShell(g: THREE.BufferGeometry, specimen: Specimen, layer: nu
     if (anchor) continue;
     hosts.set(voice, span);
     const variation = Math.sin(phase + voice * 2.39996);
+    let eye = 0, eyeX = 0, eyeZ = 0;
+    if (roll && layer >= 1) {
+      // Identify the tight eye and its adjoining turn by the mature tip.
+      // The longer outer spoons keep their original fold.
+      let stride = 1;
+      while (first + stride < end && uv.getY(first + stride) === 0) stride++;
+      const tip = end - stride + Math.floor(stride / 2);
+      const r = Math.hypot(open.getX(tip), open.getZ(tip)) || 1;
+      eye = 1 - ease((r / R - .19) / .32);
+      eyeX = open.getX(tip) / r;
+      eyeZ = open.getZ(tip) / r;
+    }
     for (let i = first; i < end; i++) {
       const t = uv.getY(i), s = uv.getX(i) * 2 - 1;
       const x = open.getX(i), y = open.getY(i), z = open.getZ(i);
@@ -147,7 +159,12 @@ export function foldShell(g: THREE.BufferGeometry, specimen: Specimen, layer: nu
       // Taper the authored bud back to the same insertion as the open blade.
       // This is a bend above its socket, not radial expansion from the axis.
       const sx = x + (shut.getX(i) - x) * free, sy = y + (shut.getY(i) - y) * free, sz = z + (shut.getZ(i) - z) * free;
-      shut.setXYZ(i, sx, sy, sz);
+      const hook = eye ? eye * R * ease((t - .16) / .62) : 0;
+      if (hook) {
+        // The closed eye tucks across the axis, but its insertion stays fixed.
+        const wrap = .117 * s * hook * (1 - .46 * lip);
+        shut.setXYZ(i, sx - .155 * eyeX * hook + eyeZ * wrap, sy - .038 * hook, sz - .155 * eyeZ * hook - eyeX * wrap);
+      } else shut.setXYZ(i, sx, sy, sz);
       if (cup) {
         // The tulip's shoulder bows OUT while its lip is still folded back
         // over the centre. One corner peels off the next tepal before its
@@ -189,6 +206,12 @@ export function foldShell(g: THREE.BufferGeometry, specimen: Specimen, layer: nu
         // margins *toward each other* above the midrib before they peel out.
         const r = Math.hypot(x, z) || 1, curl = s * inner * (.47 * belly + .75 * lip) * R * .062;
         mx -= z / r * curl; mz += x / r * curl; my += Math.abs(curl) * .96;
+        // The margins of the eye's hooked rolls overlap while the shoulder
+        // opens, then peel back with the existing blend to the mature mesh.
+        const side = .135 * s * hook * (1 - .35 * lip);
+        mx += -eyeX * .211 * hook + eyeZ * side;
+        mz += -eyeZ * .211 * hook - eyeX * side;
+        my -= .052 * hook;
       }
       bent.setXYZ(i, mx, my, mz);
     }
