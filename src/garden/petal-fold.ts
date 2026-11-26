@@ -31,7 +31,14 @@ export function foldBlade(g: THREE.BufferGeometry, key: SpeciesKey, openAngle: n
   let across = 1;
   while (across < uv.count && uv.getY(across) === uv.getY(0)) across++;
   const middle = Math.floor(across / 2);
-  const lily = key === 'lily', poppy = key === 'poppy', ray = !lily && !poppy;
+  const lily = key === 'lily', poppy = key === 'poppy';
+  // Different strips store tension along different lengths of the rib. A
+  // sunflower ray is a long hooked strap; a cosmos ray folds its broad fan.
+  const [lift, hook, tuck, crease] = lily ? [.91, 1.25, 2.78, .72]
+    : poppy ? [.91, 1.18, 1.61, .80]
+    : key === 'sunflower' ? [.89, 1.04, 1.32, .56]
+    : key === 'cosmos' ? [1.02, .70, 1.60, .64]
+    : [.98, .97, 1.39, .65];
   const bladeLength = pos.getZ(pos.count - across + middle) - pos.getZ(middle);
   // Radius in head space, including the insertion ring. The tip of a lily
   // meets its neighbours above the pistil instead of crossing through them.
@@ -46,10 +53,8 @@ export function foldBlade(g: THREE.BufferGeometry, key: SpeciesKey, openAngle: n
       if (row) {
         const dy = pos.getY(c) - pos.getY(c - across), dz = pos.getZ(c) - pos.getZ(c - across);
         const length = Math.hypot(dy, dz), rest = Math.atan2(dy, dz);
-        const arch = ease((t - .23) / .70);
-        let angle = sealed
-          ? openAngle + (ray ? .98 : .91) + (ray ? .97 : 1.25) * arch
-          : rest + .10 + (lily ? 2.78 : poppy ? 1.61 : 1.32) * arch;
+        const arch = ease((t - (key === 'cosmos' ? .12 : .23)) / .70);
+        let angle = sealed ? openAngle + lift + hook * arch : rest + .10 + tuck * arch;
         if (sealed && lily) {
           const dr = lilyRadius(t) - lilyRadius(uv.getY(c - across));
           angle = openAngle + Math.acos(Math.max(-1, Math.min(1, dr / length)));
@@ -69,11 +74,12 @@ export function foldBlade(g: THREE.BufferGeometry, key: SpeciesKey, openAngle: n
             y + dr * hingeSin, z + dr * hingeCos);
           continue;
         }
-        const fold = sealed ? .84 : .72 * ease((t - .12) / .82);
+        const fold = sealed ? .84 * ease(t / .16) : crease * ease((t - .12) / .82);
         // Pinched margins wrap the bud; broad petals retain corrugations as
         // their shoulders spread. The seam does not scale the entire blade.
         const pleat = poppy ? .13 * Math.sin(9 * s + phase) : 0;
-        const rolled = (Math.abs(x) * (.78 + pleat) * Math.abs(s) - .06 * x) * fold;
+        const handed = poppy || key === 'cosmos' ? .16 * Math.sin(phase) : 0;
+        const rolled = (Math.abs(x) * (.78 + pleat) * Math.abs(s) - (.06 + handed) * x) * fold;
         const dy = pos.getY(i) - pos.getY(c) + rolled, dz = pos.getZ(i) - pos.getZ(c);
         shape.setXYZ(i, pos.getX(c) + x * (1 - fold * (.55 + .22 * s * s)),
           y + dy * cos + dz * sin, z + dz * cos - dy * sin);
@@ -92,17 +98,34 @@ export function foldShell(g: THREE.BufferGeometry, specimen: Specimen, layer: nu
   const open = g.getAttribute('position'), uv = g.getAttribute('uv');
   const shut = g.morphAttributes.position?.[0], bent = open.clone();
   if (!shut) throw new Error('Shell folding requires an authored closed pose.');
-  // Non-blades (receptacles, stamens, spadix) simply ride the flower.
-  for (let i = 0; i < open.count; i++) bent.setXYZ(i,
-    .5 * (shut.getX(i) + open.getX(i)), .5 * (shut.getY(i) + open.getY(i)), .5 * (shut.getZ(i) + open.getZ(i)));
+  // The anemone's dark eye, filaments, and receptacle already form one
+  // continuous throat at rest. Leave that support in place and reveal it
+  // by opening the cup rather than expanding it across an empty ring.
+  if (key === 'anemone') {
+    let from = 0;
+    for (const { first, end } of spans) {
+      for (let i = from; i < first; i++) shut.setXYZ(i, open.getX(i), open.getY(i), open.getZ(i));
+      from = end;
+    }
+    for (let i = from; i < open.count; i++) shut.setXYZ(i, open.getX(i), open.getY(i), open.getZ(i));
+  } else {
+    // Other non-blades (receptacles, stamens, spadix) ride the sheet's rise.
+    for (let i = 0; i < open.count; i++) bent.setXYZ(i,
+      .5 * (shut.getX(i) + open.getX(i)), .5 * (shut.getY(i) + open.getY(i)), .5 * (shut.getZ(i) + open.getZ(i)));
+  }
   const cup = key === 'tulip', roll = key === 'dahlia';
   const inner = 1 / (1 + layer * .33);
-  for (const { first, end, voice, anchor } of spans) {
+  const hosts = new Map<number, BladeSpan>();
+  for (const span of spans) {
+    const { first, end, voice, anchor } = span;
+    if (anchor) continue;
+    hosts.set(voice, span);
     const variation = Math.sin(phase + voice * 2.39996);
     for (let i = first; i < end; i++) {
-      const t = anchor ? anchor[0] : uv.getY(i), s = anchor ? anchor[1] : uv.getX(i) * 2 - 1;
+      const t = uv.getY(i), s = uv.getX(i) * 2 - 1;
       const x = open.getX(i), y = open.getY(i), z = open.getZ(i);
       const lip = ease((t - .37) / .61), belly = Math.sin(Math.PI * t);
+      const free = ease(t / .24);
       if (key === 'calla') {
         // The spathe is ONE sheet around a spadix. Wind the high lip into a
         // quill and bring the low front lip up over the core. At half-open,
@@ -111,26 +134,47 @@ export function foldShell(g: THREE.BufferGeometry, specimen: Specimen, layer: nu
         const furled = radius * .34 * (1 - .75 * lip) + R * .055 * belly;
         const rise = ease(t) * (.29 * R + .12 * (R - y));
         const a = Math.atan2(x, z), winding = (.20 + .96 * outer) * ease(t);
-        shut.setXYZ(i, furled * Math.sin(a + winding), y + rise, furled * Math.cos(a + winding));
+        const q = radius + (furled - radius) * free, closedAngle = a + winding;
+        shut.setXYZ(i, q * Math.sin(closedAngle), y + rise, q * Math.cos(closedAngle));
         // One lap clears the spadix and takes its own weight. The inner lap
         // remains a rolled upright quill, not a smaller final funnel.
-        const unwind = .19 + .68 * outer, rm = furled + (radius - furled) * unwind;
+        const unwind = .19 + .68 * outer, rm = q + (radius - q) * unwind;
         const sweep = a + winding * (1 - unwind) + .24 * lip * (1 - outer);
         bent.setXYZ(i, rm * Math.sin(sweep), y + rise * (1 - unwind) - .13 * R * lip * outer,
           rm * Math.cos(sweep));
         continue;
       }
-      const sx = shut.getX(i), sy = shut.getY(i), sz = shut.getZ(i);
+      // Taper the authored bud back to the same insertion as the open blade.
+      // This is a bend above its socket, not radial expansion from the axis.
+      const sx = x + (shut.getX(i) - x) * free, sy = y + (shut.getY(i) - y) * free, sz = z + (shut.getZ(i) - z) * free;
+      shut.setXYZ(i, sx, sy, sz);
       if (cup) {
         // The tulip's shoulder bows OUT while its lip is still folded back
         // over the centre. One corner peels off the next tepal before its
         // opposite corner; the three inner sails keep the smaller cup.
-        const reach = .95 - .69 * lip + .25 * s * lip;
+        const reach = .95 - .55 * lip + .30 * s * lip;
         const r = Math.hypot(x, z), sealedR = Math.hypot(sx, sz);
         const arch = .14 * inner * belly;
         const rm = sealedR + (r - sealedR) * reach + R * arch;
         const a = Math.atan2(x, z) + (.15 + .22 * s) * lip * inner;
         bent.setXYZ(i, rm * Math.sin(a), sy + (y - sy) * reach + R * (.12 * lip - .08 * belly), rm * Math.cos(a));
+        continue;
+      }
+      if (key === 'iris' || key === 'orchid' || key === 'anemone') {
+        const fall = key === 'iris' && layer === 0, wing = key === 'orchid' && layer === 1;
+        const sepal = key === 'orchid' && layer === 0, standard = key === 'iris' && layer === 1;
+        // A fall nods outward from the throat; a standard barely tips and
+        // keeps the upper rim pinched. Orchid wings bank toward the column
+        // in opposite directions, with a fold across their broad shoulder.
+        const spread = fall ? .87 - .28 * lip : standard ? .63 - .35 * lip
+          : wing ? .83 - .39 * lip : .74 - .35 * lip;
+        const roll = wing ? (voice === 0 ? -1 : 1) * (.16 + .13 * s)
+          : (fall ? .12 : .065) * variation;
+        const angle = roll * lip, c = Math.cos(angle), d = Math.sin(angle);
+        const bx = sx + (x - sx) * spread, bz = sz + (z - sz) * spread;
+        const curl = (fall ? .035 * belly + .08 * lip : standard ? .06 * belly + .12 * lip
+          : wing ? .11 * (belly + .70 * s * lip) : sepal ? .18 * belly + .10 * lip : .085 * (belly + lip)) * R;
+        bent.setXYZ(i, bx * c + bz * d, sy + (y - sy) * spread + curl, bz * c - bx * d);
         continue;
       }
       const seam = .055 * s * variation;
@@ -149,7 +193,45 @@ export function foldShell(g: THREE.BufferGeometry, specimen: Specimen, layer: nu
       bent.setXYZ(i, mx, my, mz);
     }
   }
-  install(g, [shut, bent]);
+  const root = new THREE.Vector3();
+  const sample = new THREE.Vector3(), a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  for (const { first, end, voice, anchor } of spans) {
+    if (!anchor) continue;
+    const host = hosts.get(voice);
+    if (!host) throw new Error('Blade detail requires a host surface.');
+    let stride = 1;
+    while (host.first + stride < host.end && uv.getY(host.first + stride) === 0) stride++;
+    const rows = (host.end - host.first) / stride;
+    const u = (anchor[1] + 1) * .5 * (stride - 1), v = anchor[0] * (rows - 1);
+    const col = Math.min(stride - 2, Math.floor(u)), row = Math.min(rows - 2, Math.floor(v));
+    const s = u - col, t = v - row, corner = host.first + row * stride + col;
+    const surface = (shape: Attribute, at: THREE.Vector3) => {
+      // Use the actual triangle under the detail, not an averaged panel or
+      // the angular field evaluated at the bead's own UV.
+      if (s + t <= 1) return at.fromBufferAttribute(shape, corner).multiplyScalar(1 - s - t)
+        .addScaledVector(a.fromBufferAttribute(shape, corner + 1), s).addScaledVector(b.fromBufferAttribute(shape, corner + stride), t);
+      return at.fromBufferAttribute(shape, corner + stride + 1).multiplyScalar(s + t - 1)
+        .addScaledVector(a.fromBufferAttribute(shape, corner + 1), 1 - t).addScaledVector(b.fromBufferAttribute(shape, corner + stride), 1 - s);
+    };
+    surface(open, root);
+    for (const shape of [shut, bent]) {
+      const delta = surface(shape, sample).sub(root);
+      for (let i = first; i < end; i++) {
+        c.fromBufferAttribute(open, i).add(delta);
+        shape.setXYZ(i, c.x, c.y, c.z);
+      }
+    }
+  }
+  if (key === 'orchid' && layer === 1 && spans.length === 2) {
+    // Split targets, not draws. Each pair differs from the base only in its
+    // own wing; this permits independent clocks in the existing wing batch.
+    const isolate = (shape: Attribute, { first, end }: BladeSpan) => {
+      const target = open.clone();
+      for (let i = first; i < end; i++) target.setXYZ(i, shape.getX(i), shape.getY(i), shape.getZ(i));
+      return target;
+    };
+    install(g, spans.flatMap(span => [isolate(shut, span), isolate(bent, span)]));
+  } else install(g, [shut, bent]);
 }
 
 // Compact heads first expand their shared structure. At that pose every

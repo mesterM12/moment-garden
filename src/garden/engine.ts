@@ -7,7 +7,7 @@ import { CloseView } from './close-view';
 import { BLOOM_FOV, FOCAL_HOLD_MS, PULLBACK_END_MS, createBloomFramer, type HeldBloomLens } from './bloom-camera';
 import type { ExpandedBouquetPlan as BouquetPlan, GardenEngine, GardenEngineOptions, MorphPetal, Specimen, StemEntry } from './types';
 
-import { BLOOM_DURATION as DURATION, bloomStart, clamp, ease, flexAt, foldWeights, hingePeak, leadingGuard, petalOpening, petalPace, petalWave, stemTension } from './bloom-score';
+import { BLOOM_DURATION as DURATION, bloomPetalScore, bloomStart, clamp, ease, flexAt, stemTension } from './bloom-score';
 import { finishPetals, tieBouquet } from './florist-finish';
 import { buildFiller } from './filler';
 import { bladeBatches } from './blade-batches';
@@ -246,20 +246,15 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
   }
 
   const center = buildCenter(specimen, head);
-  // Keep insertion rhythms and the exact rest sockets out of the frame loop.
-  const guard = leadingGuard(specimen.key, specimen.rotation, specimen.count);
-  const earlyRose = index === 0 && specimen.key === 'rose';
-  petals.forEach((p, i) => {
-    if (i === guard) { p.offset = 0; p.pace = earlyRose ? 2.38 : 1.88; return; }
-    p.pace = petalPace(specimen.key, p.layer, i, specimen.rotation) * (earlyRose && p.layer > 0 ? 1.34 : 1);
-    // Cluster branches and the florets at their tips share the initial lift.
-    p.offset = specimen.key === 'hydrangea' || specimen.key === 'billyButton' ? .035
-      : p.offset + petalWave(specimen.key, p.layer, i, specimen.rotation) * (earlyRose ? .42 : 1);
-  });
-  const backing = specimen.key === 'dahlia' ? head.children[0] : undefined;
-  const cutDahlia = !!backing && bouquet.version === 3;
+  // Arrange the parts once. The live and GIF renderers sample the same score.
+  const petalScore = bloomPetalScore(specimen.key, petals, specimen.rotation, specimen.count, index === 0);
+  if (specimen.key === 'dahlia') {
+    // The florets open around a stationary receptacle, not an inflating disk.
+    const backing = head.children[0];
+    if (bouquet.version === 3) backing.scale.set(.24, .082, .24);
+    else backing.scale.set(.88, .39, .88);
+  }
   const nod = bouquet.version === 2 && specimen.key === 'ranunculus' ? .29 * Math.sin(specimen.rotation * 1.6) : 0;
-  const peak = hingePeak(specimen.key);
   const diskHead = specimen.key === 'sunflower' || specimen.key === 'daisy';
   const neck = (specimen.key === 'lily' || specimen.key === 'poppy' ? .29 : .16) * Math.cos(specimen.rotation + index);
   const focal = bouquet.flowers[0].position;
@@ -267,7 +262,7 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
   const startBeat = index === 0 ? .026 : bouquet.version === 2 ? .10 + .89 * bloomStart(index, entry.delay)
     : .19 + Math.min(.20, distance * .055) + (index > 3 ? .091 : 0) + entry.delay * .42;
   const endBeat = index === 0 ? .66 : index > 3 ? 1 : .88 + entry.delay;
-  return { head, center, petals, leaves, sepals, backing, cutDahlia, nod, peak, neck, diskHead, entry, curve, stem, flexStem, top, bendX, bendZ, drop, startBeat, endBeat };
+  return { head, center, petals, petalScore, leaves, sepals, nod, neck, diskHead, entry, curve, stem, flexStem, top, bendX, bendZ, drop, startBeat, endBeat };
 }
 
 // Lay out foliage once at full bloom, not every frame. The thin leaf surfaces
@@ -313,7 +308,7 @@ function settleFoliage(bouquet: BuiltBouquet) {
 
 export function pose({ blooms, filler }: BuiltBouquet, p: number) {
   filler?.pose(p);
-  blooms.forEach(({ head, center, petals, leaves, sepals, backing, cutDahlia, nod, peak, neck, diskHead, entry, stem, top, bendX, bendZ, drop, startBeat, endBeat }) => {
+  blooms.forEach(({ head, center, petals, petalScore, leaves, sepals, nod, neck, diskHead, entry, stem, top, bendX, bendZ, drop, startBeat, endBeat }) => {
     const local = clamp((p - startBeat) / (endBeat - startBeat));
     const tension = stemTension(local);
     stem.morphTargetInfluences![0] = tension;
@@ -326,16 +321,7 @@ export function pose({ blooms, filler }: BuiltBouquet, p: number) {
     head.rotation.z = -.5 * entry.turn - .13 * bendX * tension + neck * .72 * lift;
     const unfurl = ease((local - .03) / .9);
     head.scale.setScalar(entry.scale); // the petal surface opens, not the silhouette's scale
-    if (backing) {
-      const girth = cutDahlia ? .09 + .15 * unfurl : .88 * (.20 + .80 * unfurl);
-      backing.scale.set(girth, cutDahlia ? .082 : .39, girth);
-    }
-    petals.forEach(petal => {
-      const opening = clamp(petalOpening(local, petal.offset) * (petal.pace ?? 1));
-      const weights = petal.mesh.morphTargetInfluences!;
-      if (weights.length === 2) foldWeights(weights, opening, peak);
-      else weights[0] = 1 - ease(opening);
-    });
+    petals.forEach(({ mesh }, i) => petalScore(mesh.morphTargetInfluences!, local, i));
     leaves.forEach((leaf, i) => {
       if (!leaf.visible) return;
       const rest = leaf.userData.rest as THREE.Vector3 | undefined;
@@ -346,11 +332,19 @@ export function pose({ blooms, filler }: BuiltBouquet, p: number) {
       leaf.orient(.8 - .58 * (1 - ease((local - i * .045) / .53)), tension);
       leaf.scale.setScalar((entry.leafScale ?? .55) * (leaf.userData.clearanceScale ?? 1) * (.73 + .27 * unfurl));
     });
-    sepals.forEach((sepal, i) => { sepal.rotation.x = -1.3 + 1.5 * ease((local - i * .013) / .38); });
+    const composite = diskHead || entry.specimen.key === 'cosmos';
+    sepals.forEach((sepal, i) => {
+      if (composite) {
+        // Bracts are short hinges under the rays. They turn before the ray
+        // hooks unroll, and stay under the disk instead of flaring to its face.
+        const lean = ease((local - .011 * i) / (diskHead ? .31 : .24));
+        sepal.rotation.x = -.93 + 1.13 * lean;
+      } else sepal.rotation.x = -1.3 + 1.5 * ease((local - i * .013) / .38);
+    });
     // The throat exists inside the bud; it does not pop into a vacant disk.
     const throat = ease((local - .13) / .69);
-    const coreWidth = diskHead ? .78 + .22 * throat : .31 + .69 * throat;
-    center.scale.set(coreWidth, .52 + .48 * throat, coreWidth);
+    const coreWidth = composite ? 1 : .31 + .69 * throat;
+    center.scale.set(coreWidth, (composite ? .83 : .52) + (composite ? .17 : .48) * throat, coreWidth);
   });
   // The binding and cut ends stay still throughout.
 }
