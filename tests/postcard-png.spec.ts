@@ -11,7 +11,9 @@ const saveButton = (page: Page) => page.getByRole('button', { name: /Save postca
 async function openGift(page: Page) {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto(gift)
-  await page.getByRole('button', { name: 'Open your flowers', exact: true }).press('Enter')
+  const opener = page.getByRole('button', { name: 'Open your flowers', exact: true })
+  await expect(opener).toBeEnabled()
+  await opener.press('Enter')
   await expect(saveButton(page)).toBeEnabled()
 }
 
