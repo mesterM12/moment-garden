@@ -6,6 +6,7 @@ const WINDOW_POSITION = new THREE.Vector3(-4, 6, 4.5).applyAxisAngle(new THREE.V
 const ORIGIN = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
 const WINDOW_DISTANCE = 16;
+const LIGHTS_ONLY = new THREE.Group();
 
 /** The camera observes a turntable: the window and its depth map stay with the
  * bouquet when the viewer turns it. Only a new cut or pose needs a depth pass. */
@@ -109,16 +110,21 @@ export class BouquetStudio extends THREE.Scene {
     }
   }
 
-  override onBeforeRender(renderer: THREE.WebGLRenderer) {
+  override onBeforeRender(renderer: THREE.WebGLRenderer, _scene: THREE.Scene, camera: THREE.Camera) {
     const { bouquet, key } = this;
     if (!bouquet) return;
     const { shadow } = key;
+    const wasCasting = key.castShadow && shadow.map !== null;
     if (renderer.shadowMap.enabled) this.prepareMap(renderer);
     key.castShadow = renderer.shadowMap.enabled && !this.shadowUnavailable;
     const world = bouquet.plant.matrixWorld;
     this.rig.matrix.copy(world);
     this.rig.updateMatrixWorld(true);
     if (!key.castShadow) return;
+    // Three draws depth before setting up its lights. Prime that light state
+    // with an empty group so the first depth pass uses the same program keys
+    // as later poses, without an extra draw or a relink on the opening tap.
+    if (!wasCasting) renderer.compile(LIGHTS_ONLY, camera, this);
     this.inverse.copy(world).invert();
     shadow.needsUpdate = this.lastProgress !== bouquet.progress;
     if (shadow.needsUpdate) {

@@ -25,23 +25,32 @@ test('opening and bloom assets are local PCM audio and decode in the browser', a
 
 test('an explicit opening starts the local audio without autoplay', async ({ page, isMobile }) => {
   await page.addInitScript(() => {
-    const durations: number[] = []
-    Object.assign(window, { startedAudio: durations })
+    const opening = { durations: [] as number[], programLinks: 0 }
+    Object.assign(window, { openingProbe: opening })
     const start = AudioBufferSourceNode.prototype.start
     AudioBufferSourceNode.prototype.start = function (...args: Parameters<typeof start>) {
       start.apply(this, args)
-      if (this.buffer && this.context.state === 'running') durations.push(this.buffer.duration)
+      if (this.buffer && this.context.state === 'running') opening.durations.push(this.buffer.duration)
+    }
+    const link = WebGL2RenderingContext.prototype.linkProgram
+    WebGL2RenderingContext.prototype.linkProgram = function (program) {
+      opening.programLinks += 1
+      return link.call(this, program)
     }
   })
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/?bouquet=1970260fcfb')
-  const started = () => page.evaluate(() => (window as unknown as { startedAudio: number[] }).startedAudio)
+  const opening = () => page.evaluate(() => (window as unknown as { openingProbe: { durations: number[]; programLinks: number } }).openingProbe)
   const open = page.getByRole('button', { name: 'Open your flowers', exact: true })
   await expect(open).toBeEnabled()
-  expect(await started()).toEqual([])
+  const before = await opening()
+  expect(before.durations).toEqual([])
+  expect(before.programLinks).toBeGreaterThan(0)
   if (isMobile) await open.tap()
   else await open.click()
-  await expect.poll(started).toEqual([expect.closeTo(.28, 2)])
+  // Even the instant reveal must reuse the programs prepared while sealed.
+  expect((await opening()).programLinks).toBe(before.programLinks)
+  await expect.poll(async () => (await opening()).durations).toEqual([expect.closeTo(.28, 2)])
 })
 
 test('a zero-sized bouquet cancels new bloom audio instead of playing without animation', async ({ page }) => {
