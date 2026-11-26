@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
+import { StrictMode } from 'react'
 import userEvent from '@testing-library/user-event'
 import { createAgent } from '@ui-sdk/react/agent'
 import { expect, it, vi } from 'vitest'
@@ -102,6 +103,123 @@ it('commits on release, starts opening immediately and stops painting on unmount
     act(() => vi.advanceTimersByTime(1000))
     expect(path.getAttribute('d')).toBe(last)
   } finally { vi.useRealTimers() }
+})
+
+it.each([-1, 1])('arms only when the %i tail feeds outward, and disarms on reversal', side => {
+  vi.useFakeTimers()
+  try {
+    const { ribbon, pointer, props, container } = parcel(true)
+    const hint = container.querySelector('.parcel-hint')!
+    const tag = container.querySelector<HTMLElement>('.parcel-label')!
+    const x = side < 0 ? 64 : 314
+    const move = (d: number) => {
+      fireEvent.pointerMove(document, pointer(x + side * d))
+      act(() => vi.advanceTimersByTime(20))
+    }
+    fireEvent.pointerDown(ribbon, pointer(x))
+    move(68)
+    expect(hint.hasAttribute('data-armed')).toBe(true)
+    expect(Math.sign(parseFloat(tag.style.rotate))).toBe(-side)
+    move(20)
+    expect(hint.hasAttribute('data-armed')).toBe(false)
+    move(-70)
+    fireEvent.pointerUp(document, pointer(x - side * 70))
+    fireEvent.click(ribbon, { detail: 1 })
+    expect(props.onOpen).not.toHaveBeenCalled()
+    expect(parseFloat(tag.style.rotate)).toBe(0)
+  } finally { vi.useRealTimers() }
+})
+
+it.each(['pinch', 'capture loss', 'Escape', 'window blur'])('abandons an armed pull on %s, including the following pointer click', reason => {
+  vi.useFakeTimers()
+  try {
+    const { ribbon, pointer, props, shape } = parcel(true)
+    const rest = shape('right-tail')
+    fireEvent.pointerDown(ribbon, pointer(310))
+    fireEvent.pointerMove(ribbon, pointer(382))
+    act(() => vi.advanceTimersByTime(32))
+    expect(shape('right-tail')).not.toBe(rest)
+    if (reason === 'pinch') fireEvent.pointerDown(document.body, { ...pointer(210), pointerId: 8, isPrimary: false })
+    else if (reason === 'capture loss') fireEvent.lostPointerCapture(ribbon, pointer(382))
+    else if (reason === 'Escape') fireEvent.keyDown(document, { key: 'Escape' })
+    else fireEvent(window, new Event('blur'))
+    fireEvent.pointerUp(ribbon, pointer(390))
+    fireEvent.click(ribbon, { detail: 1 })
+    expect(shape('right-tail')).toBe(rest)
+    expect(props.onOpen).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Open your flowers' }), { detail: 0 })
+    expect(props.onOpen).toHaveBeenCalledExactlyOnceWith(true)
+  } finally { vi.useRealTimers() }
+})
+
+it('keeps pulling when implicit touch capture transfers from a silk path to the button', () => {
+  const { ribbon, pointer, props } = parcel()
+  const path = ribbon.querySelector('path')!
+  fireEvent.pointerDown(path, { ...pointer(64), pointerType: 'touch' })
+  fireEvent.pointerMove(path, { ...pointer(30), pointerType: 'touch' })
+  fireEvent.lostPointerCapture(path, { ...pointer(30), pointerType: 'touch' })
+  fireEvent.pointerUp(ribbon, { ...pointer(6), pointerType: 'touch' })
+  expect(props.onOpen).toHaveBeenCalledExactlyOnceWith(false)
+  expect(ribbon.closest('.parcel')!.hasAttribute('data-pulled-left')).toBe(true)
+})
+
+it('clears the held pose when reduced motion changes, without removing direct control', () => {
+  vi.useFakeTimers()
+  try {
+    const { ribbon, props, pointer, shape, rerender } = parcel()
+    const rest = shape('right-tail')
+    fireEvent.pointerDown(ribbon, pointer(315))
+    fireEvent.pointerMove(ribbon, pointer(375))
+    act(() => vi.advanceTimersByTime(20))
+    expect(shape('right-tail')).not.toBe(rest)
+    rerender(<GiftCover {...props} reducedMotion />)
+    fireEvent.pointerUp(document, pointer(375))
+    expect(shape('right-tail')).toBe(rest)
+    expect(props.onOpen).not.toHaveBeenCalled()
+    fireEvent.pointerDown(ribbon, pointer(315))
+    fireEvent.pointerUp(ribbon, pointer(375))
+    const end = shape('right-tail')
+    act(() => vi.advanceTimersByTime(200))
+    expect(shape('right-tail')).toBe(end)
+    expect(props.onOpen).toHaveBeenCalledExactlyOnceWith(false)
+  } finally { vi.useRealTimers() }
+})
+
+it('yields vertical swipes to scrolling without warping or opening the parcel', () => {
+  vi.useFakeTimers()
+  try {
+    const { ribbon, pointer, props, shape } = parcel()
+    const rest = shape('right-tail')
+    fireEvent.pointerDown(ribbon, { ...pointer(305), pointerType: 'touch' })
+    fireEvent.pointerMove(ribbon, { ...pointer(312), clientY: 122, pointerType: 'touch' })
+    act(() => vi.advanceTimersByTime(32))
+    fireEvent.pointerUp(ribbon, { ...pointer(390), clientY: 133, pointerType: 'touch' })
+    fireEvent.click(ribbon, { detail: 1 })
+    expect(shape('right-tail')).toBe(rest)
+    expect(props.onOpen).not.toHaveBeenCalled()
+  } finally { vi.useRealTimers() }
+})
+
+it('demonstrates the touched side on tap without counting contact jitter as a pull', () => {
+  const { ribbon, pointer, container, props } = parcel()
+  fireEvent.pointerDown(ribbon, { ...pointer(63), pointerType: 'touch' })
+  fireEvent.pointerMove(ribbon, { ...pointer(66), pointerType: 'touch' })
+  fireEvent.pointerUp(ribbon, { ...pointer(66), pointerType: 'touch' })
+  fireEvent.click(ribbon, { detail: 1 })
+  expect(props.onOpen).toHaveBeenCalledExactlyOnceWith(false)
+  expect(container.querySelector('.parcel')!.hasAttribute('data-pulled-left')).toBe(true)
+})
+
+it('does not carry an in-progress pointer across a Strict Mode remount', () => {
+  const props = { ready: true, exiting: false, reducedMotion: true, onOpen: vi.fn(), onExit: vi.fn() }
+  const view = render(<StrictMode><GiftCover {...props} key="old" /></StrictMode>)
+  const point = { pointerId: 7, isPrimary: true, button: 0, clientX: 310, clientY: 90 }
+  fireEvent.pointerDown(screen.getByRole('button', { name: 'Pull the ribbon' }), point)
+  view.rerender(<StrictMode><GiftCover {...props} key="new" /></StrictMode>)
+  fireEvent.pointerUp(document, { ...point, clientX: 390 })
+  expect(props.onOpen).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('button', { name: 'Pull the ribbon' }), { detail: 0 })
+  expect(props.onOpen).toHaveBeenCalledExactlyOnceWith(true)
 })
 
 it('demonstrates the knot draw on tap and bounds removal even without transition events', () => {

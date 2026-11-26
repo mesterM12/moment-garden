@@ -67,7 +67,7 @@ export default function App() {
 
     function uncoverForFailure() {
       const active = document.activeElement
-      if (active === surface || (active instanceof HTMLElement && active.matches('.flower-open, .flower-render-control'))) {
+      if (active === surface || (active instanceof HTMLElement && (active.closest('.flower-cover') || active.matches('.flower-render-control')))) {
         focusTarget.current = 'fallback'
       }
       opened.current = true
@@ -251,7 +251,9 @@ export default function App() {
             <p className="sr-only" role="status">{unavailable ? null : status}</p>
             <div className="flower-stage-controls" data-unavailable={unavailable ? '' : undefined}>
               <p id="flower-turn-instructions" className="sr-only">Drag in any direction or use the arrow keys to turn the bouquet. Choose Look closer to see the petals in detail. To scroll, swipe outside the artwork. Press Home or Reset view to see the whole bouquet from the front.</p>
-              <span aria-hidden="true" className="flower-turn-hint"><Move size={13} />Drag to turn</span>
+              <span aria-hidden="true" className="flower-turn-hint">
+                <Move size={13} /><span className="flower-turn-pointer">Drag to turn</span><span className="flower-turn-touch">Swipe to turn</span>
+              </span>
               <Toggle
                 pressed={closeView}
                 disabled={!ready}

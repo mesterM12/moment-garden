@@ -16,6 +16,7 @@ export function SilkBow({ plate }: { plate: Ref<SVGSVGElement> }) {
       <g transform="rotate(-7 186 80)" className="parcel-wrap">
         {([-1, 1] as const).map(side => <g key={side}>
           <path data-band="" id={`parcel-band-${side}`} d={bandPath(side, 0)} />
+          <use href={`#parcel-band-${side}`} stroke="#76533a" strokeOpacity=".15" strokeWidth="34" transform="translate(0 2)" />
           <use href={`#parcel-band-${side}`} stroke="#7f4053" strokeWidth="33" />
           <use href={`#parcel-band-${side}`} stroke="url(#parcel-band-face)" strokeWidth="31" />
           <use href={`#parcel-band-${side}`} stroke="#edc4c2" strokeOpacity=".45" strokeWidth=".8" strokeDasharray="3 2" transform="translate(0 12)" />

@@ -542,7 +542,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
   let leafTexture: THREE.CanvasTexture | undefined;
   let current: BuiltBouquet | null = null;
   let frame: number | null = null;
-  let drag: { id: number; sensitivity: number } | null = null;
+  let drag: { id: number; pointerType: string; sensitivity: number } | null = null;
   let phase: 'ready' | 'blooming' | 'mature' = 'ready';
   let progress = 0;
   let start: number | null = null;
@@ -688,12 +688,19 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
     wake();
   }
 
+  // A pinch may begin on the canvas and land its second finger on the paper.
+  function yieldToPinch(event: PointerEvent): void {
+    if (event.pointerType === 'touch' && drag?.pointerType === 'touch' && drag.id !== event.pointerId) {
+      endDrag(eventTime(event), true);
+    }
+  }
+
   function onPointerDown(event: PointerEvent): void {
-    if (!current || !available() || drag || event.button !== 0) return;
+    if (!current || !available() || drag || event.button !== 0 || (event.pointerType === 'touch' && !event.isPrimary)) return;
     try { canvas.setPointerCapture(event.pointerId); }
     catch { return; } // The pointer may already have been cancelled by the browser.
     drag = {
-      id: event.pointerId,
+      id: event.pointerId, pointerType: event.pointerType,
       sensitivity: Math.PI * 2 / Math.max(240, Math.min(canvas.clientWidth, canvas.clientHeight)),
     };
     rotation.grab(event.clientX, event.clientY, eventTime(event));
@@ -826,6 +833,8 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
       canvas.addEventListener(name, listener);
       cleanups.push(() => canvas.removeEventListener(name, listener));
     }
+    document.addEventListener('pointerdown', yieldToPinch, { capture: true, passive: true });
+    cleanups.push(() => document.removeEventListener('pointerdown', yieldToPinch, true));
     document.addEventListener('visibilitychange', onVisibilityChange);
     cleanups.push(() => document.removeEventListener('visibilitychange', onVisibilityChange));
     const onWindowResize = () => resize(); // Also update DPR when moving between displays.

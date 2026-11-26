@@ -70,10 +70,12 @@ test('a ribbon can be tugged, eased back and pulled again without opening the wr
   const box = (await bow.boundingBox())!
   const x = box.x + box.width / 2, y = box.y + box.height / 2
   const distance = Math.min(110, box.width * .48)
+  await page.getByRole('button', { name: 'Open your flowers', exact: true }).focus()
   const initial = await bow.screenshot()
   await page.mouse.move(x, y)
   await page.mouse.down()
   await page.mouse.move(x + distance, y, { steps: 10 })
+  await expect(page.getByText('Release to open', { exact: true })).toBeVisible()
   expect((await bow.screenshot()).equals(initial)).toBe(false)
   await page.mouse.move(x + 1, y, { steps: 10 })
   await page.mouse.up()
@@ -189,6 +191,7 @@ test('shows an invalid-link notice without trapping the gift', async ({ page }) 
 test('context loss dismisses a sealed cover, keeps sharing available, and restores the same bouquet', async ({ page }) => {
   await page.goto(gift)
   await expect(page.getByRole('button', { name: 'Open your flowers', exact: true })).toBeEnabled()
+  await page.getByRole('button', { name: 'Pull the ribbon' }).focus()
   const canLoseContext = await page.evaluate(() => {
     const canvas = document.querySelector('canvas')!
     const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl')
@@ -200,6 +203,7 @@ test('context loss dismisses a sealed cover, keeps sharing available, and restor
   })
   expect(canLoseContext).toBe(true)
   await expect(page.getByText(/3D preview paused/)).toBeVisible()
+  await expect(page.locator('.flower-render-fallback')).toBeFocused()
   await expect(page.getByRole('button', { name: 'Open your flowers', exact: true })).not.toBeVisible()
   await expect(page.getByRole('button', { name: 'Send flowers', exact: true })).toBeEnabled()
   await expect(page.locator('.flower-garden')).not.toHaveAttribute('data-pointer-opened', '')
@@ -231,6 +235,31 @@ test('stationery uses continuous corners and stays usable with larger text and i
   await expect(page.getByRole('button', { name: 'Send flowers', exact: true })).toBeEnabled()
   await page.locator('canvas').focus()
   await expect(page.locator('canvas')).toHaveCSS('outline-style', 'solid')
+})
+
+test('the paper and its printed inset share the postcard corner treatment without covering the opener outline', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 })
+  await page.goto(gift)
+  await expect(page.getByRole('button', { name: 'Open your flowers' })).toBeEnabled()
+  const frame = await page.evaluate(() => {
+    const node = (s: string) => document.querySelector(s)!
+    const style = (s: string, pseudo?: string) => getComputedStyle(node(s), pseudo)
+    const card = style('.flower-postcard')
+    const tag = style('.parcel-tag'), rule = style('.parcel-tag', '::before')
+    return {
+      shapes: ['.flower-cover', '.flower-stage', '.flower-canvas', '.parcel-open', '.parcel-tag', '.parcel-handle'].map(s => style(s).getPropertyValue('corner-shape')),
+      shape: card.getPropertyValue('corner-shape'),
+      cover: style('.flower-cover').borderRadius, card: card.borderRadius,
+      inset: parseFloat(tag.borderRadius) - parseFloat(rule.borderRadius),
+      foot: node('.flower-cover').getBoundingClientRect().bottom - node('.parcel-open').getBoundingClientRect().bottom,
+      clear: node('.parcel-hint').getBoundingClientRect().top - node('.parcel-tag').getBoundingClientRect().bottom,
+    }
+  })
+  expect(frame.shapes.every(s => s === frame.shape)).toBe(true)
+  expect(frame.cover).toBe(frame.card)
+  expect(frame.inset).toBeCloseTo(4)
+  expect(frame.foot).toBeGreaterThanOrEqual(10)
+  expect(frame.clear).toBeGreaterThanOrEqual(4)
 })
 
 test('sealed invitation stays inside the postcard at narrow widths and 200% text', async ({ page }) => {

@@ -1,17 +1,25 @@
-import { bindCloth, resting, type Pull } from './ribbon-cloth'
+import { bindCloth, resting, silkFeed, type Pull } from './ribbon-cloth'
 
-export function mountRibbon(svg: SVGSVGElement) {
+type Velocity = { x: number; y: number }
+const still: Velocity = { x: 0, y: 0 }
+
+export function mountRibbon(svg: SVGSVGElement, tag: HTMLElement | null) {
   const draw = bindCloth(svg)
   let pose = resting
   let frame = 0
+  let lastLoose = 0
 
   function stop() {
-    cancelAnimationFrame(frame)
+    if (frame) cancelAnimationFrame(frame)
     frame = 0
   }
   function show(next: Pull, loose = 0) {
+    const samePose = pose.dx === next.dx && pose.dy === next.dy && pose.grip === next.grip && pose.side === next.side
     pose = next
+    if (samePose && loose === lastLoose) return
+    lastLoose = loose
     draw(pose, loose)
+    if (tag && !loose) tag.style.rotate = `${(pose.side * silkFeed(pose).tension * -5).toFixed(2)}deg`
   }
   function play(duration: number, sample: (t: number) => void) {
     stop()
@@ -28,24 +36,28 @@ export function mountRibbon(svg: SVGSVGElement) {
     stop,
     catch() { stop(); return pose },
     show,
-    restore(reduce: boolean) {
+    restore(reduce: boolean, velocity = still) {
       const from = pose
       if (reduce || (!from.dx && !from.dy)) { stop(); show(resting); return }
-      play(180, t => {
-        const weight = (1 - t) ** 3
-        show({ ...from, dx: from.dx * weight, dy: from.dy * weight })
-      })
+      // Critically damped silk: preserve release speed, never oscillate across the knot.
+      const settle = (distance: number, speed: number, ms: number) => {
+        const v = Math.max(-2, Math.min(2, speed))
+        return (distance + (v + .043 * distance) * ms) * Math.exp(-.043 * ms)
+      }
+      play(240, t => show(t === 1 ? resting : { ...from, dx: settle(from.dx, velocity.x, t * 240), dy: settle(from.dy, velocity.y, t * 240) }))
     },
-    release() {
+    release(outwardSpeed = 0) {
       const from = pose
-      const drawThrough = Math.max(50, 215 * (1 - Math.min(1, Math.abs(from.dx) / 112)))
-      const full = (Math.sign(from.dx) || from.side) * Math.max(126, Math.abs(from.dx))
-      const flutter = 395
+      const full = from.side * Math.max(126, from.side * from.dx)
+      const distance = Math.abs(full - from.dx)
+      const drawThrough = Math.max(32, Math.min(180, distance / Math.max(.72, outwardSpeed)))
+      const flutter = 270
       play(drawThrough + flutter, t => {
         const elapsed = t * (drawThrough + flutter)
         const take = Math.min(1, elapsed / drawThrough)
         const loose = Math.max(0, (elapsed - drawThrough) / flutter)
-        show({ ...from, dx: from.dx + (full - from.dx) * take, dy: from.dy - 10 * take }, loose)
+        const ease = take * (2 - take)
+        show({ ...from, dx: from.dx + (full - from.dx) * ease, dy: from.dy - 7 * ease }, loose)
       })
       return Math.round(drawThrough)
     },

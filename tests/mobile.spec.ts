@@ -144,6 +144,29 @@ test('vertical and sideways drags turn the bouquet without scrolling the page', 
   await session.detach()
 })
 
+test('a second finger on the paper releases the canvas for a native pinch', async ({ page, isMobile, skip }) => {
+  skip(!isMobile, 'Requires touch input and the mobile viewport.')
+  await page.goto('/?bouquet=1970260fcfb')
+  const opener = page.getByRole('button', { name: 'Open your flowers' })
+  await expect(opener).toBeEnabled()
+  await opener.press('Enter')
+  const canvas = page.locator('canvas')
+  const box = (await canvas.boundingBox())!
+  const x = box.x + 60, y = box.y + box.height * .5
+  const cdp = await page.context().newCDPSession(page)
+  const a = { id: 1, x, y }, b = { id: 2, x: box.x - 4, y }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [a] })
+  await expect(canvas).toHaveClass(/is-dragging/)
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [a, b] })
+  await expect(canvas).not.toHaveClass(/is-dragging/)
+  for (const dx of [15, 30, 50, 80]) {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ ...a, x: x + dx }, b] })
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  await expect.poll(() => page.evaluate(() => visualViewport?.scale ?? 1)).toBeGreaterThan(1)
+  await cdp.detach()
+})
+
 test('a short screen can still scroll from outside the bouquet', async ({ page, isMobile, skip }) => {
   skip(!isMobile, 'Touch gesture is exercised by the mobile Chromium project.')
   await page.setViewportSize({ width: 320, height: 400 })

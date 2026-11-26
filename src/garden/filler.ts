@@ -42,7 +42,7 @@ function silverLeaf(root: THREE.Vector3, tip: THREE.Vector3, breadth: number, ti
 
 // Rest geometry is the actual keepsake. Bake two alternate poses once: the
 // tucked spray and the slight recoil as the paper lets go of its far end.
-type LeafFold = { root: THREE.Vector3; axis: THREE.Vector3; lift: number };
+type LeafFold = { root: THREE.Vector3; axis: THREE.Vector3; midrib: THREE.Vector3; lift: number; roll: number };
 const zAxis = v(0, 0, 1), xAxis = v(1, 0, 0);
 function creaseSpray(geometry: THREE.BufferGeometry, height: number, side: number, leaf?: LeafFold) {
   const rest = geometry.getAttribute('position'), normals = geometry.getAttribute('normal');
@@ -52,12 +52,20 @@ function creaseSpray(geometry: THREE.BufferGeometry, height: number, side: numbe
     p.fromBufferAttribute(rest, i);
     if (leaf) {
       const along = Math.floor(i / 5) / 10;
-      p.sub(leaf.root).applyAxisAngle(leaf.axis, leaf.lift * (.78 + .30 * along)).add(leaf.root);
+      p.sub(leaf.root).applyAxisAngle(leaf.midrib, leaf.roll * along)
+        .applyAxisAngle(leaf.axis, leaf.lift * (.78 + .30 * along)).add(leaf.root);
     }
     const arc = ease(p.y / height);
     q.copy(p).applyAxisAngle(zAxis, side * .49 * arc).applyAxisAngle(xAxis, -.52 * arc);
     tucked.setXYZ(i, q.x, q.y - .17 * arc, q.z);
     p.fromBufferAttribute(rest, i);
+    if (leaf) {
+      // The twig springs first. Its disks still show their narrow edges at
+      // recoil, then turn their silver faces out as the twig comes to rest.
+      const along = Math.floor(i / 5) / 10;
+      p.sub(leaf.root).applyAxisAngle(leaf.midrib, leaf.roll * .78 * along)
+        .applyAxisAngle(leaf.axis, leaf.lift * .39).add(leaf.root);
+    }
     const tip = ease((p.y / height - .19) / .81);
     q.copy(p).applyAxisAngle(zAxis, -side * .075 * tip);
     released.setXYZ(i, q.x, q.y, q.z - .085 * tip);
@@ -97,7 +105,9 @@ export function buildFiller(plan: ExpandedBouquetPlan) {
           const size = .64 - t * .29, angle = .56 * Math.sin(i + phase);
           const b = a.clone().add(v(flank * size * Math.cos(angle), size * (.38 + .25 * i / 7), size * Math.sin(angle) * flank));
           const blade = silverLeaf(a, b, size * (.32 + .06 * Math.cos(i)), flank * (.71 + angle), t);
-          leafFolds.set(parts.length, { root: a, axis: b.clone().sub(a).cross(v(0, 1, 0)).normalize(), lift: 1.04 + .20 * t });
+          const midrib = b.clone().sub(a).normalize();
+          leafFolds.set(parts.length, { root: a, midrib, axis: midrib.clone().cross(v(0, 1, 0)).normalize(),
+            lift: 1.04 + .20 * t, roll: flank * (1.21 - .30 * t) });
           parts.push(blade);
         }
       }

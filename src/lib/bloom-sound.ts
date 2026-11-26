@@ -21,6 +21,7 @@ interface Voice {
   part: Part
   offset: number
   startedAt: number
+  fadeIn: boolean
   timer?: ReturnType<typeof setTimeout>
   retired: boolean
 }
@@ -32,6 +33,7 @@ interface Playback {
   resumed: boolean
   released: boolean
   accepting: boolean
+  mode: Mode
   openingPending: boolean
   bloomPending: boolean
   openingBuffer?: AudioBuffer
@@ -159,7 +161,9 @@ export function createBloomSound(): {
     try {
       const now = playback.context.currentTime
       voice.gain.gain.cancelScheduledValues(now)
-      voice.gain.gain.setValueAtTime(1, now)
+      // A second seek (or export) can interrupt the first 8ms ramp.
+      const level = voice.fadeIn ? Math.min(1, Math.max(0, (now - voice.startedAt) / FADE_SECONDS)) : 1
+      voice.gain.gain.setValueAtTime(level, now)
       voice.gain.gain.linearRampToValueAtTime(0, now + FADE_SECONDS)
       voice.source.stop(now + FADE_SECONDS)
       clearTimeout(voice.timer)
@@ -174,7 +178,7 @@ export function createBloomSound(): {
     }
   }
 
-  function startVoice(playback: Playback, part: Part, buffer: AudioBuffer, offset: number, fade = false) {
+  function startVoice(playback: Playback, part: Part, buffer: AudioBuffer, offset: number, fade = offset > 0) {
     if (!valid(playback)) return
     let source: AudioBufferSourceNode | undefined
     let gain: GainNode | undefined
@@ -188,7 +192,7 @@ export function createBloomSound(): {
       gain.connect(playback.context.destination)
       gain.gain.setValueAtTime(fade ? 0 : 1, now)
       if (fade) gain.gain.linearRampToValueAtTime(1, now + FADE_SECONDS)
-      const voice: Voice = { source, gain, part, offset, startedAt: now, retired: false }
+      const voice: Voice = { source, gain, part, offset, startedAt: now, fadeIn: fade, retired: false }
       playback.voices.add(voice)
       registered = true
       if (part === 'bloom') playback.bloomVoice = voice
@@ -229,7 +233,11 @@ export function createBloomSound(): {
     if (playback.context.state !== 'running') { release(playback); return }
     if (playback.openingPending && playback.openingBuffer) {
       playback.openingPending = false
-      startVoice(playback, 'opening', playback.openingBuffer, 0)
+      // A late paper decode must not slide the tissue release over the first
+      // pluck. Instant opening has no running clock and keeps the whole cue.
+      const progress = playback.progress ?? 0
+      const offset = playback.mode === 'opening-and-bloom' && progress < 1 ? progress * BLOOM_SECONDS : 0
+      if (offset < playback.openingBuffer.duration) startVoice(playback, 'opening', playback.openingBuffer, offset)
     }
     if (!valid(playback)) return
     if (playback.bloomPending && playback.bloomBuffer && playback.progress !== undefined) {
@@ -283,7 +291,7 @@ export function createBloomSound(): {
       let context: AudioContext
       try { context = new AudioContext() } catch { restoreAudioSession(); return }
       const playback: Playback = {
-        context, restoreAudioSession, requestedAt: performance.now(), resumed: false, released: false, accepting: true,
+        mode, context, restoreAudioSession, requestedAt: performance.now(), resumed: false, released: false, accepting: true,
         openingPending: mode !== 'bloom', bloomPending: mode !== 'opening', voices: new Set(),
       }
       active = playback

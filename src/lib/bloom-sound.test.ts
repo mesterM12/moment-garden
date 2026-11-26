@@ -198,6 +198,29 @@ describe('asset bloom sound controller', () => {
     next.dispose()
   })
 
+  it.each([0.035, 0.075])('keeps a late paper decode on the bloom clock at %s progress', async progress => {
+    const paper = deferred<AudioBuffer>()
+    MockAudioContext.configure = audio => {
+      audio.decodeAudioData.mockImplementation(bytes => new Uint8Array(bytes)[0] === 1
+        ? paper.promise : Promise.resolve(audioBuffer(3.8)))
+    }
+    const sound = createBloomSound()
+    sound.play('opening-and-bloom')
+    sound.sync(progress)
+    await flush()
+    paper.resolve(audioBuffer(0.28))
+    await flush()
+    expect(context().sources[0]!.buffer?.duration).toBe(3.8)
+    expect(context().gains[0]!.gain.setValueAtTime).toHaveBeenCalledWith(0, 12)
+    if (progress * 4.6 < 0.28) {
+      expect(context().sources[1]!.start).toHaveBeenCalledWith(12, progress * 4.6)
+      expect(context().gains[1]!.gain.linearRampToValueAtTime).toHaveBeenCalledWith(1, 12.008)
+    } else {
+      expect(context().sources).toHaveLength(1)
+    }
+    sound.dispose()
+  })
+
   it('uses the latest progress at resume, not activation, and does not restart every frame', async () => {
     const resume = deferred<void>()
     MockAudioContext.configure = (audio) => { audio.resume.mockReturnValue(resume.promise) }
@@ -228,8 +251,12 @@ describe('asset bloom sound controller', () => {
     expect(replacement.start).toHaveBeenCalledWith(12, 1.8399999999999999)
     expect(bloom.stop).toHaveBeenCalledWith(12.008)
     expect(context().gains[2]!.gain.linearRampToValueAtTime).toHaveBeenCalledWith(1, 12.008)
+    context().currentTime = 12.004
     sound.sync(1)
-    expect(replacement.stop).toHaveBeenCalledWith(12.008)
+    const [level, time] = context().gains[2]!.gain.setValueAtTime.mock.lastCall!
+    expect(level).toBeCloseTo(0.5)
+    expect(time).toBe(12.004)
+    expect(replacement.stop).toHaveBeenCalledWith(12.004 + 0.008)
     expect(opening.stop).not.toHaveBeenCalled()
     vi.advanceTimersByTime(29)
     expect(context().close).not.toHaveBeenCalled()

@@ -55,15 +55,16 @@ function resonator(hz: number, decay: number) {
 
 /** A ribbon pulled through a pinch: accelerating weave contacts ride a soft friction stroke. */
 function ribbonSlip(mix: Float64Array, start: number, length: number, level: number, noise: () => number) {
-  const fibre = lowPass(2_650), soft = lowPass(2_150), bass = lowPass(380), pressure = lowPass(58)
+  const fibre = lowPass(3_250), soft = lowPass(2_400), bass = lowPass(360), pressure = lowPass(42)
   let phase = 0, tooth = 0
   addGesture(mix, start, length, (t) => {
     const x = t / length
-    phase += (230 + 380 * Math.sin(Math.PI * x) + 110 * noise()) / SAMPLE_RATE
-    if (phase >= 1) { phase--; tooth = 0.5 + 0.5 * noise() }
-    tooth *= 0.90
-    const friction = soft(fibre((0.45 + tooth) * noise() + 0.25 * tooth))
-    const contact = Math.sin(Math.PI * x) ** 1.4 * (1 + 1.6 * pressure(noise()))
+    phase += (165 + 360 * smoothStep(x / 0.86) + 75 * noise()) / SAMPLE_RATE
+    if (phase >= 1) { phase--; tooth = 0.62 + 0.34 * noise() }
+    tooth *= 0.94
+    const friction = soft(fibre((0.39 + tooth) * noise() + 0.28 * tooth))
+    const contact = smoothStep(x / 0.21) * (0.65 + 0.35 * x)
+      * smoothStep((1 - x) / 0.24) * (1 + 1.6 * pressure(noise()))
     return level * contact * (friction - bass(friction))
   })
 }
@@ -102,13 +103,16 @@ function finish(samples: Float64Array, attack: number, release: number): Float64
 export function renderGiftOpen(): Float64Array {
   const samples = new Float64Array(Math.round(SOUND_DURATIONS['gift-open'] * SAMPLE_RATE))
   const noise = noiseSource(0x73696c6b)
-  ribbonSlip(samples, 0.005, 0.097, 0.31, noise)
-  folds(samples, 0.093, 0.048, 7, 0.017, noise)
-  ribbonSlip(samples, 0.132, 0.076, 0.14, noise)
-  folds(samples, 0.183, 0.049, 4, 0.010, noise)
-  // The last fold rests against the lid rather than ending on a bright click.
-  addGesture(samples, 0.204, 0.072, t => 0.023 * smoothStep(t / 0.004) * Math.exp(-t / 0.015)
-    * (Math.sin(TAU * 172 * t) + 0.42 * Math.sin(TAU * 357 * t)))
+  ribbonSlip(samples, 0.003, 0.14, 0.216, noise)
+  // As the knot slips free, the broad face of the sheet exhales under two
+  // successively lighter creases. Its last contact is unpitched, not a tap.
+  const face = lowPass(1_080), rumble = lowPass(260)
+  addGesture(samples, 0.137, 0.137, t => {
+    const flex = face(noise())
+    return 0.095 * smoothStep(t / 0.019) * Math.exp(-t / 0.050) * (flex - rumble(flex))
+  })
+  folds(samples, 0.145, 0.034, 5, 0.017, noise)
+  folds(samples, 0.207, 0.039, 3, 0.009, noise)
   return finish(samples, 0.006, 0.016)
 }
 
@@ -127,7 +131,8 @@ function pluck(mix: Float64Array, start: number, midi: number, gain: number, pos
     line[i] = 2 * (x < position ? x / position : (1 - x) / (1 - position)) - 1
   }
   const loss = Math.exp(-1 / (hz * decay))
-  const wood = resonator(271, 0.008), bridge = resonator(511, 0.005)
+  const wood = resonator(326, 0.007), bridge = resonator(688, 0.004)
+  const felt = lowPass(1_650), grain = noiseSource(0x66656c74 ^ midi)
   let cursor = 0, last = 0
   addGesture(mix, start, decay * 7, (t) => {
     const ahead = (cursor + 1) % line.length
@@ -136,8 +141,11 @@ function pluck(mix: Float64Array, start: number, midi: number, gain: number, pos
     line[cursor] = loss * (wave - damping * velocity)
     cursor = ahead
     last = wave
-    const body = 0.14 * wood(velocity) + 0.08 * bridge(velocity)
-    return gain * smoothStep(t / 0.009) * (wave + body)
+    // A little aperiodic finger contact excites only the board, not a
+    // repeating noise pattern in the string. The upper modes carry on mono.
+    const contact = velocity + 0.035 * felt(grain()) * Math.exp(-t / 0.012)
+    const body = 0.20 * wood(contact) + 0.12 * bridge(contact)
+    return gain * smoothStep(t / 0.013) * (wave + body)
   })
 }
 
@@ -146,21 +154,27 @@ function pluck(mix: Float64Array, start: number, midi: number, gain: number, pos
 export function renderBloom(): Float64Array {
   const samples = new Float64Array(Math.round(SOUND_DURATIONS.bloom * SAMPLE_RATE))
   const noise = noiseSource(0x7065746c)
-  // Low open fifth, rolled rather than struck together. Let the impatient upper
-  // neighbour lean down onto D; the last, softer F# answers in the lower voice.
-  pluck(samples, 0.334, 50, 0.071, 0.31, 0.39) // D3
-  pluck(samples, 0.403, 57, 0.041, 0.37, 0.34) // A3
-  pluck(samples, 1.118, 64, 0.073, 0.27, 0.36) // E4
-  pluck(samples, 1.718, 62, 0.056, 0.38, 0.45) // D4
-  pluck(samples, 2.612, 54, 0.042, 0.34, 0.33) // F#3
-  // Paired leaf/petal movements in the spaces between fingers. A little dry
-  // brush followed by the delicate buckles of a loosening crease.
-  for (const [at, span, level, creases] of [
-    [0.84, 0.086, 0.074, 3], [1.47, 0.101, 0.064, 4],
-    [2.24, 0.130, 0.087, 4], [2.98, 0.094, 0.050, 3], [3.29, 0.082, 0.034, 2],
+  // Let the paper finish first. The change to stems unfolding (22% of
+  // 4.6s) lifts to G; the heads opening (45%) resolve down to F.
+  pluck(samples, 0.323, 53, 0.068, 0.29, 0.32) // F3
+  pluck(samples, 0.411, 60, 0.039, 0.36, 0.30) // C4
+  pluck(samples, 1.013, 67, 0.069, 0.40, 0.39) // G4
+  pluck(samples, 2.070, 65, 0.042, 0.36, 0.41) // F4
+  pluck(samples, 2.694, 62, 0.029, 0.32, 0.30) // D4
+
+  // Leaves pass one another smoothly, without the regular teeth of woven silk.
+  // A second, lighter blade briefly follows the first on each sweep.
+  for (const [at, span, level] of [
+    [0.78, 0.125, 0.052], [1.58, 0.205, 0.065],
+    [2.38, 0.177, 0.054], [3.27, 0.125, 0.026],
   ] as const) {
-    ribbonSlip(samples, at, span, level, noise)
-    folds(samples, at + span * 0.64, span * 0.68, creases, level * 0.041, noise)
+    const edge = lowPass(2_800), shade = lowPass(720)
+    addGesture(samples, at, span, t => {
+      const x = t / span, air = edge(noise())
+      const blade = Math.sin(Math.PI * Math.min(1, x / 0.67)) ** 2
+      const neighbour = Math.sin(Math.PI * Math.max(0, (x - 0.47) / 0.53)) ** 2
+      return level * (blade + 0.55 * neighbour) * (air - shade(air))
+    })
   }
   return finish(samples, 0.008, 0.45)
 }

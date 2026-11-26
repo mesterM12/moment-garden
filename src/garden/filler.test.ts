@@ -34,6 +34,16 @@ it('replays from the binding and ends exactly at the same rest pose', () => {
   }
   pose(.66);
   expect(leafy.morphTargetInfluences![1]).toBeGreaterThan(.1);
+  // The spray has already sprung outward; the turning blade faces still
+  // catch the light differently here than in the mature keepsake.
+  const restNormal = leafy.geometry.getAttribute('normal'), recoilNormal = leafy.geometry.morphAttributes.normal[1];
+  let turning = 0;
+  for (let i = 0; i < restNormal.count; i++) {
+    const x = restNormal.getX(i), y = restNormal.getY(i), z = restNormal.getZ(i);
+    if (x * x + y * y + z * z < .99) continue; // coincident vertices at a leaf tip
+    if (x * recoilNormal.getX(i) + y * recoilNormal.getY(i) + z * recoilNormal.getZ(i) < Math.cos(Math.PI / 6)) turning++;
+  }
+  expect(turning).toBeGreaterThan(restNormal.count * .25);
   pose(1);
   for (const [i, mesh] of group.children.entries()) {
     expect(mesh.position.equals(bases[i])).toBe(true);

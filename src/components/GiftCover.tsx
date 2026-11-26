@@ -3,17 +3,17 @@ import { Button as ActionButton } from '@ui-sdk/react/button'
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react'
 import { Button } from './ui/button'
 import { SilkBow } from './ribbon-bow'
-import type { Side } from './ribbon-cloth'
+import { gripRibbon } from './ribbon-cloth'
 import { mountRibbon } from './ribbon-motion'
 import '../styles/parcel.css'
 
-export const COVER_EXIT_MS = 850
+export const COVER_EXIT_MS = 640
 
 interface GiftCoverProps {
   ready: boolean
   exiting: boolean
   reducedMotion: boolean
-  onOpen: (instant: boolean) => void
+  onOpen: (nonPointer: boolean) => void
   onExit: () => void
 }
 
@@ -59,6 +59,8 @@ function Tissue({ side }: { side: 'left' | 'right' }) {
 export function GiftCover({ ready, exiting, reducedMotion, onOpen, onExit }: GiftCoverProps) {
   const opener = useRef<HTMLButtonElement>(null)
   const plate = useRef<SVGSVGElement>(null)
+  const label = useRef<HTMLDivElement>(null)
+  const hint = useRef<HTMLParagraphElement>(null)
   const cover = useRef<HTMLDivElement>(null)
   const motion = useRef<ReturnType<typeof mountRibbon> | null>(null)
   const committed = useRef(false)
@@ -74,7 +76,7 @@ export function GiftCover({ ready, exiting, reducedMotion, onOpen, onExit }: Gif
 
   useEffect(() => {
     if (!plate.current) return
-    const controller = mountRibbon(plate.current)
+    const controller = mountRibbon(plate.current, label.current)
     motion.current = controller
     return () => {
       stopDrag.current?.()
@@ -93,14 +95,21 @@ export function GiftCover({ ready, exiting, reducedMotion, onOpen, onExit }: Gif
     return () => window.clearTimeout(fallback)
   }, [exiting, onExit, reducedMotion])
 
-  function open(nonPointer: boolean) {
+  useEffect(() => {
+    // A changed input preference or disabled cover invalidates a held gesture.
+    if (committed.current) return
+    stopDrag.current?.()
+    if (!ready || reducedMotion) motion.current?.restore(true)
+  }, [ready, reducedMotion])
+
+  function open(nonPointer: boolean, outwardSpeed = 0) {
     if (committed.current || exiting || !ready) return
     committed.current = true
     stopDrag.current?.()
     if (!nonPointer && !reducedMotion && motion.current) {
       const pose = motion.current.catch()
       cover.current?.toggleAttribute('data-pulled-left', pose.side < 0)
-      cover.current?.style.setProperty('--silk-slip', `${motion.current.release()}ms`)
+      cover.current?.style.setProperty('--silk-slip', `${motion.current.release(outwardSpeed)}ms`)
     }
     onOpen(nonPointer)
   }
@@ -108,47 +117,81 @@ export function GiftCover({ ready, exiting, reducedMotion, onOpen, onExit }: Gif
   function pull(event: ReactPointerEvent<HTMLButtonElement>) {
     const silk = motion.current
     if (!ready || exiting || committed.current || !silk || event.button !== 0) return
-    if (!event.isPrimary) {
-      stopDrag.current?.()
-      suppressClick.current = true
-      silk.restore(reducedMotion)
-      return
-    }
+    if (!event.isPrimary) { suppressClick.current = true; return }
     stopDrag.current?.()
     suppressClick.current = false
     const initial = silk.catch()
+    const handle = event.currentTarget, id = event.pointerId
     const startX = event.clientX, startY = event.clientY
-    const box = event.currentTarget.getBoundingClientRect()
+    const box = handle.getBoundingClientRect()
     const scale = 380 / (box.width || 380)
     const across = (startX - box.left) * scale - 186
-    const fromTail = Math.abs(across) > 36
-    const track = (dx: number, dy: number) => {
-      const horizontal = initial.dx + dx * scale
-      const side: Side = initial.dx ? initial.side : (fromTail ? across : horizontal) < 0 ? -1 : 1
-      silk.show({ side, dx: horizontal, dy: initial.dy + dy * scale, grip: initial.dx ? initial.grip : fromTail ? Math.abs(across) : 100 })
+    const grip = gripRibbon(initial, across)
+    const tapSlop = event.pointerType === 'touch' ? 8 : dragThreshold
+    const openDistance = Math.max(30, Math.min(52, (box.width || 380) * .14))
+    let lastX = startX, lastY = startY, lastTime = event.timeStamp
+    let velocity = { x: 0, y: 0 }
+    const track = (x: number, y: number, time: number) => {
+      const dx = x - startX, dy = y - startY
+      if (time - lastTime > 80) velocity = { x: 0, y: 0 }
+      else if (x !== lastX || y !== lastY) {
+        const dt = Math.max(8, time - lastTime)
+        velocity = { x: (x - lastX) * scale / dt, y: (y - lastY) * scale / dt }
+      }
+      lastX = x; lastY = y; lastTime = time
+      const pose = grip.at(dx * scale, dy * scale)
+      silk.show(pose)
+      const armed = pose.dx * pose.side / scale >= openDistance && dx * pose.side > Math.abs(dy)
+      hint.current?.toggleAttribute('data-armed', armed)
+      return armed ? pose.side : 0
     }
-    stopDrag.current = bindDrag(event.currentTarget, event.nativeEvent, {
-      threshold: dragThreshold,
+    const listeners = new AbortController()
+    function detach() {
+      listeners.abort()
+      stopDrag.current = undefined
+      hint.current?.removeAttribute('data-armed')
+    }
+    const cancel = () => {
+      detach()
+      unbind()
+      suppressClick.current = true
+      silk.restore(reducedMotion)
+    }
+    const unbind = bindDrag(handle, event.nativeEvent, {
+      threshold: tapSlop,
       cancelOnEscape: true,
-      onStart: () => { suppressClick.current = true },
-      onMove: ({ x, y }) => track(x - startX, y - startY),
+      onStart: move => {
+        suppressClick.current = true
+        if (Math.abs(move.clientY - startY) > Math.abs(move.clientX - startX)) { cancel(); return false }
+      },
+      onMove: ({ x, y, event: move }) => track(x, y, move.timeStamp),
       onEnd: (up, canceled) => {
-        stopDrag.current = undefined
-        const dx = up.clientX - startX, dy = up.clientY - startY
-        suppressClick.current ||= canceled || Math.max(Math.abs(dx), Math.abs(dy)) >= dragThreshold
-        if (!canceled && Math.abs(dx) >= 36 && Math.abs(dx) > Math.abs(dy)) {
-          track(dx, dy)
-          open(false)
-        } else silk.restore(reducedMotion)
+        const distance = Math.max(Math.abs(up.clientX - startX), Math.abs(up.clientY - startY))
+        const dragged = suppressClick.current || distance >= tapSlop
+        suppressClick.current = canceled || dragged
+        const armed = !canceled && dragged && track(up.clientX, up.clientY, up.timeStamp)
+        detach()
+        if (armed) open(false, velocity.x * armed)
+        else if (suppressClick.current) silk.restore(reducedMotion, canceled ? undefined : velocity)
+        else silk.show(grip.tap)
       },
     })
+    stopDrag.current = cancel
+    const options = { capture: true, signal: listeners.signal }
+    handle.ownerDocument.addEventListener('pointerdown', down => { if (down.pointerId !== id) cancel() }, options)
+    // Touch may transfer implicit capture from an SVG child to the handle; that is not a cancellation.
+    handle.addEventListener('lostpointercapture', lost => {
+      if (lost.target === handle && 'pointerId' in lost && lost.pointerId === id) cancel()
+    }, options)
+    // Capturing blur here would also cancel the first pull when focus leaves the opener for the bow.
+    window.addEventListener('blur', cancel, { signal: listeners.signal })
   }
 
   return (
     <div ref={cover} className="flower-cover parcel" data-exiting={exiting ? '' : undefined} inert={exiting} aria-hidden={exiting || undefined}>
       <PrintPlate />
       <Tissue side="left" /><Tissue side="right" />
-      <div className="parcel-label">
+      <div ref={label} className="parcel-label">
         <svg className="parcel-thread" aria-hidden="true" viewBox="0 0 85 110" preserveAspectRatio="none"><path d="M76 0C35 19 85 63 10 110m68-110C44 27 84 68 12 110" fill="none" stroke="#886e55" strokeWidth="1.2" /></svg>
         <div className="parcel-tag"><h2 id="flower-cover-note">A little something,<br /><em>just for you.</em></h2></div>
       </div>
@@ -158,7 +201,7 @@ export function GiftCover({ ready, exiting, reducedMotion, onOpen, onExit }: Gif
         </ActionButton>
       </div>
       <div className="parcel-invitation">
-        <p className="parcel-hint">Pull the ribbon, or</p>
+        <p ref={hint} className="parcel-hint"><span>Pull the ribbon, or</span><span>Release to open</span></p>
         <ActionButton ref={opener} disabled={!ready} aria-describedby="flower-cover-note" onClick={(event) => open(event.detail === 0)} render={<Button className="flower-control flower-open parcel-open" />}>
           Open your flowers <svg width="19" height="12" viewBox="0 0 19 12" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M1 6h15m-5-4.5L16 6l-5 4.5" /></svg>
         </ActionButton>

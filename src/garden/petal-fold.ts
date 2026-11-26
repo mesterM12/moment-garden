@@ -25,12 +25,18 @@ function install(g: THREE.BufferGeometry, targets: Attribute[]) {
 // Free blades (lily, rays, poppy) are strips along +Z. Walk the midrib ONCE
 // in arc length: the base lies back before the tip releases. Merely rotating
 // the finished plane about the socket cannot make this hook or folded seam.
-export function foldBlade(g: THREE.BufferGeometry, key: SpeciesKey, openAngle: number, phase: number) {
+export function foldBlade(g: THREE.BufferGeometry, key: SpeciesKey, openAngle: number, phase: number, socketRadius = 0) {
   const pos = g.getAttribute('position'), uv = g.getAttribute('uv');
   let across = 1;
   while (across < uv.count && uv.getY(across) === uv.getY(0)) across++;
   const middle = Math.floor(across / 2);
   const lily = key === 'lily', poppy = key === 'poppy', ray = !lily && !poppy;
+  const bladeLength = pos.getZ(pos.count - across + middle) - pos.getZ(middle);
+  // Radius in head space, including the insertion ring. The tip of a lily
+  // meets its neighbours above the pistil instead of crossing through them.
+  const lilyRadius = (t: number) => socketRadius * (1 - ease(t))
+    + bladeLength * (.18 * Math.sin(Math.PI * t) + .018 * t);
+  const hingeSin = Math.sin(openAngle), hingeCos = Math.cos(openAngle);
   const targets = [true, false].map(sealed => {
     const shape = pos.clone();
     let y = pos.getY(middle), z = pos.getZ(middle), bend = 0;
@@ -40,15 +46,28 @@ export function foldBlade(g: THREE.BufferGeometry, key: SpeciesKey, openAngle: n
         const dy = pos.getY(c) - pos.getY(c - across), dz = pos.getZ(c) - pos.getZ(c - across);
         const length = Math.hypot(dy, dz), rest = Math.atan2(dy, dz);
         const arch = ease((t - .23) / .70);
-        const angle = sealed
+        let angle = sealed
           ? openAngle + (ray ? .98 : .91) + (ray ? .97 : 1.25) * arch
-          : rest + .10 + (lily ? 2.18 : poppy ? 1.61 : 1.32) * arch;
+          : rest + .10 + (lily ? 2.78 : poppy ? 1.61 : 1.32) * arch;
+        if (sealed && lily) {
+          const dr = lilyRadius(t) - lilyRadius(uv.getY(c - across));
+          angle = openAngle + Math.acos(Math.max(-1, Math.min(1, dr / length)));
+        }
         bend = angle - rest;
         y += length * Math.sin(angle); z += length * Math.cos(angle);
       }
       const sin = Math.sin(bend), cos = Math.cos(bend);
       for (let i = row * across; i < (row + 1) * across; i++) {
         const s = uv.getX(i) * 2 - 1, x = pos.getX(i) - pos.getX(c);
+        if (sealed && lily) {
+          // Give each tepal a face on a shared hull. A flat, pinched margin
+          // leaves daylight between all six blades in the middle of the bud.
+          const r = lilyRadius(t), wrap = Math.atan2(x, r) * 1.03;
+          const dr = r * (Math.cos(wrap) - 1);
+          shape.setXYZ(i, pos.getX(c) * (1 - ease(t)) + r * Math.sin(wrap),
+            y + dr * hingeSin, z + dr * hingeCos);
+          continue;
+        }
         const fold = sealed ? .84 : .72 * ease((t - .12) / .82);
         // Pinched margins wrap the bud; broad petals retain corrugations as
         // their shoulders spread. The seam does not scale the entire blade.
@@ -74,7 +93,7 @@ export function foldShell(g: THREE.BufferGeometry, specimen: Specimen, layer: nu
   // Non-blades (receptacles, stamens, spadix) simply ride the flower.
   for (let i = 0; i < open.count; i++) bent.setXYZ(i,
     .5 * (shut.getX(i) + open.getX(i)), .5 * (shut.getY(i) + open.getY(i)), .5 * (shut.getZ(i) + open.getZ(i)));
-  const cup = key === 'tulip' || key === 'calla', roll = key === 'dahlia';
+  const cup = key === 'tulip', roll = key === 'dahlia';
   const inner = 1 / (1 + layer * .33);
   for (const { first, end, voice, anchor } of spans) {
     const variation = Math.sin(phase + voice * 2.39996);
@@ -82,18 +101,36 @@ export function foldShell(g: THREE.BufferGeometry, specimen: Specimen, layer: nu
       const t = anchor ? anchor[0] : uv.getY(i), s = anchor ? anchor[1] : uv.getX(i) * 2 - 1;
       const x = open.getX(i), y = open.getY(i), z = open.getZ(i);
       const lip = ease((t - .37) / .61), belly = Math.sin(Math.PI * t);
+      if (key === 'calla') {
+        // The spathe is ONE sheet around a spadix. Wind the high lip into a
+        // quill and bring the low front lip up over the core. At half-open,
+        // the outer lap already flares while the inner lap stays furled.
+        const outer = ease((s + 1) / 2), radius = Math.hypot(x, z) || 1;
+        const furled = radius * .34 * (1 - .75 * lip) + R * .055 * belly;
+        const rise = ease(t) * (.29 * R + .12 * (R - y));
+        const a = Math.atan2(x, z), winding = (.20 + .96 * outer) * ease(t);
+        shut.setXYZ(i, furled * Math.sin(a + winding), y + rise, furled * Math.cos(a + winding));
+        const unwind = .42 + .35 * outer, rm = furled + (radius - furled) * unwind;
+        bent.setXYZ(i, rm * Math.sin(a + winding * (1 - unwind)), y + rise * (1 - unwind),
+          rm * Math.cos(a + winding * (1 - unwind)));
+        continue;
+      }
       if (key === 'rose') {
         const r = Math.hypot(x, z) || 1;
-        const budR = R * (.12 + .20 * belly + .10 * t) * inner + .06 * r;
-        shut.setXYZ(i, x / r * budR, .84 * R * t + y * (.57 - .32 * t), z / r * budR);
+        const budR = R * (.10 + .23 * belly + .074 * t + .029 * s * belly) * inner + .03 * r;
+        // The margins wind over one another, rather than meeting on straight
+        // meridians. Leave the basal socket in the same place in all poses.
+        const wind = (.61 + .16 * s) * ease(t), a = Math.atan2(x, z) + wind;
+        const radius = budR + (r - budR) * (1 - ease(t / .32));
+        const height = (.80 * t + .07 * s * t - .046 * s * s * lip) * R + y * (1 - .71 * ease(t));
+        shut.setXYZ(i, radius * Math.sin(a), height, radius * Math.cos(a));
       }
       const sx = shut.getX(i), sy = shut.getY(i), sz = shut.getZ(i);
-      // A calla unwraps at one lap of its seam; rolled florets lift from
-      // narrow tubes; the rose's overlapping guards turn aside like spoons.
-      const seam = key === 'calla' ? .19 * s : .055 * s * variation;
+      // On a rose one shoulder leads and the trailing margin stays cupped.
+      const seam = key === 'rose' ? .24 * s * inner : .055 * s * variation;
       const spread = .81 + .095 * variation - (cup ? .55 : roll ? .48 : .52) * lip + seam * lip;
       const bx = sx + (x - sx) * spread, bz = sz + (z - sz) * spread;
-      const twist = (key === 'calla' ? .56 * (1 - .5 * s) : key === 'rose' ? .30 : roll ? .22 : .13 * variation) * lip;
+      const twist = (key === 'rose' ? .40 : roll ? .22 : .13 * variation) * lip;
       const c = Math.cos(twist), d = Math.sin(twist);
       const lift = (cup ? .09 : roll ? .12 : .19) * inner * R * (belly + .65 * lip);
       let mx = bx * c + bz * d, my = sy + (y - sy) * spread + lift, mz = bz * c - bx * d;

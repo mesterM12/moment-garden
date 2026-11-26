@@ -20,14 +20,47 @@ const unit = (x: number) => Math.min(1, Math.max(0, x))
 const fmt = (x: number) => Math.round(x * 10) / 10
 const TAU = 2 * Math.PI
 
+export function gripRibbon(initial: Pull, across: number) {
+  const fromTail = Math.abs(across) > 36
+  const taking: Side = fromTail ? (across < 0 ? -1 : 1) : initial.side
+  const inFlight = initial.dx !== 0 || initial.dy !== 0
+  const grip = inFlight && taking === initial.side ? initial.grip : fromTail ? Math.abs(across) : 100
+  const tap = { ...(taking === initial.side ? initial : resting), side: taking, grip }
+  // Regrabbing the other tail first takes up the small fold left by the interrupted return.
+  const slack = taking !== initial.side ? Math.min(18, Math.hypot(initial.dx, initial.dy)) : 0
+  return { tap, at(x: number, y: number): Pull {
+    if (slack && Math.abs(x) < slack) {
+      const remaining = 1 - Math.abs(x) / slack
+      return { ...initial, dx: initial.dx * remaining, dy: initial.dy * remaining }
+    }
+    if (slack) return { side: taking, grip, dx: x - Math.sign(x) * slack, dy: y * (1 - slack / Math.abs(x)) }
+    const dx = initial.dx + x
+    const side = !fromTail && dx ? (dx < 0 ? -1 : 1) : taking
+    return { side, grip, dx, dy: initial.dy + y }
+  } }
+}
+
+// Keep the gripped fold on the finger until it runs out of silk. The derivative at the join is 1.
+function resist(distance: number, free: number, spare: number) {
+  const extra = Math.max(0, Math.abs(distance) - free)
+  return Math.sign(distance) * (Math.min(free, Math.abs(distance)) + spare * extra / (spare + extra))
+}
+
+export function silkFeed(pull: Pull) {
+  const outward = pull.dx * pull.side
+  const dx = resist(outward, outward >= 0 ? 114 : 25, outward >= 0 ? 42 : 16) * pull.side
+  const t = unit(outward / 114)
+  return { dx, dy: resist(pull.dy, 62, 28), tension: t * t * (3 - 2 * t) }
+}
+
 // After slipping, each half is still one continuous length from the wrapping band to its cut end.
 function root(side: Side, loose: number) {
   return { x: side * 275 * loose ** 1.55, y: 45 * loose + 17 * Math.sin(loose * Math.PI) }
 }
 
-function cut(piece: Piece, pull: Pull, loose: number) {
+function cut(piece: Piece, pull: Pull, feed: ReturnType<typeof silkFeed>, loose: number) {
   const taking = piece.side === pull.side
-  const tension = unit(Math.abs(pull.dx) / 112)
+  const { dx, dy, tension } = feed
   const anchor = root(piece.face === 'knot' ? pull.side : piece.side, loose)
   return (net: Net) => net.map(({ command, points }) => {
     let line = command
@@ -39,10 +72,11 @@ function cut(piece: Piece, pull: Pull, loose: number) {
         x = u * (1 - .33 * tension + .85 * loose) + v * pull.side * (.19 * tension + .65 * loose)
         y = v * (1 + .12 * tension - .94 * loose)
       } else if (piece.face === 'tail') {
-        const grip = unit(u * piece.side / pull.grip)
+        const reachToHand = unit((u * piece.side - 9) / Math.max(12, pull.grip - 23))
+        const grip = reachToHand * reachToHand * (3 - 2 * reachToHand)
         const belly = Math.sin(grip * Math.PI)
-        x += taking ? pull.dx * grip : piece.side * (12 * reach - 16 * belly) * tension
-        y += taking ? pull.dy * grip - 39 * belly * tension : (20 * reach + 12 * belly) * tension
+        x += taking ? dx * grip : piece.side * (12 * reach - 16 * belly) * tension
+        y += taking ? dy * grip - 34 * belly * tension : (20 * reach + 12 * belly) * tension
         // A single travelling fold runs from the released throat to the cut edge.
         y += loose * (-.58 * v + 36 * reach) + 45 * Math.sin(TAU * (loose - .6 * reach)) * Math.sin(loose * Math.PI) * reach
       } else {
@@ -77,12 +111,14 @@ export function bindCloth(svg: SVGSVGElement) {
   const light = svg.querySelector<SVGLinearGradientElement>('#parcel-loop')!
   let lastLoose = 0
   return (pull: Pull, loose = 0) => {
+    const feed = silkFeed(pull)
+    const atRest = !pull.dx && !pull.dy && !loose
     for (const { piece, body, edge } of parts) {
-      const warp = cut(piece, pull, loose)
-      body.setAttribute('d', warp(piece.body))
-      edge.setAttribute('d', warp(piece.edge))
+      const warp = cut(piece, pull, feed, loose)
+      body.setAttribute('d', atRest ? piece.shape : warp(piece.body))
+      edge.setAttribute('d', atRest ? piece.selvedge : warp(piece.edge))
     }
-    light.setAttribute('x2', String(.28 + pull.side * (.54 * unit(Math.abs(pull.dx) / 112) - .46 * loose)))
+    light.setAttribute('x2', String(.28 + pull.side * (.54 * feed.tension - .46 * loose)))
     if (loose !== lastLoose) {
       bands.forEach((band, i) => band.setAttribute('d', bandPath(i ? 1 : -1, loose)))
       lastLoose = loose

@@ -13,7 +13,7 @@ export function bladeBatches(key: SpeciesKey, head: THREE.Group, material: THREE
   return {
     add(g: THREE.BufferGeometry, i: number, layer: number, yawAngle: number, height: number,
       radius: number, openAngle: number, offset: number) {
-      foldBlade(g, key, openAngle, yawAngle);
+      foldBlade(g, key, openAngle, yawAngle, radius);
       matrix.multiplyMatrices(yaw.makeRotationY(yawAngle), hinge.makeRotationX(openAngle));
       matrix.setPosition(socket.set(Math.sin(yawAngle) * radius, height, Math.cos(yawAngle) * radius));
       normal.getNormalMatrix(matrix);

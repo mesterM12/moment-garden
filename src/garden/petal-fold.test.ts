@@ -7,6 +7,7 @@ import { bloomStart, foldWeights, hingePeak, leadingGuard, petalOpening } from '
 import { createSpecimen } from './botany';
 import { finishPetals } from './florist-finish';
 import * as extras from './extra-blooms';
+import * as dedicated from './petal-meshes';
 
 const strip = () => {
   const g = new THREE.BufferGeometry();
@@ -41,6 +42,23 @@ describe.each(['lily', 'poppy', 'sunflower'] as const)('%s blade', key => {
   });
 });
 
+test('a lily closes over its insertion ring instead of curling six isolated blades around open air', () => {
+  const head = new THREE.Group(), mat = new THREE.MeshStandardMaterial();
+  const batch = bladeBatches('lily', head, mat);
+  batch.add(strip(), 0, 0, 0, 0, .1, -.08, 0);
+  const [{ mesh }] = batch.finish(), [bud, bent] = mesh.geometry.morphAttributes.position;
+  const rim = 102, belly = 52;
+  // In head coordinates the sealed tip meets the axis above its fixed socket;
+  // in the bowed pose its distal tangent points back toward the pistil.
+  expect(bud.getZ(2)).toBeCloseTo(.1);
+  expect(bud.getZ(rim)).toBeGreaterThan(0);
+  expect(bud.getZ(rim)).toBeLessThan(.1 * bud.getZ(belly));
+  expect(bud.getY(rim)).toBeGreaterThan(.85);
+  expect(bud.getZ(belly - 2)).toBeLessThan(bud.getZ(belly));
+  expect(bent.getZ(rim) - bent.getZ(rim - 5)).toBeLessThan(0);
+  mesh.geometry.dispose(); mat.dispose();
+});
+
 test('three large sunflower whorls share at most fifteen draws, including closed and bowed targets', () => {
   const head = new THREE.Group(), mat = new THREE.MeshStandardMaterial();
   const batches = bladeBatches('sunflower', head, mat);
@@ -66,6 +84,48 @@ test('cluster sockets rise with their scaffold before the independently cupped f
   expect(vector(bent, blade.first)).toEqual(vector(g.attributes.position, blade.first));
   expect(vector(bent, blade.end - 1).distanceTo(vector(g.attributes.position, blade.end - 1))).toBeGreaterThan(.07);
   batches.forEach(p => p.mesh.geometry.dispose()); mat.dispose();
+});
+
+test('a calla covers its spadix with a wound lip and releases the outside lap first', () => {
+  const specimen = createSpecimen(42, 'calla'), head = new THREE.Group(), mat = new THREE.MeshStandardMaterial();
+  const [petal] = finishPetals(specimen, extras.build(specimen, head, mat), head);
+  const g = petal.mesh.geometry, open = g.attributes.position, [bud, mid] = g.morphAttributes.position;
+  const span = petal.blades![0];
+  let spadix = -Infinity, lowLip = Infinity, inner = -1, outer = -1;
+  for (let i = span.end; i < open.count; i++) spadix = Math.max(spadix, bud.getY(i));
+  for (let i = span.first; i < span.end; i++) if (g.attributes.uv.getY(i) === 1) {
+    lowLip = Math.min(lowLip, bud.getY(i));
+    if (g.attributes.uv.getX(i) === 0) inner = i;
+    if (g.attributes.uv.getX(i) === 1) outer = i;
+  }
+  expect(lowLip).toBeGreaterThan(spadix + .10 * specimen.length);
+  const radius = (p: typeof open, i: number) => Math.hypot(p.getX(i), p.getZ(i));
+  const spread = (i: number) => (radius(mid, i) - radius(bud, i)) / (radius(open, i) - radius(bud, i));
+  expect(spread(outer) - spread(inner)).toBeGreaterThan(.30);
+  expect(radius(bud, outer)).toBeLessThan(radius(open, outer) * .14);
+  g.dispose(); mat.dispose();
+});
+
+test('rose guards peel from their insertion, with one shoulder leading and the opposite rim still cupped', () => {
+  const specimen = createSpecimen(42, 'rose'), head = new THREE.Group(), mat = new THREE.MeshStandardMaterial();
+  const entries = finishPetals(specimen, dedicated.build(specimen, head, mat), head);
+  const g = entries[0].mesh.geometry, open = g.attributes.position, [bud, mid] = g.morphAttributes.position;
+  const spread = (i: number) => {
+    const r = (p: typeof open) => Math.hypot(p.getX(i), p.getZ(i));
+    return (r(mid) - r(bud)) / (r(open) - r(bud));
+  };
+  let left = -1, right = -1;
+  for (let i = 0; i < open.count; i++) {
+    if (g.attributes.uv.getY(i) === 0) {
+      expect(vector(bud, i).distanceTo(vector(open, i))).toBeLessThan(1e-6);
+      expect(vector(mid, i).distanceTo(vector(open, i))).toBeLessThan(1e-6);
+    }
+    if (g.attributes.uv.getY(i) === 1 && g.attributes.uv.getX(i) === 0) left = i;
+    if (g.attributes.uv.getY(i) === 1 && g.attributes.uv.getX(i) === 1) right = i;
+  }
+  expect(spread(right) - spread(left)).toBeGreaterThan(.35);
+  head.traverse(obj => { if (obj instanceof THREE.Mesh) { obj.geometry.dispose(); if (obj.material !== mat) obj.material.dispose(); } });
+  mat.dispose();
 });
 
 test('a visible outer guard parts first without picking a tube or a ray from a composite head', () => {

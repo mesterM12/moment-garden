@@ -10,6 +10,18 @@ function rms(samples: Float64Array, start: number, end: number): number {
   return measureSignal(samples.slice(Math.round(start * SAMPLE_RATE), Math.round(end * SAMPLE_RATE))).rms
 }
 
+// A conservative mono midband probe, not a simulated phone or listening test.
+function phoneBand(samples: Float64Array): Float64Array {
+  const hp = 1 - Math.exp(-2 * Math.PI * 400 / SAMPLE_RATE)
+  const lp = 1 - Math.exp(-2 * Math.PI * 3_200 / SAMPLE_RATE)
+  let bass = 0, band = 0
+  return samples.map(sample => {
+    bass += hp * (sample - bass)
+    band += lp * (sample - bass - band)
+    return band
+  })
+}
+
 function decodePcm(bytes: Uint8Array): Float64Array {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
   const samples = new Float64Array((bytes.length - 44) / 2)
@@ -101,12 +113,34 @@ describe('sound timing and encoder guards', () => {
   it('leaves room for the release, breathes between fingers, and answers more quietly than the melody', () => {
     const samples = renderSound('bloom')
     const bass = rms(samples, 0.34, 0.49)
-    const melody = rms(samples, 1.14, 1.30)
-    const answer = rms(samples, 2.65, 2.76)
+    const melody = rms(samples, 1.04, 1.20)
+    const answer = rms(samples, 2.72, 2.83)
     expect(rms(samples, 0, SOUND_DURATIONS['gift-open'])).toBeLessThan(bass / 50)
-    expect(rms(samples, 0.92, 1.1)).toBeLessThan(melody / 3)
+    expect(rms(samples, 0.91, 1.005)).toBeLessThan(melody / 3)
+    expect(rms(samples, 1.83, 2.04)).toBeLessThan(rms(samples, 2.10, 2.28) / 4)
     expect(answer).toBeLessThan(melody * 0.7)
     expect(answer).toBeGreaterThan(melody * 0.3)
+  })
+
+  it('keeps both tissue folds and the ribbon distinct in the mono midband', () => {
+    const samples = phoneBand(decodePcm(encodeWav(renderSound('gift-open'))))
+    const slip = rms(samples, 0.025, 0.12)
+    const fold = rms(samples, 0.15, 0.19)
+    const release = rms(samples, 0.215, 0.255)
+    expect(slip).toBeGreaterThan(0.009)
+    expect(fold / slip).toBeGreaterThan(0.35)
+    expect(fold / slip).toBeLessThan(0.85)
+    expect(release / fold).toBeGreaterThan(0.4)
+    expect(release / fold).toBeLessThan(0.85)
+  })
+
+  it('keeps every register of the plucked phrase present without relying on bass', () => {
+    const raw = decodePcm(encodeWav(renderSound('bloom')))
+    const band = phoneBand(raw)
+    for (const [start, end] of [[0.34, 0.49], [1.04, 1.20], [2.10, 2.28], [2.72, 2.83]] as const) {
+      expect(rms(band, start, end)).toBeGreaterThan(0.01)
+      expect(rms(band, start, end) / rms(raw, start, end)).toBeGreaterThan(0.43)
+    }
   })
 
   it('keeps the final petal distinct from the fading string without a new loud note', () => {
