@@ -11,12 +11,10 @@ import { finishPetals, tieBouquet } from './florist-finish';
 import { buildFiller } from './filler';
 import { bladeBatches } from './blade-batches';
 import { petalFields, petalSurface } from './petal-surface';
-const BRAND = 'Flowers for You';
-const GIFT_NOTE = 'I picked these flowers for you.';
+import { createPostcardPng, postcardCamera } from './postcard-png';
 const WEBGL_ERROR = 'These flowers need WebGL 2 to bloom. Try a current browser with hardware acceleration enabled.';
 const RENDER_ERROR = 'These flowers couldn’t open. Try reloading the page.';
 const CONTEXT_ERROR = 'The 3D preview paused. You can still send this bouquet, or reload it if the preview doesn’t return.';
-const formatDate = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
 type PetalPalette = { base: string; tip: string; root: string; fleck?: string };
 type Random = () => number;
@@ -997,43 +995,24 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
     async exportPng() {
       if (!current || !width || !height || !available()) throw new Error('The 3D preview is unavailable. Try saving when it returns.');
       const { name, timestamp } = current.plan;
-      const image = document.createElement('canvas');
-      image.width = 1600;
-      image.height = 1700;
-      const ctx = image.getContext('2d');
-      if (!ctx) throw new Error('Couldn’t prepare the postcard image.');
-      ctx.fillStyle = '#fff9f2'; ctx.fillRect(0, 0, image.width, image.height);
-      const scale = Math.min(1440 / width, 1400 / height);
-      const artWidth = Math.max(1, Math.round(width * scale));
-      const artHeight = Math.max(1, Math.round(height * scale));
-      const left = (1600 - artWidth) / 2;
-      const top = 60 + (1400 - artHeight) / 2;
+      const postcard = createPostcardPng(document);
       setProgress(1);
       current.plant.rotation.set(rotation.pitch, rotation.yaw, 0);
       try {
-        // Keep the on-screen camera framing, but render at keepsake resolution.
-        // Copy synchronously after render; the live canvas need not preserve its buffer.
-        frameCamera(0); // The keepsake always includes the tied cut ends.
-        renderer.setDrawingBufferSize(artWidth, artHeight, 1);
-        renderer.render(scene, camera);
+        // The keepsake has its own full-bouquet framing. Copy it immediately;
+        // the live WebGL buffer need not survive an animation frame.
+        const exportCamera = postcardCamera(current.plant.rotation, current.framePoints);
+        renderer.setDrawingBufferSize(postcard.artwork.width, postcard.artwork.height, 1);
+        renderer.render(scene, exportCamera);
         if (gl.isContextLost()) throw new Error(CONTEXT_ERROR);
-        ctx.drawImage(canvas, left, top, artWidth, artHeight);
+        postcard.drawBouquet(canvas);
       } finally {
         if (!gl.isContextLost()) renderer.setDrawingBufferSize(width, height, pixelRatio);
         paint();
         if (available()) announceProgress();
         if (!rotation.moving && !closeView.moving) cancelFrame();
       }
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#573b3d'; ctx.font = '48px Georgia, serif';
-      ctx.fillText(name, 800, 1485, 1440);
-      ctx.fillStyle = '#765b5d'; ctx.font = '24px Georgia, serif';
-      ctx.fillText(`${BRAND} · ${formatDate.format(timestamp)}`, 800, 1535);
-      ctx.fillStyle = '#9a4d5c'; ctx.font = 'italic 30px Georgia, serif';
-      ctx.fillText(GIFT_NOTE, 800, 1605);
-      return new Promise<Blob>((resolve, reject) => {
-        image.toBlob(blob => blob ? resolve(blob) : reject(new Error('PNG encoding failed.')), 'image/png');
-      });
+      return postcard.encode(name, timestamp);
     },
     dispose,
   };

@@ -1,6 +1,7 @@
 import { describe, expect } from 'vitest'
 import type { Page } from 'playwright'
 import { browserProjects, createBrowserTest } from './browser.fixtures'
+import { pngSize, sameBouquetArtwork } from './postcard-png.fixtures'
 
 describe.each(browserProjects)('$name', ({ options, isMobile }) => {
 const test = createBrowserTest(options, isMobile)
@@ -132,7 +133,9 @@ test('reading the petals up close does not crop the saved gift or change the see
   await page.keyboard.press('Enter')
   await expect(detail).toHaveAttribute('aria-pressed', 'true')
   expect((await art.screenshot()).equals(wide)).toBe(false)
-  expect((await keepsake()).equals(whole)).toBe(true)
+  const close = await keepsake()
+  expect(pngSize(close)).toEqual(pngSize(whole))
+  expect(await sameBouquetArtwork(page, whole, close)).toBe(true)
   await expect(detail).toHaveAttribute('aria-pressed', 'true')
   await art.focus()
   await page.keyboard.press('Home')

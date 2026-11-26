@@ -228,7 +228,7 @@ The installed app uses the same light stationery palette and safe-area spacing, 
 
 ### Saved postcard
 
-The 1600 × 1700 PNG places the finished bouquet at its current angle on cream paper. Centered Georgia type prints the bouquet name, then the brand and date, then an italic rose gift line. Interactive controls do not appear in the keepsake.
+The 2400 × 1260 PNG follows the seeded share preview’s landscape stationery: a cream card on a blush surround, a two-line Instrument Serif title with rose italic “for You,” and a soft wash behind the bouquet on the right. The gift note, bouquet name, and date stay on the left; the date replaces the preview’s invitation to open the bouquet. The saved image frames the entire mature arrangement at its current angle, including when the reader is looking closer, without changing the live rotation or zoom. Saving runs in the browser and uses local fonts with system fallbacks if unavailable. Interactive controls do not appear in the keepsake.
 
 ## Do's and Don'ts
 
