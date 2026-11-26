@@ -1,5 +1,5 @@
 {
-  "revision": "a5929b85b8b5828ed4d45fbacf9dd28426e442d8",
+  "revision": "6b413fcc958e5440604500effd03260e21073374",
   "workingTree": "",
   "address": "http://127.0.0.1:4351/",
   "environment": {
@@ -23,7 +23,7 @@
     "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
     "antialias": true,
     "anisotropy": 4,
-    "rendererAndTexturesMs": 7.5
+    "rendererAndTexturesMs": 6
   },
   "specimenSize": 288,
   "representativeDimensions": {
@@ -914,16 +914,16 @@
         "poppy"
       ],
       "stems": 7,
-      "planMs": 1.9000000357627869,
-      "buildMs": 55.799999952316284,
+      "planMs": 1.800000011920929,
+      "buildMs": 55.69999998807907,
       "first": {
         "progress": 0,
         "calls": 114,
         "triangles": 160524,
         "lines": 0,
         "points": 0,
-        "submitMs": 1041.0999999642372,
-        "readbackMs": 1745
+        "submitMs": 972.5,
+        "readbackMs": 1676.0999999642372
       },
       "warm": [
         {
@@ -932,8 +932,8 @@
           "triangles": 160854,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.800000011920929,
-          "readbackMs": 40
+          "submitMs": 0.8999999761581421,
+          "readbackMs": 27.899999976158142
         },
         {
           "progress": 0.24,
@@ -942,16 +942,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.30000001192092896,
-          "readbackMs": 37.40000003576279
-        },
-        {
-          "progress": 0.24,
-          "calls": 37,
-          "triangles": 59076,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 39.39999997615814
+          "readbackMs": 18.19999998807907
         },
         {
           "progress": 0.24,
@@ -960,7 +951,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.30000001192092896,
-          "readbackMs": 35.60000002384186
+          "readbackMs": 18.700000047683716
         },
         {
           "progress": 0.24,
@@ -968,8 +959,17 @@
           "triangles": 59076,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 38.59999996423721
+          "submitMs": 0.2999999523162842,
+          "readbackMs": 18.599999964237213
+        },
+        {
+          "progress": 0.24,
+          "calls": 37,
+          "triangles": 59076,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 20.30000001192093
         },
         {
           "progress": 0.5,
@@ -977,8 +977,8 @@
           "triangles": 203556,
           "lines": 0,
           "points": 0,
-          "submitMs": 1.2000000476837158,
-          "readbackMs": 54.80000001192093
+          "submitMs": 0.699999988079071,
+          "readbackMs": 40.89999997615814
         },
         {
           "progress": 0.5,
@@ -986,44 +986,53 @@
           "triangles": 101778,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 40.80000001192093
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 34.69999998807907
         },
         {
           "progress": 0.5,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 34.40000003576279
+        },
+        {
+          "progress": 0.5,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.2999999523162842,
+          "readbackMs": 39.19999998807907
+        },
+        {
+          "progress": 0.5,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 33.80000001192093
+        },
+        {
+          "progress": 0.78,
+          "calls": 156,
+          "triangles": 203556,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 1.2999999523162842,
+          "readbackMs": 43.09999996423721
+        },
+        {
+          "progress": 0.78,
           "calls": 78,
           "triangles": 101778,
           "lines": 0,
           "points": 0,
           "submitMs": 0.699999988079071,
-          "readbackMs": 40.5
-        },
-        {
-          "progress": 0.5,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 51.80000001192093
-        },
-        {
-          "progress": 0.5,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 54.59999996423721
-        },
-        {
-          "progress": 0.78,
-          "calls": 156,
-          "triangles": 203556,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.9000000357627869,
-          "readbackMs": 65.10000002384186
+          "readbackMs": 37.90000003576279
         },
         {
           "progress": 0.78,
@@ -1032,7 +1041,16 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 55.39999997615814
+          "readbackMs": 50.09999996423721
+        },
+        {
+          "progress": 0.78,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 53.69999998807907
         },
         {
           "progress": 0.78,
@@ -1041,25 +1059,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 44.90000003576279
-        },
-        {
-          "progress": 0.78,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 53.39999997615814
-        },
-        {
-          "progress": 0.78,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 43.10000002384186
+          "readbackMs": 31.900000035762787
         },
         {
           "progress": 1,
@@ -1067,44 +1067,44 @@
           "triangles": 203556,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5999999642372131,
-          "readbackMs": 64.30000001192093
-        },
-        {
-          "progress": 1,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 43.89999997615814
-        },
-        {
-          "progress": 1,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 53.10000002384186
-        },
-        {
-          "progress": 1,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 47.69999998807907
-        },
-        {
-          "progress": 1,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
           "submitMs": 0.699999988079071,
-          "readbackMs": 53.19999998807907
+          "readbackMs": 40.19999998807907
+        },
+        {
+          "progress": 1,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 34.89999997615814
+        },
+        {
+          "progress": 1,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 33
+        },
+        {
+          "progress": 1,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 36.90000003576279
+        },
+        {
+          "progress": 1,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 32.09999996423721
         }
       ],
       "turns": [
@@ -1114,8 +1114,8 @@
           "triangles": 101778,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 46.60000002384186
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 31.69999998807907
         },
         {
           "progress": 1,
@@ -1123,8 +1123,8 @@
           "triangles": 101778,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 53.89999997615814
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 32.5
         },
         {
           "progress": 1,
@@ -1132,17 +1132,8 @@
           "triangles": 101778,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 51.89999997615814
-        },
-        {
-          "progress": 1,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 53.60000002384186
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 31.900000035762787
         },
         {
           "progress": 1,
@@ -1151,7 +1142,16 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 44.89999997615814
+          "readbackMs": 32.09999996423721
+        },
+        {
+          "progress": 1,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 31.30000001192093
         }
       ]
     },
@@ -1167,7 +1167,7 @@
       ],
       "stems": 7,
       "planMs": 0.8999999761581421,
-      "buildMs": 31.5,
+      "buildMs": 32.30000001192093,
       "first": {
         "progress": 0,
         "calls": 114,
@@ -1175,7 +1175,7 @@
         "lines": 0,
         "points": 0,
         "submitMs": 113.40000003576279,
-        "readbackMs": 1539.4000000357628
+        "readbackMs": 1343.2000000476837
       },
       "warm": [
         {
@@ -1185,7 +1185,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.6000000238418579,
-          "readbackMs": 39.39999997615814
+          "readbackMs": 37.19999998807907
         },
         {
           "progress": 0.24,
@@ -1194,7 +1194,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.30000001192092896,
-          "readbackMs": 28.600000023841858
+          "readbackMs": 27.400000035762787
         },
         {
           "progress": 0.24,
@@ -1202,8 +1202,8 @@
           "triangles": 59076,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.19999998807907104,
-          "readbackMs": 24.899999976158142
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 28.299999952316284
         },
         {
           "progress": 0.24,
@@ -1211,116 +1211,143 @@
           "triangles": 59076,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.20000004768371582,
-          "readbackMs": 24.700000047683716
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 29.100000023841858
         },
         {
           "progress": 0.24,
           "calls": 37,
           "triangles": 59076,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 27.5
+        },
+        {
+          "progress": 0.5,
+          "calls": 156,
+          "triangles": 203556,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.699999988079071,
+          "readbackMs": 60.5
+        },
+        {
+          "progress": 0.5,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 50.30000001192093
+        },
+        {
+          "progress": 0.5,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 48
+        },
+        {
+          "progress": 0.5,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 49.5
+        },
+        {
+          "progress": 0.5,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 46.30000001192093
+        },
+        {
+          "progress": 0.78,
+          "calls": 156,
+          "triangles": 203556,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.699999988079071,
+          "readbackMs": 58.59999996423721
+        },
+        {
+          "progress": 0.78,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 49.5
+        },
+        {
+          "progress": 0.78,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 50.40000003576279
+        },
+        {
+          "progress": 0.78,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 47.299999952316284
+        },
+        {
+          "progress": 0.78,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 44.60000002384186
+        },
+        {
+          "progress": 1,
+          "calls": 156,
+          "triangles": 203556,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.699999988079071,
+          "readbackMs": 57.5
+        },
+        {
+          "progress": 1,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 47.60000002384186
+        },
+        {
+          "progress": 1,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 46.5
+        },
+        {
+          "progress": 1,
+          "calls": 78,
+          "triangles": 101778,
           "lines": 0,
           "points": 0,
           "submitMs": 0.2999999523162842,
-          "readbackMs": 21
-        },
-        {
-          "progress": 0.5,
-          "calls": 156,
-          "triangles": 203556,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.699999988079071,
-          "readbackMs": 56.19999998807907
-        },
-        {
-          "progress": 0.5,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 44.09999996423721
-        },
-        {
-          "progress": 0.5,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 43.200000047683716
-        },
-        {
-          "progress": 0.5,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 47.69999998807907
-        },
-        {
-          "progress": 0.5,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 45.30000001192093
-        },
-        {
-          "progress": 0.78,
-          "calls": 156,
-          "triangles": 203556,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.699999988079071,
-          "readbackMs": 50.59999996423721
-        },
-        {
-          "progress": 0.78,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 43.5
-        },
-        {
-          "progress": 0.78,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 40
-        },
-        {
-          "progress": 0.78,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 43.69999998807907
-        },
-        {
-          "progress": 0.78,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 43.700000047683716
-        },
-        {
-          "progress": 1,
-          "calls": 156,
-          "triangles": 203556,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 48.09999996423721
+          "readbackMs": 47.5
         },
         {
           "progress": 1,
@@ -1328,35 +1355,8 @@
           "triangles": 101778,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 44.69999998807907
-        },
-        {
-          "progress": 1,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 43.40000003576279
-        },
-        {
-          "progress": 1,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.19999998807907104,
-          "readbackMs": 39.09999996423721
-        },
-        {
-          "progress": 1,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 46.5
+          "submitMs": 0.2999999523162842,
+          "readbackMs": 47.89999997615814
         }
       ],
       "turns": [
@@ -1366,8 +1366,240 @@
           "triangles": 101778,
           "lines": 0,
           "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 39.10000002384186
+        },
+        {
+          "progress": 1,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 47.09999996423721
+        },
+        {
+          "progress": 1,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
           "submitMs": 0.40000003576278687,
-          "readbackMs": 44.30000001192093
+          "readbackMs": 53.10000002384186
+        },
+        {
+          "progress": 1,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 47.39999997615814
+        },
+        {
+          "progress": 1,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 50.40000003576279
+        }
+      ]
+    },
+    {
+      "run": 3,
+      "token": "v3-1970260fcfc",
+      "name": "With Love",
+      "tie": "bow",
+      "species": [
+        "calla",
+        "anemone",
+        "poppy"
+      ],
+      "stems": 7,
+      "planMs": 0.3999999761581421,
+      "buildMs": 30.30000001192093,
+      "first": {
+        "progress": 0,
+        "calls": 114,
+        "triangles": 160524,
+        "lines": 0,
+        "points": 0,
+        "submitMs": 114.40000003576279,
+        "readbackMs": 1299
+      },
+      "warm": [
+        {
+          "progress": 0.24,
+          "calls": 115,
+          "triangles": 160854,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.6000000238418579,
+          "readbackMs": 27.100000023841858
+        },
+        {
+          "progress": 0.24,
+          "calls": 37,
+          "triangles": 59076,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 18.600000023841858
+        },
+        {
+          "progress": 0.24,
+          "calls": 37,
+          "triangles": 59076,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.19999998807907104,
+          "readbackMs": 18.599999964237213
+        },
+        {
+          "progress": 0.24,
+          "calls": 37,
+          "triangles": 59076,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.19999998807907104,
+          "readbackMs": 17.69999998807907
+        },
+        {
+          "progress": 0.24,
+          "calls": 37,
+          "triangles": 59076,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.20000004768371582,
+          "readbackMs": 17.400000035762787
+        },
+        {
+          "progress": 0.5,
+          "calls": 156,
+          "triangles": 203556,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5999999642372131,
+          "readbackMs": 41.5
+        },
+        {
+          "progress": 0.5,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 33
+        },
+        {
+          "progress": 0.5,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 32.89999997615814
+        },
+        {
+          "progress": 0.5,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 34.5
+        },
+        {
+          "progress": 0.5,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.699999988079071,
+          "readbackMs": 35.19999998807907
+        },
+        {
+          "progress": 0.78,
+          "calls": 156,
+          "triangles": 203556,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.6000000238418579,
+          "readbackMs": 67.30000001192093
+        },
+        {
+          "progress": 0.78,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 49.10000002384186
+        },
+        {
+          "progress": 0.78,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 45.30000001192093
+        },
+        {
+          "progress": 0.78,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 43.5
+        },
+        {
+          "progress": 0.78,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 44.299999952316284
+        },
+        {
+          "progress": 1,
+          "calls": 156,
+          "triangles": 203556,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.6000000238418579,
+          "readbackMs": 62
+        },
+        {
+          "progress": 1,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 41.700000047683716
+        },
+        {
+          "progress": 1,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 40.299999952316284
+        },
+        {
+          "progress": 1,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 34.40000003576279
         },
         {
           "progress": 1,
@@ -1376,7 +1608,18 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.30000001192092896,
-          "readbackMs": 44
+          "readbackMs": 33.5
+        }
+      ],
+      "turns": [
+        {
+          "progress": 1,
+          "calls": 78,
+          "triangles": 101778,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 33
         },
         {
           "progress": 1,
@@ -1385,7 +1628,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.40000003576278687,
-          "readbackMs": 47.10000002384186
+          "readbackMs": 37.60000002384186
         },
         {
           "progress": 1,
@@ -1403,194 +1646,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 45
-        }
-      ]
-    },
-    {
-      "run": 3,
-      "token": "v3-1970260fcfc",
-      "name": "With Love",
-      "tie": "bow",
-      "species": [
-        "calla",
-        "anemone",
-        "poppy"
-      ],
-      "stems": 7,
-      "planMs": 0.6000000238418579,
-      "buildMs": 30.899999976158142,
-      "first": {
-        "progress": 0,
-        "calls": 114,
-        "triangles": 160524,
-        "lines": 0,
-        "points": 0,
-        "submitMs": 112.20000004768372,
-        "readbackMs": 1403.1000000238419
-      },
-      "warm": [
-        {
-          "progress": 0.24,
-          "calls": 115,
-          "triangles": 160854,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 35.19999998807907
-        },
-        {
-          "progress": 0.24,
-          "calls": 37,
-          "triangles": 59076,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.20000004768371582,
-          "readbackMs": 24.600000023841858
-        },
-        {
-          "progress": 0.24,
-          "calls": 37,
-          "triangles": 59076,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.19999998807907104,
-          "readbackMs": 25.80000001192093
-        },
-        {
-          "progress": 0.24,
-          "calls": 37,
-          "triangles": 59076,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.19999998807907104,
-          "readbackMs": 19.099999964237213
-        },
-        {
-          "progress": 0.24,
-          "calls": 37,
-          "triangles": 59076,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 26.400000035762787
-        },
-        {
-          "progress": 0.5,
-          "calls": 156,
-          "triangles": 203556,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 54.19999998807907
-        },
-        {
-          "progress": 0.5,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 40.80000001192093
-        },
-        {
-          "progress": 0.5,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 46.19999998807907
-        },
-        {
-          "progress": 0.5,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 44.5
-        },
-        {
-          "progress": 0.5,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 41.89999997615814
-        },
-        {
-          "progress": 0.78,
-          "calls": 156,
-          "triangles": 203556,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 55.40000003576279
-        },
-        {
-          "progress": 0.78,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 43.19999998807907
-        },
-        {
-          "progress": 0.78,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 38.19999998807907
-        },
-        {
-          "progress": 0.78,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 44.19999998807907
-        },
-        {
-          "progress": 0.78,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 42.40000003576279
-        },
-        {
-          "progress": 1,
-          "calls": 156,
-          "triangles": 203556,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.699999988079071,
-          "readbackMs": 52.30000001192093
-        },
-        {
-          "progress": 1,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.2999999523162842,
-          "readbackMs": 43.299999952316284
-        },
-        {
-          "progress": 1,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 38
+          "readbackMs": 36.89999997615814
         },
         {
           "progress": 1,
@@ -1599,63 +1655,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.40000003576278687,
-          "readbackMs": 44.5
-        },
-        {
-          "progress": 1,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 43.700000047683716
-        }
-      ],
-      "turns": [
-        {
-          "progress": 1,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.19999998807907104,
-          "readbackMs": 37.09999996423721
-        },
-        {
-          "progress": 1,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 45.19999998807907
-        },
-        {
-          "progress": 1,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 44.60000002384186
-        },
-        {
-          "progress": 1,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 38
-        },
-        {
-          "progress": 1,
-          "calls": 78,
-          "triangles": 101778,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 45.19999998807907
+          "readbackMs": 40.40000003576279
         }
       ]
     },
@@ -1670,16 +1670,16 @@
         "daisy"
       ],
       "stems": 8,
-      "planMs": 0.6000000238418579,
-      "buildMs": 57,
+      "planMs": 0.5999999642372131,
+      "buildMs": 55.10000002384186,
       "first": {
         "progress": 0,
         "calls": 211,
         "triangles": 321810,
         "lines": 0,
         "points": 0,
-        "submitMs": 127,
-        "readbackMs": 1673.800000011921
+        "submitMs": 129,
+        "readbackMs": 1757.5
       },
       "warm": [
         {
@@ -1688,8 +1688,8 @@
           "triangles": 321810,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.7999999523162842,
-          "readbackMs": 63.09999996423721
+          "submitMs": 0.800000011920929,
+          "readbackMs": 68.80000001192093
         },
         {
           "progress": 0.24,
@@ -1697,8 +1697,17 @@
           "triangles": 135444,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 48.40000003576279
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 48.5
+        },
+        {
+          "progress": 0.24,
+          "calls": 90,
+          "triangles": 135444,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 51.30000001192093
         },
         {
           "progress": 0.24,
@@ -1707,7 +1716,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 47.89999997615814
+          "readbackMs": 48.10000002384186
         },
         {
           "progress": 0.24,
@@ -1716,16 +1725,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 50
-        },
-        {
-          "progress": 0.24,
-          "calls": 90,
-          "triangles": 135444,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 51
+          "readbackMs": 48.89999997615814
         },
         {
           "progress": 0.5,
@@ -1733,8 +1733,8 @@
           "triangles": 372732,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.8999999761581421,
-          "readbackMs": 78
+          "submitMs": 0.800000011920929,
+          "readbackMs": 82.30000001192093
         },
         {
           "progress": 0.5,
@@ -1742,26 +1742,8 @@
           "triangles": 186366,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 73.69999998807907
-        },
-        {
-          "progress": 0.5,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 109
-        },
-        {
-          "progress": 0.5,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 108.80000001192093
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 62.89999997615814
         },
         {
           "progress": 0.5,
@@ -1770,7 +1752,25 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 104.89999997615814
+          "readbackMs": 62.80000001192093
+        },
+        {
+          "progress": 0.5,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 64
+        },
+        {
+          "progress": 0.5,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 63.09999996423721
         },
         {
           "progress": 0.78,
@@ -1779,16 +1779,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.9000000357627869,
-          "readbackMs": 77.30000001192093
-        },
-        {
-          "progress": 0.78,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 64.19999998807907
+          "readbackMs": 74.60000002384186
         },
         {
           "progress": 0.78,
@@ -1797,7 +1788,16 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 61.39999997615814
+          "readbackMs": 59.5
+        },
+        {
+          "progress": 0.78,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 65.09999996423721
         },
         {
           "progress": 0.78,
@@ -1806,7 +1806,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.40000003576278687,
-          "readbackMs": 60
+          "readbackMs": 60.200000047683716
         },
         {
           "progress": 0.78,
@@ -1814,8 +1814,8 @@
           "triangles": 186366,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.7000000476837158,
-          "readbackMs": 60.5
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 65.69999998807907
         },
         {
           "progress": 1,
@@ -1823,26 +1823,8 @@
           "triangles": 372732,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.7000000476837158,
-          "readbackMs": 75.10000002384186
-        },
-        {
-          "progress": 1,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 59.60000002384186
-        },
-        {
-          "progress": 1,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.2999999523162842,
-          "readbackMs": 58.59999996423721
+          "submitMs": 0.800000011920929,
+          "readbackMs": 75.09999996423721
         },
         {
           "progress": 1,
@@ -1851,7 +1833,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.40000003576278687,
-          "readbackMs": 60
+          "readbackMs": 62.40000003576279
         },
         {
           "progress": 1,
@@ -1859,8 +1841,26 @@
           "triangles": 186366,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 65.5
+          "submitMs": 0.5,
+          "readbackMs": 66.19999998807907
+        },
+        {
+          "progress": 1,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 69.19999998807907
+        },
+        {
+          "progress": 1,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 61.30000001192093
         }
       ],
       "turns": [
@@ -1870,26 +1870,8 @@
           "triangles": 186366,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 74
-        },
-        {
-          "progress": 1,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 61
-        },
-        {
-          "progress": 1,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 61.40000003576279
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 60.60000002384186
         },
         {
           "progress": 1,
@@ -1898,7 +1880,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 62.89999997615814
+          "readbackMs": 65.19999998807907
         },
         {
           "progress": 1,
@@ -1907,12 +1889,282 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 62.89999997615814
+          "readbackMs": 69.09999996423721
+        },
+        {
+          "progress": 1,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 65.89999997615814
+        },
+        {
+          "progress": 1,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 82.60000002384186
         }
       ]
     },
     {
       "run": 2,
+      "token": "v3-1970260fd01",
+      "name": "Yours, Always",
+      "tie": "wrap",
+      "species": [
+        "rose",
+        "calla",
+        "daisy"
+      ],
+      "stems": 8,
+      "planMs": 0.3999999761581421,
+      "buildMs": 41.60000002384186,
+      "first": {
+        "progress": 0,
+        "calls": 211,
+        "triangles": 321810,
+        "lines": 0,
+        "points": 0,
+        "submitMs": 124.09999996423721,
+        "readbackMs": 1794.0999999642372
+      },
+      "warm": [
+        {
+          "progress": 0.24,
+          "calls": 211,
+          "triangles": 321810,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.800000011920929,
+          "readbackMs": 67.80000001192093
+        },
+        {
+          "progress": 0.24,
+          "calls": 90,
+          "triangles": 135444,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 55.5
+        },
+        {
+          "progress": 0.24,
+          "calls": 90,
+          "triangles": 135444,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 52.39999997615814
+        },
+        {
+          "progress": 0.24,
+          "calls": 90,
+          "triangles": 135444,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 51.200000047683716
+        },
+        {
+          "progress": 0.24,
+          "calls": 90,
+          "triangles": 135444,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 54.39999997615814
+        },
+        {
+          "progress": 0.5,
+          "calls": 242,
+          "triangles": 372732,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.7999999523162842,
+          "readbackMs": 81
+        },
+        {
+          "progress": 0.5,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 65.69999998807907
+        },
+        {
+          "progress": 0.5,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 66.5
+        },
+        {
+          "progress": 0.5,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 68.5
+        },
+        {
+          "progress": 0.5,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.699999988079071,
+          "readbackMs": 67.5
+        },
+        {
+          "progress": 0.78,
+          "calls": 242,
+          "triangles": 372732,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.800000011920929,
+          "readbackMs": 82.19999998807907
+        },
+        {
+          "progress": 0.78,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 64.39999997615814
+        },
+        {
+          "progress": 0.78,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 73.30000001192093
+        },
+        {
+          "progress": 0.78,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.699999988079071,
+          "readbackMs": 67.19999998807907
+        },
+        {
+          "progress": 0.78,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 64.70000004768372
+        },
+        {
+          "progress": 1,
+          "calls": 242,
+          "triangles": 372732,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.7999999523162842,
+          "readbackMs": 81.09999996423721
+        },
+        {
+          "progress": 1,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 71.10000002384186
+        },
+        {
+          "progress": 1,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 72.19999998807907
+        },
+        {
+          "progress": 1,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 96.30000001192093
+        },
+        {
+          "progress": 1,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 72
+        }
+      ],
+      "turns": [
+        {
+          "progress": 1,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 70.30000001192093
+        },
+        {
+          "progress": 1,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 76.60000002384186
+        },
+        {
+          "progress": 1,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 76.89999997615814
+        },
+        {
+          "progress": 1,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 63
+        },
+        {
+          "progress": 1,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5999999642372131,
+          "readbackMs": 83.59999996423721
+        }
+      ]
+    },
+    {
+      "run": 3,
       "token": "v3-1970260fd01",
       "name": "Yours, Always",
       "tie": "wrap",
@@ -1930,8 +2182,8 @@
         "triangles": 321810,
         "lines": 0,
         "points": 0,
-        "submitMs": 123,
-        "readbackMs": 1625.5
+        "submitMs": 122,
+        "readbackMs": 1723.800000011921
       },
       "warm": [
         {
@@ -1940,98 +2192,125 @@
           "triangles": 321810,
           "lines": 0,
           "points": 0,
+          "submitMs": 1.100000023841858,
+          "readbackMs": 92
+        },
+        {
+          "progress": 0.24,
+          "calls": 90,
+          "triangles": 135444,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 73.10000002384186
+        },
+        {
+          "progress": 0.24,
+          "calls": 90,
+          "triangles": 135444,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 71.69999998807907
+        },
+        {
+          "progress": 0.24,
+          "calls": 90,
+          "triangles": 135444,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 71.5
+        },
+        {
+          "progress": 0.24,
+          "calls": 90,
+          "triangles": 135444,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 79.89999997615814
+        },
+        {
+          "progress": 0.5,
+          "calls": 242,
+          "triangles": 372732,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.800000011920929,
+          "readbackMs": 106.70000004768372
+        },
+        {
+          "progress": 0.5,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 101.09999996423721
+        },
+        {
+          "progress": 0.5,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 99.80000001192093
+        },
+        {
+          "progress": 0.5,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 98.69999998807907
+        },
+        {
+          "progress": 0.5,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 75.90000003576279
+        },
+        {
+          "progress": 0.78,
+          "calls": 242,
+          "triangles": 372732,
+          "lines": 0,
+          "points": 0,
           "submitMs": 0.699999988079071,
-          "readbackMs": 90.30000001192093
+          "readbackMs": 83.89999997615814
         },
         {
-          "progress": 0.24,
-          "calls": 90,
-          "triangles": 135444,
+          "progress": 0.78,
+          "calls": 121,
+          "triangles": 186366,
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 65.39999997615814
+          "readbackMs": 59.30000001192093
         },
         {
-          "progress": 0.24,
-          "calls": 90,
-          "triangles": 135444,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 74.30000001192093
-        },
-        {
-          "progress": 0.24,
-          "calls": 90,
-          "triangles": 135444,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 73.19999998807907
-        },
-        {
-          "progress": 0.24,
-          "calls": 90,
-          "triangles": 135444,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 78.39999997615814
-        },
-        {
-          "progress": 0.5,
-          "calls": 242,
-          "triangles": 372732,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.9000000357627869,
-          "readbackMs": 101.40000003576279
-        },
-        {
-          "progress": 0.5,
+          "progress": 0.78,
           "calls": 121,
           "triangles": 186366,
           "lines": 0,
           "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 88.19999998807907
+          "readbackMs": 57.19999998807907
         },
         {
-          "progress": 0.5,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 93
-        },
-        {
-          "progress": 0.5,
+          "progress": 0.78,
           "calls": 121,
           "triangles": 186366,
           "lines": 0,
           "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 100.80000001192093
-        },
-        {
-          "progress": 0.5,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 128.0999999642372
-        },
-        {
-          "progress": 0.78,
-          "calls": 242,
-          "triangles": 372732,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.7000000476837158,
-          "readbackMs": 118.90000003576279
+          "readbackMs": 55.89999997615814
         },
         {
           "progress": 0.78,
@@ -2039,35 +2318,8 @@
           "triangles": 186366,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 94.80000001192093
-        },
-        {
-          "progress": 0.78,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.2999999523162842,
-          "readbackMs": 84
-        },
-        {
-          "progress": 0.78,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 84.5
-        },
-        {
-          "progress": 0.78,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 85.09999996423721
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 57.40000003576279
         },
         {
           "progress": 1,
@@ -2076,25 +2328,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.800000011920929,
-          "readbackMs": 105.69999998807907
-        },
-        {
-          "progress": 1,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 83.90000003576279
-        },
-        {
-          "progress": 1,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 84.09999996423721
+          "readbackMs": 100.19999998807907
         },
         {
           "progress": 1,
@@ -2103,7 +2337,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 82.30000001192093
+          "readbackMs": 85.5
         },
         {
           "progress": 1,
@@ -2111,8 +2345,26 @@
           "triangles": 186366,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 82.80000001192093
+          "submitMs": 0.6000000238418579,
+          "readbackMs": 71.10000002384186
+        },
+        {
+          "progress": 1,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.699999988079071,
+          "readbackMs": 68.39999997615814
+        },
+        {
+          "progress": 1,
+          "calls": 121,
+          "triangles": 186366,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.6000000238418579,
+          "readbackMs": 76.80000001192093
         }
       ],
       "turns": [
@@ -2122,231 +2374,35 @@
           "triangles": 186366,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.2999999523162842,
-          "readbackMs": 97.5
-        },
-        {
-          "progress": 1,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 90.29999995231628
-        },
-        {
-          "progress": 1,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 81.30000001192093
-        },
-        {
-          "progress": 1,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 66.40000003576279
-        },
-        {
-          "progress": 1,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 96.59999996423721
-        }
-      ]
-    },
-    {
-      "run": 3,
-      "token": "v3-1970260fd01",
-      "name": "Yours, Always",
-      "tie": "wrap",
-      "species": [
-        "rose",
-        "calla",
-        "daisy"
-      ],
-      "stems": 8,
-      "planMs": 0.5,
-      "buildMs": 43.69999998807907,
-      "first": {
-        "progress": 0,
-        "calls": 211,
-        "triangles": 321810,
-        "lines": 0,
-        "points": 0,
-        "submitMs": 123,
-        "readbackMs": 1818.3999999761581
-      },
-      "warm": [
-        {
-          "progress": 0.24,
-          "calls": 211,
-          "triangles": 321810,
-          "lines": 0,
-          "points": 0,
           "submitMs": 0.699999988079071,
-          "readbackMs": 94.80000001192093
+          "readbackMs": 61.5
         },
         {
-          "progress": 0.24,
-          "calls": 90,
-          "triangles": 135444,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 75.69999998807907
-        },
-        {
-          "progress": 0.24,
-          "calls": 90,
-          "triangles": 135444,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 68.5
-        },
-        {
-          "progress": 0.24,
-          "calls": 90,
-          "triangles": 135444,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 69.10000002384186
-        },
-        {
-          "progress": 0.24,
-          "calls": 90,
-          "triangles": 135444,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.2999999523162842,
-          "readbackMs": 74.19999998807907
-        },
-        {
-          "progress": 0.5,
-          "calls": 242,
-          "triangles": 372732,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.800000011920929,
-          "readbackMs": 103.69999998807907
-        },
-        {
-          "progress": 0.5,
+          "progress": 1,
           "calls": 121,
           "triangles": 186366,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 81.60000002384186
+          "submitMs": 0.5999999642372131,
+          "readbackMs": 66.59999996423721
         },
         {
-          "progress": 0.5,
+          "progress": 1,
           "calls": 121,
           "triangles": 186366,
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 94.89999997615814
+          "readbackMs": 61.5
         },
         {
-          "progress": 0.5,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 88.80000001192093
-        },
-        {
-          "progress": 0.5,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 85.59999996423721
-        },
-        {
-          "progress": 0.78,
-          "calls": 242,
-          "triangles": 372732,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.7000000476837158,
-          "readbackMs": 109.80000001192093
-        },
-        {
-          "progress": 0.78,
+          "progress": 1,
           "calls": 121,
           "triangles": 186366,
           "lines": 0,
           "points": 0,
           "submitMs": 0.40000003576278687,
-          "readbackMs": 79.60000002384186
-        },
-        {
-          "progress": 0.78,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 87.89999997615814
-        },
-        {
-          "progress": 0.78,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 87
-        },
-        {
-          "progress": 0.78,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.699999988079071,
-          "readbackMs": 83.90000003576279
-        },
-        {
-          "progress": 1,
-          "calls": 242,
-          "triangles": 372732,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.7999999523162842,
-          "readbackMs": 116
-        },
-        {
-          "progress": 1,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 83
-        },
-        {
-          "progress": 1,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 82.79999995231628
+          "readbackMs": 60.40000003576279
         },
         {
           "progress": 1,
@@ -2355,574 +2411,12 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 94.60000002384186
-        },
-        {
-          "progress": 1,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 86.39999997615814
-        }
-      ],
-      "turns": [
-        {
-          "progress": 1,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 86.80000001192093
-        },
-        {
-          "progress": 1,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 102.69999998807907
-        },
-        {
-          "progress": 1,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 114.80000001192093
-        },
-        {
-          "progress": 1,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 94.69999998807907
-        },
-        {
-          "progress": 1,
-          "calls": 121,
-          "triangles": 186366,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.699999988079071,
-          "readbackMs": 133.89999997615814
+          "readbackMs": 61.89999997615814
         }
       ]
     },
     {
       "run": 1,
-      "token": "v3-1970260fd17",
-      "name": "Under the Same Sky",
-      "tie": "wrap",
-      "species": [
-        "hydrangea",
-        "iris",
-        "cosmos",
-        "daisy"
-      ],
-      "stems": 9,
-      "planMs": 0.5999999642372131,
-      "buildMs": 52.80000001192093,
-      "first": {
-        "progress": 0,
-        "calls": 196,
-        "triangles": 304038,
-        "lines": 0,
-        "points": 0,
-        "submitMs": 124.39999997615814,
-        "readbackMs": 1879.8999999761581
-      },
-      "warm": [
-        {
-          "progress": 0.24,
-          "calls": 196,
-          "triangles": 304038,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.699999988079071,
-          "readbackMs": 78.80000001192093
-        },
-        {
-          "progress": 0.24,
-          "calls": 80,
-          "triangles": 130598,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 73.79999995231628
-        },
-        {
-          "progress": 0.24,
-          "calls": 80,
-          "triangles": 130598,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 78.90000003576279
-        },
-        {
-          "progress": 0.24,
-          "calls": 80,
-          "triangles": 130598,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 64.30000001192093
-        },
-        {
-          "progress": 0.24,
-          "calls": 80,
-          "triangles": 130598,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 55.5
-        },
-        {
-          "progress": 0.5,
-          "calls": 232,
-          "triangles": 346880,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.7999999523162842,
-          "readbackMs": 77.29999995231628
-        },
-        {
-          "progress": 0.5,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 58.90000003576279
-        },
-        {
-          "progress": 0.5,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 59
-        },
-        {
-          "progress": 0.5,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 65.80000001192093
-        },
-        {
-          "progress": 0.5,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 64.29999995231628
-        },
-        {
-          "progress": 0.78,
-          "calls": 232,
-          "triangles": 346880,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.800000011920929,
-          "readbackMs": 71.60000002384186
-        },
-        {
-          "progress": 0.78,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 58
-        },
-        {
-          "progress": 0.78,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 59.30000001192093
-        },
-        {
-          "progress": 0.78,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 57.80000001192093
-        },
-        {
-          "progress": 0.78,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 58.69999998807907
-        },
-        {
-          "progress": 1,
-          "calls": 232,
-          "triangles": 346880,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.800000011920929,
-          "readbackMs": 73.59999996423721
-        },
-        {
-          "progress": 1,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 60.90000003576279
-        },
-        {
-          "progress": 1,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 59.19999998807907
-        },
-        {
-          "progress": 1,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 60.10000002384186
-        },
-        {
-          "progress": 1,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 58.59999996423721
-        }
-      ],
-      "turns": [
-        {
-          "progress": 1,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 59.69999998807907
-        },
-        {
-          "progress": 1,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 61.10000002384186
-        },
-        {
-          "progress": 1,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 59.39999997615814
-        },
-        {
-          "progress": 1,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 59.200000047683716
-        },
-        {
-          "progress": 1,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 62.799999952316284
-        }
-      ]
-    },
-    {
-      "run": 2,
-      "token": "v3-1970260fd17",
-      "name": "Under the Same Sky",
-      "tie": "wrap",
-      "species": [
-        "hydrangea",
-        "iris",
-        "cosmos",
-        "daisy"
-      ],
-      "stems": 9,
-      "planMs": 0.8999999761581421,
-      "buildMs": 45.5,
-      "first": {
-        "progress": 0,
-        "calls": 196,
-        "triangles": 304038,
-        "lines": 0,
-        "points": 0,
-        "submitMs": 117.10000002384186,
-        "readbackMs": 1642.300000011921
-      },
-      "warm": [
-        {
-          "progress": 0.24,
-          "calls": 196,
-          "triangles": 304038,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.699999988079071,
-          "readbackMs": 75.60000002384186
-        },
-        {
-          "progress": 0.24,
-          "calls": 80,
-          "triangles": 130598,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.19999998807907104,
-          "readbackMs": 68.09999996423721
-        },
-        {
-          "progress": 0.24,
-          "calls": 80,
-          "triangles": 130598,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 81.5
-        },
-        {
-          "progress": 0.24,
-          "calls": 80,
-          "triangles": 130598,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 55.10000002384186
-        },
-        {
-          "progress": 0.24,
-          "calls": 80,
-          "triangles": 130598,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5999999642372131,
-          "readbackMs": 62.89999997615814
-        },
-        {
-          "progress": 0.5,
-          "calls": 232,
-          "triangles": 346880,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 1,
-          "readbackMs": 76
-        },
-        {
-          "progress": 0.5,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 65.80000001192093
-        },
-        {
-          "progress": 0.5,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 61.39999997615814
-        },
-        {
-          "progress": 0.5,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 63.90000003576279
-        },
-        {
-          "progress": 0.5,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 68.39999997615814
-        },
-        {
-          "progress": 0.78,
-          "calls": 232,
-          "triangles": 346880,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.800000011920929,
-          "readbackMs": 77
-        },
-        {
-          "progress": 0.78,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 58.40000003576279
-        },
-        {
-          "progress": 0.78,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 60.59999996423721
-        },
-        {
-          "progress": 0.78,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 61.5
-        },
-        {
-          "progress": 0.78,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 59.19999998807907
-        },
-        {
-          "progress": 1,
-          "calls": 232,
-          "triangles": 346880,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.800000011920929,
-          "readbackMs": 82.39999997615814
-        },
-        {
-          "progress": 1,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 74.19999998807907
-        },
-        {
-          "progress": 1,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 61.60000002384186
-        },
-        {
-          "progress": 1,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 63.5
-        },
-        {
-          "progress": 1,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 57.90000003576279
-        }
-      ],
-      "turns": [
-        {
-          "progress": 1,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 59.80000001192093
-        },
-        {
-          "progress": 1,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 62.19999998807907
-        },
-        {
-          "progress": 1,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 60.10000002384186
-        },
-        {
-          "progress": 1,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 87.69999998807907
-        },
-        {
-          "progress": 1,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 95.19999998807907
-        }
-      ]
-    },
-    {
-      "run": 3,
       "token": "v3-1970260fd17",
       "name": "Under the Same Sky",
       "tie": "wrap",
@@ -2934,15 +2428,15 @@
       ],
       "stems": 9,
       "planMs": 0.6000000238418579,
-      "buildMs": 44.89999997615814,
+      "buildMs": 44.5,
       "first": {
         "progress": 0,
         "calls": 196,
         "triangles": 304038,
         "lines": 0,
         "points": 0,
-        "submitMs": 127.60000002384186,
-        "readbackMs": 1724.300000011921
+        "submitMs": 119.5,
+        "readbackMs": 1539.199999988079
       },
       "warm": [
         {
@@ -2951,8 +2445,8 @@
           "triangles": 304038,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.800000011920929,
-          "readbackMs": 76
+          "submitMs": 0.6000000238418579,
+          "readbackMs": 88.90000003576279
         },
         {
           "progress": 0.24,
@@ -2960,8 +2454,17 @@
           "triangles": 130598,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.19999998807907104,
-          "readbackMs": 45.80000001192093
+          "submitMs": 0.2999999523162842,
+          "readbackMs": 73.29999995231628
+        },
+        {
+          "progress": 0.24,
+          "calls": 80,
+          "triangles": 130598,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 76.70000004768372
         },
         {
           "progress": 0.24,
@@ -2970,7 +2473,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 47.69999998807907
+          "readbackMs": 80.59999996423721
         },
         {
           "progress": 0.24,
@@ -2978,17 +2481,8 @@
           "triangles": 130598,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 67.39999997615814
-        },
-        {
-          "progress": 0.24,
-          "calls": 80,
-          "triangles": 130598,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 74
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 66.40000003576279
         },
         {
           "progress": 0.5,
@@ -2996,8 +2490,8 @@
           "triangles": 346880,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.800000011920929,
-          "readbackMs": 91.20000004768372
+          "submitMs": 0.699999988079071,
+          "readbackMs": 105.09999996423721
         },
         {
           "progress": 0.5,
@@ -3005,26 +2499,8 @@
           "triangles": 173440,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5999999642372131,
-          "readbackMs": 61.39999997615814
-        },
-        {
-          "progress": 0.5,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 69.69999998807907
-        },
-        {
-          "progress": 0.5,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 80.5
+          "submitMs": 0.5,
+          "readbackMs": 84.19999998807907
         },
         {
           "progress": 0.5,
@@ -3033,61 +2509,79 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.40000003576278687,
-          "readbackMs": 64.19999998807907
+          "readbackMs": 88.20000004768372
         },
         {
-          "progress": 0.78,
-          "calls": 232,
-          "triangles": 346880,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 1,
-          "readbackMs": 76.70000004768372
-        },
-        {
-          "progress": 0.78,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 77.09999996423721
-        },
-        {
-          "progress": 0.78,
+          "progress": 0.5,
           "calls": 116,
           "triangles": 173440,
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 72.19999998807907
+          "readbackMs": 96.19999998807907
         },
         {
-          "progress": 0.78,
+          "progress": 0.5,
           "calls": 116,
           "triangles": 173440,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 69.10000002384186
+          "submitMs": 0.5999999642372131,
+          "readbackMs": 57.39999997615814
         },
         {
           "progress": 0.78,
-          "calls": 116,
-          "triangles": 173440,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 61.39999997615814
-        },
-        {
-          "progress": 1,
           "calls": 232,
           "triangles": 346880,
           "lines": 0,
           "points": 0,
           "submitMs": 0.9000000357627869,
-          "readbackMs": 74.90000003576279
+          "readbackMs": 101.90000003576279
+        },
+        {
+          "progress": 0.78,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 77.89999997615814
+        },
+        {
+          "progress": 0.78,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 97.10000002384186
+        },
+        {
+          "progress": 0.78,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 102.89999997615814
+        },
+        {
+          "progress": 0.78,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 80
+        },
+        {
+          "progress": 1,
+          "calls": 232,
+          "triangles": 346880,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.8999999761581421,
+          "readbackMs": 83.30000001192093
         },
         {
           "progress": 1,
@@ -3096,7 +2590,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 63.5
+          "readbackMs": 66.69999998807907
         },
         {
           "progress": 1,
@@ -3105,7 +2599,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 62
+          "readbackMs": 57.19999998807907
         },
         {
           "progress": 1,
@@ -3113,8 +2607,8 @@
           "triangles": 173440,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 64
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 53.80000001192093
         },
         {
           "progress": 1,
@@ -3123,7 +2617,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 61.5
+          "readbackMs": 52.39999997615814
         }
       ],
       "turns": [
@@ -3133,8 +2627,8 @@
           "triangles": 173440,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 59.700000047683716
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 53.700000047683716
         },
         {
           "progress": 1,
@@ -3142,8 +2636,8 @@
           "triangles": 173440,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.2999999523162842,
-          "readbackMs": 64.59999996423721
+          "submitMs": 0.5,
+          "readbackMs": 67.09999996423721
         },
         {
           "progress": 1,
@@ -3152,7 +2646,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.40000003576278687,
-          "readbackMs": 60.19999998807907
+          "readbackMs": 82.5
         },
         {
           "progress": 1,
@@ -3161,7 +2655,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.40000003576278687,
-          "readbackMs": 59.60000002384186
+          "readbackMs": 77.30000001192093
         },
         {
           "progress": 1,
@@ -3170,7 +2664,513 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.6000000238418579,
-          "readbackMs": 59.80000001192093
+          "readbackMs": 66.19999998807907
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "token": "v3-1970260fd17",
+      "name": "Under the Same Sky",
+      "tie": "wrap",
+      "species": [
+        "hydrangea",
+        "iris",
+        "cosmos",
+        "daisy"
+      ],
+      "stems": 9,
+      "planMs": 0.800000011920929,
+      "buildMs": 47.19999998807907,
+      "first": {
+        "progress": 0,
+        "calls": 196,
+        "triangles": 304038,
+        "lines": 0,
+        "points": 0,
+        "submitMs": 121,
+        "readbackMs": 1530.5
+      },
+      "warm": [
+        {
+          "progress": 0.24,
+          "calls": 196,
+          "triangles": 304038,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.7999999523162842,
+          "readbackMs": 82.09999996423721
+        },
+        {
+          "progress": 0.24,
+          "calls": 80,
+          "triangles": 130598,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 63.80000001192093
+        },
+        {
+          "progress": 0.24,
+          "calls": 80,
+          "triangles": 130598,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.19999998807907104,
+          "readbackMs": 60.80000001192093
+        },
+        {
+          "progress": 0.24,
+          "calls": 80,
+          "triangles": 130598,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 62.19999998807907
+        },
+        {
+          "progress": 0.24,
+          "calls": 80,
+          "triangles": 130598,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 61.5
+        },
+        {
+          "progress": 0.5,
+          "calls": 232,
+          "triangles": 346880,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5999999642372131,
+          "readbackMs": 97.79999995231628
+        },
+        {
+          "progress": 0.5,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 86.90000003576279
+        },
+        {
+          "progress": 0.5,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 93
+        },
+        {
+          "progress": 0.5,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 84.89999997615814
+        },
+        {
+          "progress": 0.5,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 85.40000003576279
+        },
+        {
+          "progress": 0.78,
+          "calls": 232,
+          "triangles": 346880,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.800000011920929,
+          "readbackMs": 86.90000003576279
+        },
+        {
+          "progress": 0.78,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5999999642372131,
+          "readbackMs": 66.39999997615814
+        },
+        {
+          "progress": 0.78,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 55.89999997615814
+        },
+        {
+          "progress": 0.78,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 53
+        },
+        {
+          "progress": 0.78,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 53.10000002384186
+        },
+        {
+          "progress": 1,
+          "calls": 232,
+          "triangles": 346880,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.699999988079071,
+          "readbackMs": 75.10000002384186
+        },
+        {
+          "progress": 1,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.2999999523162842,
+          "readbackMs": 83.39999997615814
+        },
+        {
+          "progress": 1,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 71.80000001192093
+        },
+        {
+          "progress": 1,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.6000000238418579,
+          "readbackMs": 68.5
+        },
+        {
+          "progress": 1,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.7000000476837158,
+          "readbackMs": 61
+        }
+      ],
+      "turns": [
+        {
+          "progress": 1,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.7000000476837158,
+          "readbackMs": 57.700000047683716
+        },
+        {
+          "progress": 1,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 60.69999998807907
+        },
+        {
+          "progress": 1,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5999999642372131,
+          "readbackMs": 61.30000001192093
+        },
+        {
+          "progress": 1,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 58.19999998807907
+        },
+        {
+          "progress": 1,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 57
+        }
+      ]
+    },
+    {
+      "run": 3,
+      "token": "v3-1970260fd17",
+      "name": "Under the Same Sky",
+      "tie": "wrap",
+      "species": [
+        "hydrangea",
+        "iris",
+        "cosmos",
+        "daisy"
+      ],
+      "stems": 9,
+      "planMs": 0.5,
+      "buildMs": 37.39999997615814,
+      "first": {
+        "progress": 0,
+        "calls": 196,
+        "triangles": 304038,
+        "lines": 0,
+        "points": 0,
+        "submitMs": 116.39999997615814,
+        "readbackMs": 1514.6000000238419
+      },
+      "warm": [
+        {
+          "progress": 0.24,
+          "calls": 196,
+          "triangles": 304038,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.699999988079071,
+          "readbackMs": 72.60000002384186
+        },
+        {
+          "progress": 0.24,
+          "calls": 80,
+          "triangles": 130598,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 66.30000001192093
+        },
+        {
+          "progress": 0.24,
+          "calls": 80,
+          "triangles": 130598,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.2999999523162842,
+          "readbackMs": 65.19999998807907
+        },
+        {
+          "progress": 0.24,
+          "calls": 80,
+          "triangles": 130598,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5999999642372131,
+          "readbackMs": 58.30000001192093
+        },
+        {
+          "progress": 0.24,
+          "calls": 80,
+          "triangles": 130598,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.2999999523162842,
+          "readbackMs": 56
+        },
+        {
+          "progress": 0.5,
+          "calls": 232,
+          "triangles": 346880,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 1.0999999642372131,
+          "readbackMs": 79.79999995231628
+        },
+        {
+          "progress": 0.5,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 59.30000001192093
+        },
+        {
+          "progress": 0.5,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 61.19999998807907
+        },
+        {
+          "progress": 0.5,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 62
+        },
+        {
+          "progress": 0.5,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 58.80000001192093
+        },
+        {
+          "progress": 0.78,
+          "calls": 232,
+          "triangles": 346880,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.699999988079071,
+          "readbackMs": 69.30000001192093
+        },
+        {
+          "progress": 0.78,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 57.69999998807907
+        },
+        {
+          "progress": 0.78,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 56.5
+        },
+        {
+          "progress": 0.78,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 61.90000003576279
+        },
+        {
+          "progress": 0.78,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 58.59999996423721
+        },
+        {
+          "progress": 1,
+          "calls": 232,
+          "triangles": 346880,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.6000000238418579,
+          "readbackMs": 72.69999998807907
+        },
+        {
+          "progress": 1,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 58.90000003576279
+        },
+        {
+          "progress": 1,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5999999642372131,
+          "readbackMs": 64.89999997615814
+        },
+        {
+          "progress": 1,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 93
+        },
+        {
+          "progress": 1,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 57.80000001192093
+        }
+      ],
+      "turns": [
+        {
+          "progress": 1,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 55.30000001192093
+        },
+        {
+          "progress": 1,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 59.69999998807907
+        },
+        {
+          "progress": 1,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 59.10000002384186
+        },
+        {
+          "progress": 1,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 60.89999997615814
+        },
+        {
+          "progress": 1,
+          "calls": 116,
+          "triangles": 173440,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 60.19999998807907
         }
       ]
     },
@@ -3187,15 +3187,15 @@
       ],
       "stems": 10,
       "planMs": 0.699999988079071,
-      "buildMs": 83.89999997615814,
+      "buildMs": 75.80000001192093,
       "first": {
         "progress": 0,
         "calls": 224,
         "triangles": 350020,
         "lines": 0,
         "points": 0,
-        "submitMs": 155.19999998807907,
-        "readbackMs": 2447.100000023842
+        "submitMs": 145.5,
+        "readbackMs": 2107.300000011921
       },
       "warm": [
         {
@@ -3204,8 +3204,26 @@
           "triangles": 350020,
           "lines": 0,
           "points": 0,
-          "submitMs": 1.100000023841858,
-          "readbackMs": 90.90000003576279
+          "submitMs": 0.699999988079071,
+          "readbackMs": 59.30000001192093
+        },
+        {
+          "progress": 0.24,
+          "calls": 91,
+          "triangles": 153930,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 47.69999998807907
+        },
+        {
+          "progress": 0.24,
+          "calls": 91,
+          "triangles": 153930,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 48.30000001192093
         },
         {
           "progress": 0.24,
@@ -3214,7 +3232,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 59.69999998807907
+          "readbackMs": 52.19999998807907
         },
         {
           "progress": 0.24,
@@ -3222,279 +3240,8 @@
           "triangles": 153930,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.699999988079071,
-          "readbackMs": 62.30000001192093
-        },
-        {
-          "progress": 0.24,
-          "calls": 91,
-          "triangles": 153930,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 58.19999998807907
-        },
-        {
-          "progress": 0.24,
-          "calls": 91,
-          "triangles": 153930,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 53.89999997615814
-        },
-        {
-          "progress": 0.5,
-          "calls": 266,
-          "triangles": 392180,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 1.100000023841858,
-          "readbackMs": 89.80000001192093
-        },
-        {
-          "progress": 0.5,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 79.80000001192093
-        },
-        {
-          "progress": 0.5,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 83.19999998807907
-        },
-        {
-          "progress": 0.5,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 73.19999998807907
-        },
-        {
-          "progress": 0.5,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 73.30000001192093
-        },
-        {
-          "progress": 0.78,
-          "calls": 266,
-          "triangles": 392180,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 1,
-          "readbackMs": 83.40000003576279
-        },
-        {
-          "progress": 0.78,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5999999642372131,
-          "readbackMs": 67
-        },
-        {
-          "progress": 0.78,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.699999988079071,
-          "readbackMs": 77.29999995231628
-        },
-        {
-          "progress": 0.78,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.7000000476837158,
-          "readbackMs": 69.40000003576279
-        },
-        {
-          "progress": 0.78,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 69.19999998807907
-        },
-        {
-          "progress": 1,
-          "calls": 266,
-          "triangles": 392180,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 1.199999988079071,
-          "readbackMs": 91.60000002384186
-        },
-        {
-          "progress": 1,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.699999988079071,
-          "readbackMs": 73
-        },
-        {
-          "progress": 1,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5999999642372131,
-          "readbackMs": 72.09999996423721
-        },
-        {
-          "progress": 1,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 68.80000001192093
-        },
-        {
-          "progress": 1,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 70
-        }
-      ],
-      "turns": [
-        {
-          "progress": 1,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 110.89999997615814
-        },
-        {
-          "progress": 1,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.7000000476837158,
-          "readbackMs": 177.9000000357628
-        },
-        {
-          "progress": 1,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 122.40000003576279
-        },
-        {
-          "progress": 1,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5999999642372131,
-          "readbackMs": 89.89999997615814
-        },
-        {
-          "progress": 1,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.800000011920929,
-          "readbackMs": 84.10000002384186
-        }
-      ]
-    },
-    {
-      "run": 2,
-      "token": "v3-1970260fd29",
-      "name": "An Unsaid Thing",
-      "tie": "wrap",
-      "species": [
-        "dahlia",
-        "lily",
-        "anemone",
-        "poppy"
-      ],
-      "stems": 10,
-      "planMs": 1,
-      "buildMs": 83.59999996423721,
-      "first": {
-        "progress": 0,
-        "calls": 224,
-        "triangles": 350020,
-        "lines": 0,
-        "points": 0,
-        "submitMs": 160.89999997615814,
-        "readbackMs": 2415.300000011921
-      },
-      "warm": [
-        {
-          "progress": 0.24,
-          "calls": 224,
-          "triangles": 350020,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.800000011920929,
-          "readbackMs": 96.10000002384186
-        },
-        {
-          "progress": 0.24,
-          "calls": 91,
-          "triangles": 153930,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 57.59999996423721
-        },
-        {
-          "progress": 0.24,
-          "calls": 91,
-          "triangles": 153930,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 55
-        },
-        {
-          "progress": 0.24,
-          "calls": 91,
-          "triangles": 153930,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 61.60000002384186
-        },
-        {
-          "progress": 0.24,
-          "calls": 91,
-          "triangles": 153930,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 69.60000002384186
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 57.19999998807907
         },
         {
           "progress": 0.5,
@@ -3503,16 +3250,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.8999999761581421,
-          "readbackMs": 97.79999995231628
-        },
-        {
-          "progress": 0.5,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 112.20000004768372
+          "readbackMs": 83.19999998807907
         },
         {
           "progress": 0.5,
@@ -3521,7 +3259,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 109.79999995231628
+          "readbackMs": 79.40000003576279
         },
         {
           "progress": 0.5,
@@ -3529,8 +3267,8 @@
           "triangles": 196090,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 133.4000000357628
+          "submitMs": 0.5999999642372131,
+          "readbackMs": 79
         },
         {
           "progress": 0.5,
@@ -3539,7 +3277,16 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 71.09999996423721
+          "readbackMs": 76.39999997615814
+        },
+        {
+          "progress": 0.5,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.6000000238418579,
+          "readbackMs": 70.80000001192093
         },
         {
           "progress": 0.78,
@@ -3547,8 +3294,8 @@
           "triangles": 392180,
           "lines": 0,
           "points": 0,
-          "submitMs": 1.100000023841858,
-          "readbackMs": 81.90000003576279
+          "submitMs": 0.9000000357627869,
+          "readbackMs": 76.60000002384186
         },
         {
           "progress": 0.78,
@@ -3557,16 +3304,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 100
-        },
-        {
-          "progress": 0.78,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.699999988079071,
-          "readbackMs": 86.30000001192093
+          "readbackMs": 63.10000002384186
         },
         {
           "progress": 0.78,
@@ -3575,7 +3313,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5999999642372131,
-          "readbackMs": 69.59999996423721
+          "readbackMs": 86.69999998807907
         },
         {
           "progress": 0.78,
@@ -3583,8 +3321,17 @@
           "triangles": 196090,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 69.40000003576279
+          "submitMs": 0.5999999642372131,
+          "readbackMs": 68.09999996423721
+        },
+        {
+          "progress": 0.78,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 83.30000001192093
         },
         {
           "progress": 1,
@@ -3592,8 +3339,17 @@
           "triangles": 392180,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.7999999523162842,
-          "readbackMs": 93.09999996423721
+          "submitMs": 0.9000000357627869,
+          "readbackMs": 89.40000003576279
+        },
+        {
+          "progress": 1,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5999999642372131,
+          "readbackMs": 63
         },
         {
           "progress": 1,
@@ -3602,7 +3358,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 66.5
+          "readbackMs": 57.799999952316284
         },
         {
           "progress": 1,
@@ -3610,17 +3366,8 @@
           "triangles": 196090,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 71.90000003576279
-        },
-        {
-          "progress": 1,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 67.29999995231628
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 57
         },
         {
           "progress": 1,
@@ -3629,7 +3376,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 65.90000003576279
+          "readbackMs": 61.80000001192093
         }
       ],
       "turns": [
@@ -3639,8 +3386,17 @@
           "triangles": 196090,
           "lines": 0,
           "points": 0,
+          "submitMs": 0.699999988079071,
+          "readbackMs": 89.30000001192093
+        },
+        {
+          "progress": 1,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
           "submitMs": 0.5999999642372131,
-          "readbackMs": 67.39999997615814
+          "readbackMs": 84.69999998807907
         },
         {
           "progress": 1,
@@ -3648,8 +3404,8 @@
           "triangles": 196090,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 69.90000003576279
+          "submitMs": 0.800000011920929,
+          "readbackMs": 74
         },
         {
           "progress": 1,
@@ -3657,8 +3413,8 @@
           "triangles": 196090,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 84.29999995231628
+          "submitMs": 0.699999988079071,
+          "readbackMs": 66.19999998807907
         },
         {
           "progress": 1,
@@ -3666,22 +3422,13 @@
           "triangles": 196090,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 69.80000001192093
-        },
-        {
-          "progress": 1,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 90
+          "submitMs": 0.800000011920929,
+          "readbackMs": 63.69999998807907
         }
       ]
     },
     {
-      "run": 3,
+      "run": 2,
       "token": "v3-1970260fd29",
       "name": "An Unsaid Thing",
       "tie": "wrap",
@@ -3693,15 +3440,15 @@
       ],
       "stems": 10,
       "planMs": 0.800000011920929,
-      "buildMs": 79.19999998807907,
+      "buildMs": 72.29999995231628,
       "first": {
         "progress": 0,
         "calls": 224,
         "triangles": 350020,
         "lines": 0,
         "points": 0,
-        "submitMs": 150.10000002384186,
-        "readbackMs": 2413.400000035763
+        "submitMs": 151.10000002384186,
+        "readbackMs": 1993.300000011921
       },
       "warm": [
         {
@@ -3711,7 +3458,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.800000011920929,
-          "readbackMs": 76.10000002384186
+          "readbackMs": 54.700000047683716
         },
         {
           "progress": 0.24,
@@ -3720,7 +3467,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 62.59999996423721
+          "readbackMs": 43.19999998807907
         },
         {
           "progress": 0.24,
@@ -3729,7 +3476,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 75.20000004768372
+          "readbackMs": 43
         },
         {
           "progress": 0.24,
@@ -3737,8 +3484,8 @@
           "triangles": 153930,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 67.69999998807907
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 54.69999998807907
         },
         {
           "progress": 0.24,
@@ -3746,8 +3493,8 @@
           "triangles": 153930,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5999999642372131,
-          "readbackMs": 75.69999998807907
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 67.19999998807907
         },
         {
           "progress": 0.5,
@@ -3755,8 +3502,35 @@
           "triangles": 392180,
           "lines": 0,
           "points": 0,
-          "submitMs": 1,
-          "readbackMs": 115.80000001192093
+          "submitMs": 0.800000011920929,
+          "readbackMs": 108.69999998807907
+        },
+        {
+          "progress": 0.5,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.6000000238418579,
+          "readbackMs": 83.10000002384186
+        },
+        {
+          "progress": 0.5,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.8999999761581421,
+          "readbackMs": 66.5
+        },
+        {
+          "progress": 0.5,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.6000000238418579,
+          "readbackMs": 69.30000001192093
         },
         {
           "progress": 0.5,
@@ -3765,34 +3539,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5999999642372131,
-          "readbackMs": 95.59999996423721
-        },
-        {
-          "progress": 0.5,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 98
-        },
-        {
-          "progress": 0.5,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 130.5
-        },
-        {
-          "progress": 0.5,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 111.30000001192093
+          "readbackMs": 66.5
         },
         {
           "progress": 0.78,
@@ -3800,8 +3547,8 @@
           "triangles": 392180,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.9000000357627869,
-          "readbackMs": 76.90000003576279
+          "submitMs": 1,
+          "readbackMs": 80.5
         },
         {
           "progress": 0.78,
@@ -3810,7 +3557,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.699999988079071,
-          "readbackMs": 107.19999998807907
+          "readbackMs": 68.80000001192093
         },
         {
           "progress": 0.78,
@@ -3818,8 +3565,8 @@
           "triangles": 196090,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5999999642372131,
-          "readbackMs": 112.39999997615814
+          "submitMs": 0.5,
+          "readbackMs": 61.89999997615814
         },
         {
           "progress": 0.78,
@@ -3827,8 +3574,8 @@
           "triangles": 196090,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.800000011920929,
-          "readbackMs": 90.19999998807907
+          "submitMs": 0.5,
+          "readbackMs": 62.69999998807907
         },
         {
           "progress": 0.78,
@@ -3837,7 +3584,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.6000000238418579,
-          "readbackMs": 68.70000004768372
+          "readbackMs": 61.90000003576279
         },
         {
           "progress": 1,
@@ -3846,25 +3593,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 1,
-          "readbackMs": 82.5
-        },
-        {
-          "progress": 1,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5999999642372131,
-          "readbackMs": 83
-        },
-        {
-          "progress": 1,
-          "calls": 133,
-          "triangles": 196090,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.7999999523162842,
-          "readbackMs": 119.59999996423721
+          "readbackMs": 77.69999998807907
         },
         {
           "progress": 1,
@@ -3873,7 +3602,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 122.40000003576279
+          "readbackMs": 62.69999998807907
         },
         {
           "progress": 1,
@@ -3881,8 +3610,26 @@
           "triangles": 196090,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5999999642372131,
-          "readbackMs": 78.5
+          "submitMs": 0.6000000238418579,
+          "readbackMs": 62.39999997615814
+        },
+        {
+          "progress": 1,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.6000000238418579,
+          "readbackMs": 61.700000047683716
+        },
+        {
+          "progress": 1,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.699999988079071,
+          "readbackMs": 63.19999998807907
         }
       ],
       "turns": [
@@ -3892,8 +3639,17 @@
           "triangles": 196090,
           "lines": 0,
           "points": 0,
+          "submitMs": 0.800000011920929,
+          "readbackMs": 93.69999998807907
+        },
+        {
+          "progress": 1,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
           "submitMs": 0.699999988079071,
-          "readbackMs": 70.39999997615814
+          "readbackMs": 75.69999998807907
         },
         {
           "progress": 1,
@@ -3901,8 +3657,8 @@
           "triangles": 196090,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 70.69999998807907
+          "submitMs": 0.5999999642372131,
+          "readbackMs": 62.80000001192093
         },
         {
           "progress": 1,
@@ -3910,17 +3666,261 @@
           "triangles": 196090,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 67.5
+          "submitMs": 0.5999999642372131,
+          "readbackMs": 66.29999995231628
         },
         {
           "progress": 1,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 62.40000003576279
+        }
+      ]
+    },
+    {
+      "run": 3,
+      "token": "v3-1970260fd29",
+      "name": "An Unsaid Thing",
+      "tie": "wrap",
+      "species": [
+        "dahlia",
+        "lily",
+        "anemone",
+        "poppy"
+      ],
+      "stems": 10,
+      "planMs": 0.699999988079071,
+      "buildMs": 66.30000001192093,
+      "first": {
+        "progress": 0,
+        "calls": 224,
+        "triangles": 350020,
+        "lines": 0,
+        "points": 0,
+        "submitMs": 143.89999997615814,
+        "readbackMs": 2010.3999999761581
+      },
+      "warm": [
+        {
+          "progress": 0.24,
+          "calls": 224,
+          "triangles": 350020,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.800000011920929,
+          "readbackMs": 60.90000003576279
+        },
+        {
+          "progress": 0.24,
+          "calls": 91,
+          "triangles": 153930,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 49.30000001192093
+        },
+        {
+          "progress": 0.24,
+          "calls": 91,
+          "triangles": 153930,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 51.5
+        },
+        {
+          "progress": 0.24,
+          "calls": 91,
+          "triangles": 153930,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 48
+        },
+        {
+          "progress": 0.24,
+          "calls": 91,
+          "triangles": 153930,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 45.39999997615814
+        },
+        {
+          "progress": 0.5,
+          "calls": 266,
+          "triangles": 392180,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.8999999761581421,
+          "readbackMs": 80.80000001192093
+        },
+        {
+          "progress": 0.5,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.699999988079071,
+          "readbackMs": 67.19999998807907
+        },
+        {
+          "progress": 0.5,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 64.80000001192093
+        },
+        {
+          "progress": 0.5,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 66.69999998807907
+        },
+        {
+          "progress": 0.5,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 66.59999996423721
+        },
+        {
+          "progress": 0.78,
+          "calls": 266,
+          "triangles": 392180,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.699999988079071,
+          "readbackMs": 75.80000001192093
+        },
+        {
+          "progress": 0.78,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5999999642372131,
+          "readbackMs": 65.89999997615814
+        },
+        {
+          "progress": 0.78,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 64.19999998807907
+        },
+        {
+          "progress": 0.78,
           "calls": 133,
           "triangles": 196090,
           "lines": 0,
           "points": 0,
           "submitMs": 0.40000003576278687,
-          "readbackMs": 90.19999998807907
+          "readbackMs": 62.69999998807907
+        },
+        {
+          "progress": 0.78,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 63.60000002384186
+        },
+        {
+          "progress": 1,
+          "calls": 266,
+          "triangles": 392180,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.800000011920929,
+          "readbackMs": 76.39999997615814
+        },
+        {
+          "progress": 1,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 63.5
+        },
+        {
+          "progress": 1,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 61.700000047683716
+        },
+        {
+          "progress": 1,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5999999642372131,
+          "readbackMs": 59.89999997615814
+        },
+        {
+          "progress": 1,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 59.5
+        }
+      ],
+      "turns": [
+        {
+          "progress": 1,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 86.19999998807907
+        },
+        {
+          "progress": 1,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.800000011920929,
+          "readbackMs": 82.90000003576279
+        },
+        {
+          "progress": 1,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.7999999523162842,
+          "readbackMs": 64.59999996423721
+        },
+        {
+          "progress": 1,
+          "calls": 133,
+          "triangles": 196090,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.800000011920929,
+          "readbackMs": 64.5
         },
         {
           "progress": 1,
@@ -3929,7 +3929,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.6000000238418579,
-          "readbackMs": 148.5
+          "readbackMs": 61.90000003576279
         }
       ]
     },
@@ -3945,16 +3945,16 @@
         "poppy"
       ],
       "stems": 10,
-      "planMs": 0.699999988079071,
-      "buildMs": 85,
+      "planMs": 0.5999999642372131,
+      "buildMs": 67.20000004768372,
       "first": {
         "progress": 0,
         "calls": 156,
         "triangles": 327056,
         "lines": 0,
         "points": 0,
-        "submitMs": 169.80000001192093,
-        "readbackMs": 2113.399999976158
+        "submitMs": 151.19999998807907,
+        "readbackMs": 1782.7999999523163
       },
       "warm": [
         {
@@ -3964,25 +3964,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.699999988079071,
-          "readbackMs": 68.09999996423721
-        },
-        {
-          "progress": 0.24,
-          "calls": 72,
-          "triangles": 142282,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 56.60000002384186
-        },
-        {
-          "progress": 0.24,
-          "calls": 72,
-          "triangles": 142282,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 58.69999998807907
+          "readbackMs": 55.59999996423721
         },
         {
           "progress": 0.24,
@@ -3991,7 +3973,16 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.30000001192092896,
-          "readbackMs": 50.69999998807907
+          "readbackMs": 43.19999998807907
+        },
+        {
+          "progress": 0.24,
+          "calls": 72,
+          "triangles": 142282,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 60.700000047683716
         },
         {
           "progress": 0.24,
@@ -4000,16 +3991,43 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 55.5
+          "readbackMs": 69.29999995231628
+        },
+        {
+          "progress": 0.24,
+          "calls": 72,
+          "triangles": 142282,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 66.90000003576279
         },
         {
           "progress": 0.5,
           "calls": 168,
           "triangles": 369548,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.699999988079071,
+          "readbackMs": 90.89999997615814
+        },
+        {
+          "progress": 0.5,
+          "calls": 84,
+          "triangles": 184774,
           "lines": 0,
           "points": 0,
           "submitMs": 0.6000000238418579,
-          "readbackMs": 150.80000001192093
+          "readbackMs": 65.30000001192093
+        },
+        {
+          "progress": 0.5,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.6000000238418579,
+          "readbackMs": 65.10000002384186
         },
         {
           "progress": 0.5,
@@ -4018,7 +4036,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 124
+          "readbackMs": 68.09999996423721
         },
         {
           "progress": 0.5,
@@ -4026,26 +4044,8 @@
           "triangles": 184774,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 120.09999996423721
-        },
-        {
-          "progress": 0.5,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 122.30000001192093
-        },
-        {
-          "progress": 0.5,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 113
+          "submitMs": 0.5,
+          "readbackMs": 65.10000002384186
         },
         {
           "progress": 0.78,
@@ -4053,8 +4053,8 @@
           "triangles": 369548,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.800000011920929,
-          "readbackMs": 125.69999998807907
+          "submitMs": 0.5999999642372131,
+          "readbackMs": 78.09999996423721
         },
         {
           "progress": 0.78,
@@ -4063,7 +4063,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.40000003576278687,
-          "readbackMs": 120.5
+          "readbackMs": 60.700000047683716
         },
         {
           "progress": 0.78,
@@ -4072,7 +4072,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 133
+          "readbackMs": 60.5
         },
         {
           "progress": 0.78,
@@ -4080,8 +4080,8 @@
           "triangles": 184774,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 153.30000001192093
+          "submitMs": 0.5,
+          "readbackMs": 60.19999998807907
         },
         {
           "progress": 0.78,
@@ -4089,8 +4089,8 @@
           "triangles": 184774,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 130.4000000357628
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 60.5
         },
         {
           "progress": 1,
@@ -4098,8 +4098,8 @@
           "triangles": 369548,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.7999999523162842,
-          "readbackMs": 137.69999998807907
+          "submitMs": 0.5999999642372131,
+          "readbackMs": 78.59999996423721
         },
         {
           "progress": 1,
@@ -4107,8 +4107,8 @@
           "triangles": 184774,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 115.69999998807907
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 64
         },
         {
           "progress": 1,
@@ -4116,8 +4116,8 @@
           "triangles": 184774,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 117.80000001192093
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 64.80000001192093
         },
         {
           "progress": 1,
@@ -4125,8 +4125,8 @@
           "triangles": 184774,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 116.89999997615814
+          "submitMs": 0.6000000238418579,
+          "readbackMs": 64.5
         },
         {
           "progress": 1,
@@ -4134,8 +4134,8 @@
           "triangles": 184774,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 109.69999998807907
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 67.69999998807907
         }
       ],
       "turns": [
@@ -4145,26 +4145,8 @@
           "triangles": 184774,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 118.20000004768372
-        },
-        {
-          "progress": 1,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 116.59999996423721
-        },
-        {
-          "progress": 1,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 109.19999998807907
+          "submitMs": 0.6000000238418579,
+          "readbackMs": 64
         },
         {
           "progress": 1,
@@ -4173,7 +4155,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.6000000238418579,
-          "readbackMs": 98.5
+          "readbackMs": 99.10000002384186
         },
         {
           "progress": 1,
@@ -4181,8 +4163,26 @@
           "triangles": 184774,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 113.30000001192093
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 93.5
+        },
+        {
+          "progress": 1,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 66.69999998807907
+        },
+        {
+          "progress": 1,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 69.30000001192093
         }
       ]
     },
@@ -4198,16 +4198,16 @@
         "poppy"
       ],
       "stems": 10,
-      "planMs": 0.699999988079071,
-      "buildMs": 78.60000002384186,
+      "planMs": 0.7000000476837158,
+      "buildMs": 65.29999995231628,
       "first": {
         "progress": 0,
         "calls": 156,
         "triangles": 327056,
         "lines": 0,
         "points": 0,
-        "submitMs": 156,
-        "readbackMs": 2206.199999988079
+        "submitMs": 142.80000001192093,
+        "readbackMs": 1784.5
       },
       "warm": [
         {
@@ -4216,17 +4216,8 @@
           "triangles": 327056,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5999999642372131,
-          "readbackMs": 100.89999997615814
-        },
-        {
-          "progress": 0.24,
-          "calls": 72,
-          "triangles": 142282,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 68.39999997615814
+          "submitMs": 0.7000000476837158,
+          "readbackMs": 59.80000001192093
         },
         {
           "progress": 0.24,
@@ -4235,7 +4226,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.40000003576278687,
-          "readbackMs": 82
+          "readbackMs": 46.40000003576279
         },
         {
           "progress": 0.24,
@@ -4243,8 +4234,8 @@
           "triangles": 142282,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 71.20000004768372
+          "submitMs": 0.2999999523162842,
+          "readbackMs": 46.19999998807907
         },
         {
           "progress": 0.24,
@@ -4253,61 +4244,88 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 70.79999995231628
+          "readbackMs": 47.39999997615814
+        },
+        {
+          "progress": 0.24,
+          "calls": 72,
+          "triangles": 142282,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 46.30000001192093
         },
         {
           "progress": 0.5,
+          "calls": 168,
+          "triangles": 369548,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.699999988079071,
+          "readbackMs": 78.10000002384186
+        },
+        {
+          "progress": 0.5,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 63.69999998807907
+        },
+        {
+          "progress": 0.5,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 67.69999998807907
+        },
+        {
+          "progress": 0.5,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.6000000238418579,
+          "readbackMs": 69.19999998807907
+        },
+        {
+          "progress": 0.5,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 90.5
+        },
+        {
+          "progress": 0.78,
           "calls": 168,
           "triangles": 369548,
           "lines": 0,
           "points": 0,
           "submitMs": 0.800000011920929,
-          "readbackMs": 119
+          "readbackMs": 74.5
         },
         {
-          "progress": 0.5,
+          "progress": 0.78,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 65.10000002384186
+        },
+        {
+          "progress": 0.78,
           "calls": 84,
           "triangles": 184774,
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 101
-        },
-        {
-          "progress": 0.5,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 100.90000003576279
-        },
-        {
-          "progress": 0.5,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 99.5
-        },
-        {
-          "progress": 0.5,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 100.60000002384186
-        },
-        {
-          "progress": 0.78,
-          "calls": 168,
-          "triangles": 369548,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.699999988079071,
-          "readbackMs": 115.39999997615814
+          "readbackMs": 68.39999997615814
         },
         {
           "progress": 0.78,
@@ -4315,8 +4333,8 @@
           "triangles": 184774,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 90.10000002384186
+          "submitMs": 0.5,
+          "readbackMs": 59.40000003576279
         },
         {
           "progress": 0.78,
@@ -4325,25 +4343,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 90.5
-        },
-        {
-          "progress": 0.78,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 78.5
-        },
-        {
-          "progress": 0.78,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 74
+          "readbackMs": 61.69999998807907
         },
         {
           "progress": 1,
@@ -4352,7 +4352,25 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.699999988079071,
-          "readbackMs": 97.60000002384186
+          "readbackMs": 80.30000001192093
+        },
+        {
+          "progress": 1,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.2999999523162842,
+          "readbackMs": 66.29999995231628
+        },
+        {
+          "progress": 1,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 62.700000047683716
         },
         {
           "progress": 1,
@@ -4361,7 +4379,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 117.19999998807907
+          "readbackMs": 64.69999998807907
         },
         {
           "progress": 1,
@@ -4370,25 +4388,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 95.5
-        },
-        {
-          "progress": 1,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 96.5
-        },
-        {
-          "progress": 1,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 124
+          "readbackMs": 63.30000001192093
         }
       ],
       "turns": [
@@ -4399,7 +4399,16 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 111.60000002384186
+          "readbackMs": 63.799999952316284
+        },
+        {
+          "progress": 1,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 65.90000003576279
         },
         {
           "progress": 1,
@@ -4408,16 +4417,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 161.69999998807907
-        },
-        {
-          "progress": 1,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 135
+          "readbackMs": 64.09999996423721
         },
         {
           "progress": 1,
@@ -4426,7 +4426,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.40000003576278687,
-          "readbackMs": 93.40000003576279
+          "readbackMs": 63.60000002384186
         },
         {
           "progress": 1,
@@ -4434,8 +4434,8 @@
           "triangles": 184774,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 106.09999996423721
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 63.19999998807907
         }
       ]
     },
@@ -4451,16 +4451,16 @@
         "poppy"
       ],
       "stems": 10,
-      "planMs": 0.5999999642372131,
-      "buildMs": 77.60000002384186,
+      "planMs": 0.800000011920929,
+      "buildMs": 64.80000001192093,
       "first": {
         "progress": 0,
         "calls": 156,
         "triangles": 327056,
         "lines": 0,
         "points": 0,
-        "submitMs": 177,
-        "readbackMs": 2365.100000023842
+        "submitMs": 146.69999998807907,
+        "readbackMs": 1783.0999999642372
       },
       "warm": [
         {
@@ -4469,35 +4469,8 @@
           "triangles": 327056,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.800000011920929,
-          "readbackMs": 97.40000003576279
-        },
-        {
-          "progress": 0.24,
-          "calls": 72,
-          "triangles": 142282,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 66.80000001192093
-        },
-        {
-          "progress": 0.24,
-          "calls": 72,
-          "triangles": 142282,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 79.89999997615814
-        },
-        {
-          "progress": 0.24,
-          "calls": 72,
-          "triangles": 142282,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 88.10000002384186
+          "submitMs": 0.699999988079071,
+          "readbackMs": 59.89999997615814
         },
         {
           "progress": 0.24,
@@ -4506,61 +4479,115 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 76
+          "readbackMs": 46
+        },
+        {
+          "progress": 0.24,
+          "calls": 72,
+          "triangles": 142282,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 48.69999998807907
+        },
+        {
+          "progress": 0.24,
+          "calls": 72,
+          "triangles": 142282,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 47.69999998807907
+        },
+        {
+          "progress": 0.24,
+          "calls": 72,
+          "triangles": 142282,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 51.10000002384186
         },
         {
           "progress": 0.5,
-          "calls": 168,
-          "triangles": 369548,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.800000011920929,
-          "readbackMs": 119.69999998807907
-        },
-        {
-          "progress": 0.5,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 100.19999998807907
-        },
-        {
-          "progress": 0.5,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 89
-        },
-        {
-          "progress": 0.5,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5,
-          "readbackMs": 110.60000002384186
-        },
-        {
-          "progress": 0.5,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.6000000238418579,
-          "readbackMs": 118.30000001192093
-        },
-        {
-          "progress": 0.78,
           "calls": 168,
           "triangles": 369548,
           "lines": 0,
           "points": 0,
           "submitMs": 0.5999999642372131,
-          "readbackMs": 136.30000001192093
+          "readbackMs": 79.59999996423721
+        },
+        {
+          "progress": 0.5,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 65
+        },
+        {
+          "progress": 0.5,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.30000001192092896,
+          "readbackMs": 65.69999998807907
+        },
+        {
+          "progress": 0.5,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 65.19999998807907
+        },
+        {
+          "progress": 0.5,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 63.80000001192093
+        },
+        {
+          "progress": 0.78,
+          "calls": 168,
+          "triangles": 369548,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.6000000238418579,
+          "readbackMs": 75.60000002384186
+        },
+        {
+          "progress": 0.78,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 77
+        },
+        {
+          "progress": 0.78,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 67.80000001192093
+        },
+        {
+          "progress": 0.78,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 61.69999998807907
         },
         {
           "progress": 0.78,
@@ -4569,34 +4596,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 103.79999995231628
-        },
-        {
-          "progress": 0.78,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 130.30000001192093
-        },
-        {
-          "progress": 0.78,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 130.69999998807907
-        },
-        {
-          "progress": 0.78,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.40000003576278687,
-          "readbackMs": 126.40000003576279
+          "readbackMs": 61.19999998807907
         },
         {
           "progress": 1,
@@ -4605,7 +4605,16 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.699999988079071,
-          "readbackMs": 139.39999997615814
+          "readbackMs": 78.19999998807907
+        },
+        {
+          "progress": 1,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.40000003576278687,
+          "readbackMs": 67.69999998807907
         },
         {
           "progress": 1,
@@ -4614,7 +4623,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.6000000238418579,
-          "readbackMs": 108.80000001192093
+          "readbackMs": 73.10000002384186
         },
         {
           "progress": 1,
@@ -4623,7 +4632,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 144.39999997615814
+          "readbackMs": 63.89999997615814
         },
         {
           "progress": 1,
@@ -4632,16 +4641,7 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.5,
-          "readbackMs": 141.70000004768372
-        },
-        {
-          "progress": 1,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 145.69999998807907
+          "readbackMs": 60.200000047683716
         }
       ],
       "turns": [
@@ -4651,35 +4651,8 @@
           "triangles": 184774,
           "lines": 0,
           "points": 0,
-          "submitMs": 0.30000001192092896,
-          "readbackMs": 107.70000004768372
-        },
-        {
-          "progress": 1,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.5999999642372131,
-          "readbackMs": 93.39999997615814
-        },
-        {
-          "progress": 1,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
           "submitMs": 0.3999999761581421,
-          "readbackMs": 90.10000002384186
-        },
-        {
-          "progress": 1,
-          "calls": 84,
-          "triangles": 184774,
-          "lines": 0,
-          "points": 0,
-          "submitMs": 0.3999999761581421,
-          "readbackMs": 90.79999995231628
+          "readbackMs": 59.299999952316284
         },
         {
           "progress": 1,
@@ -4688,7 +4661,34 @@
           "lines": 0,
           "points": 0,
           "submitMs": 0.40000003576278687,
-          "readbackMs": 97.10000002384186
+          "readbackMs": 66.40000003576279
+        },
+        {
+          "progress": 1,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 91.5
+        },
+        {
+          "progress": 1,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.3999999761581421,
+          "readbackMs": 81.69999998807907
+        },
+        {
+          "progress": 1,
+          "calls": 84,
+          "triangles": 184774,
+          "lines": 0,
+          "points": 0,
+          "submitMs": 0.5,
+          "readbackMs": 86
         }
       ]
     }
