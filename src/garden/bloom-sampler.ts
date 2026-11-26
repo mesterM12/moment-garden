@@ -9,11 +9,16 @@ import { petalFields } from './petal-surface'
 export function createBloomSampler(document: Document, gift: Gift, width: number, height: number) {
   const canvas = document.createElement('canvas')
   const renderer = createRenderer(canvas)
+  const scene = createScene()
+  let disposed = false
   let petals: ReturnType<typeof petalFields> | undefined
   let leaf: ReturnType<typeof leafVeins> | undefined
   let bouquet: ReturnType<typeof buildBouquet> | undefined
 
   function dispose() {
+    if (disposed) return
+    disposed = true
+    scene.dispose()
     if (bouquet) disposeBouquet(bouquet)
     petals?.dispose()
     leaf?.dispose()
@@ -25,7 +30,6 @@ export function createBloomSampler(document: Document, gift: Gift, width: number
   try {
     const gl = renderer.getContext()
     renderer.setDrawingBufferSize(width, height, 1)
-    const scene = createScene()
     const camera = new PerspectiveCamera(BLOOM_FOV, width / height, .1, 60)
     const framer = createBloomFramer(camera)
     const anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy())
@@ -33,7 +37,7 @@ export function createBloomSampler(document: Document, gift: Gift, width: number
     leaf = leafVeins(document, anisotropy)
     const sample = bouquet = buildBouquet(createBouquet(gift.timestamp, gift.version), { petal: petals, leaf })
     sample.plant.rotation.y = BLOOM_FRONT_YAW
-    scene.add(sample.plant)
+    scene.setBouquet(sample)
 
     return {
       draw(progress: number, target: CanvasRenderingContext2D) {

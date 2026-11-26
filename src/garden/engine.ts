@@ -7,12 +7,17 @@ import { CloseView } from './close-view';
 import { BLOOM_FOV, FOCAL_HOLD_MS, PULLBACK_END_MS, createBloomFramer, type HeldBloomLens } from './bloom-camera';
 import type { ExpandedBouquetPlan as BouquetPlan, GardenEngine, GardenEngineOptions, MorphPetal, Specimen, StemEntry } from './types';
 
-import { BLOOM_DURATION as DURATION, bloomStart, clamp, ease, flexAt, foldWeights, hingePeak, leadingGuard, petalOpening, petalPace, petalWave, stemTension } from './bloom-score';
+import { BLOOM_DURATION as DURATION, bloomPetalScore, bloomStart, clamp, ease, flexAt, stemTension } from './bloom-score';
 import { finishPetals, tieBouquet } from './florist-finish';
 import { buildFiller } from './filler';
 import { bladeBatches } from './blade-batches';
+import { cutStemGeometry, cutStemMaterial, flexCutStem } from './cut-stem';
+import { foliageMaterial, StemLeaf } from './foliage';
+import { freePetal } from './free-petals';
+import { buildCenter } from './floral-centers';
 import { petalFields, petalSurface } from './petal-surface';
 import { createPostcardPng, postcardCamera } from './postcard-png';
+import { BouquetStudio } from './bouquet-studio';
 const WEBGL_ERROR = 'These flowers need WebGL 2 to bloom. Try a current browser with hardware acceleration enabled.';
 const RENDER_ERROR = 'These flowers couldn’t open. Try reloading the page.';
 const CONTEXT_ERROR = 'The 3D preview paused. You can still send this bouquet, or reload it if the preview doesn’t return.';
@@ -22,7 +27,7 @@ type Random = () => number;
 type HeadEnvelope = { center: THREE.Vector3; axis: THREE.Vector3; radius: number; halfHeight: number };
 type Bloom = ReturnType<typeof buildBloom>;
 type Textures = { petal: ReturnType<typeof petalFields>; leaf: THREE.CanvasTexture };
-type BuiltBouquet = { framePoints: THREE.Vector3[]; focalPoints: THREE.Vector3[]; focus: THREE.Vector3; plant: THREE.Group; blooms: Bloom[]; ribbon: THREE.Group; filler?: ReturnType<typeof buildFiller>; plan: BouquetPlan; materials: Set<THREE.Material> };
+type BuiltBouquet = { progress: number; framePoints: THREE.Vector3[]; focalPoints: THREE.Vector3[]; focus: THREE.Vector3; plant: THREE.Group; blooms: Bloom[]; ribbon: THREE.Group; filler?: ReturnType<typeof buildFiller>; plan: BouquetPlan; materials: Set<THREE.Material> };
 
 export function leafVeins(document: Document, anisotropy: number) {
   const surface = document.createElement('canvas');
@@ -48,8 +53,7 @@ export function leafVeins(document: Document, anisotropy: number) {
   return texture;
 }
 
-// A petal is a cupped, gently ruffled surface, not a flat billboard.
-function botanicalGeometry(length: number, width: number, palette: PetalPalette, random: Random, specimen: Specimen, isLeaf = false) {
+function leafGeometry(length: number, width: number, palette: PetalPalette, random: Random, specimen: Specimen) {
   const across = 18;
   const along = 28;
   const positions = [];
@@ -62,43 +66,24 @@ function botanicalGeometry(length: number, width: number, palette: PetalPalette,
   const asymmetry = (random() - 0.5) * 0.15;
   const phase = random() * Math.PI * 2;
   const recipe = specimen.recipe;
-  const fleck = new THREE.Color(palette.fleck || palette.root);
   const tint = new THREE.Color();
-  const broadLip = !isLeaf && (specimen.key === 'cosmos' || specimen.key === 'poppy' || specimen.key === 'daisy');
-  const poppy = !isLeaf && specimen.key === 'poppy';
-  const ink = new THREE.Color('#442131');
   for (let j = 0; j <= along; j++) {
     const t = j / along;
-    const profile = Math.pow(Math.max(0, Math.sin(Math.PI * t)), isLeaf ? (recipe.leaf === 'broad' ? 0.5 : 0.8) : recipe.shape);
-    const serration = isLeaf && recipe.leaf === 'serrated' ? 1 - 0.12 * Math.abs(Math.sin(t * 55)) : 1;
-    // Keep a finite distal lip on blunt ray florets, not a collapsed point.
-    const silhouette = (broadLip ? Math.max(profile, ease(t) * (poppy ? .63 : .52)) : profile) * serration;
+    const profile = Math.pow(Math.max(0, Math.sin(Math.PI * t)), recipe.leaf === 'broad' ? 0.5 : 0.8);
+    const serration = recipe.leaf === 'serrated' ? 1 - 0.12 * Math.abs(Math.sin(t * 55)) : 1;
+    const silhouette = profile * serration;
     for (let i = 0; i <= across; i++) {
       const u = i / across;
       const s = u * 2 - 1;
-      const ruffle = Math.sin(t * 23 + phase + s * 3) * (isLeaf ? 0.014 : recipe.ruffle) * Math.pow(Math.abs(s), 3) * t;
+      const ruffle = Math.sin(t * 23 + phase + s * 3) * 0.014 * Math.pow(Math.abs(s), 3) * t;
       const x = s * width * silhouette * (1 + asymmetry * s) + Math.sin(t * 4) * asymmetry * t;
-      const cosmosNotch = !isLeaf && specimen.key === 'cosmos' ? (Math.exp(-(((s - 0.42) / 0.10) ** 2)) + Math.exp(-(((s + 0.42) / 0.10) ** 2))) * 0.07 * ease((t - 0.78) / 0.22) : 0;
-      const z = length * t - cosmosNotch - (broadLip ? length * .094 * s * s * ease((t - .70) / .30) : 0);
       const ridge = Math.exp(-s * s * 26) * silhouette;
-      const folds = Math.cos(s * (poppy ? 10 : 6) + t * 1.2 + phase) * silhouette;
-      const y = isLeaf
-        ? .17 * Math.sin(Math.PI * t) + .055 * ridge - .15 * s * s * silhouette + .09 * s * t * silhouette + ruffle
-        : .16 * Math.sin(t * Math.PI) + recipe.curl * t * t + recipe.cup * s * s * silhouette + ruffle + (poppy ? .067 : .018) * folds;
-      positions.push(x, y, z);
+      const folds = Math.cos(s * 6 + t * 1.2 + phase) * silhouette;
+      const y = .17 * Math.sin(Math.PI * t) + .055 * ridge - .15 * s * s * silhouette + .09 * s * t * silhouette + ruffle;
+      positions.push(x, y, length * t);
       uvs.push(u, t);
-      const color = tint.copy(root).lerp(base, ease(t / 0.42));
-      const pattern = isLeaf ? 'gradient' : specimen.pattern;
-      const tipBlend = pattern === 'picotee'
-        ? ease((Math.abs(s) - 0.65) / 0.35) * 0.85 + ease((t - 0.82) / 0.18) * 0.5
-        : ease((t - 0.35) / 0.65) * 0.86;
-      color.lerp(tip, Math.min(1, tipBlend));
-      if (!isLeaf && (pattern === 'speckled' || specimen.key === 'lily') && t > 0.15 && t < 0.7) {
-        const spots = Math.sin(u * 93 + phase) * Math.sin(t * 127 + phase);
-        if (spots > 0.87) color.lerp(fleck, 0.75);
-      }
-      if (poppy) color.lerp(ink, .82 * (1 - ease((t - .06) / .24)) * (1 - .6 * s * s));
-      if (isLeaf) color.lerp(tip, .24 * ridge);
+      const color = tint.copy(root).lerp(base, ease(t / 0.42))
+        .lerp(tip, ease((t - 0.35) / 0.65) * 0.86).lerp(tip, .24 * ridge);
       const vein = 1 - Math.pow(Math.cos(s * 15 + t * 2 + phase), 8) * .068;
       color.multiplyScalar(vein * (.98 - .09 * s * s + .04 * folds));
       colors.push(color.r, color.g, color.b);
@@ -157,20 +142,21 @@ function routedStem(bottom: THREE.Vector3, knot: THREE.Vector3, middle: THREE.Ve
 
 function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envelopes: HeadEnvelope[], earlierStems: THREE.Vector3[][], plant: THREE.Group, materials: Set<THREE.Material>, textures: Textures) {
   const specimen = entry.specimen;
-  const { random, palette, recipe } = specimen;
+  const { random, recipe } = specimen;
   const petals: MorphPetal[] = [];
-  const leaves: THREE.Group[] = [];
+  const leaves: StemLeaf[] = [];
   const sepals: THREE.Mesh[] = [];
   const group = new THREE.Group();
   plant.add(group);
-  const green = new THREE.MeshStandardMaterial({ color: `hsl(${specimen.greenHue - 13}, 33%, 32%)`, roughness: .79 });
+  const green = cutStemMaterial();
   const petalMaterial = petalSurface(specimen, textures.petal);
-  const leafMaterial = new THREE.MeshPhysicalMaterial({
+  const leafMaterial = foliageMaterial(specimen.key);
+  const sepalMaterial = new THREE.MeshPhysicalMaterial({
     vertexColors: true, side: THREE.DoubleSide, roughness: 0.56,
     clearcoat: 0.3, clearcoatRoughness: 0.6, bumpMap: textures.leaf, bumpScale: 0.045,
   });
-  // The sepal or foliage material may not have any mesh in some recipes.
-  materials.add(green).add(petalMaterial).add(leafMaterial);
+  // Sepal geometry and shading remain part of the head, not the stem foliage.
+  materials.add(green).add(petalMaterial).add(leafMaterial).add(sepalMaterial);
   const top = new THREE.Vector3(...entry.position);
   const bottom = new THREE.Vector3(entry.turn * 0.6, -3.2 + random() * 0.25, -entry.turn * 0.3);
   const knot = new THREE.Vector3(entry.turn * 0.2, -1.9, 0);
@@ -187,40 +173,32 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
   middle.z = top.z * 0.6 + knot.z;
   const curve = routedStem(bottom, knot, middle, top, envelopes.filter((_, other) => other !== index), earlierStems);
   earlierStems.push(curve.getPoints(40).filter(point => point.y > -1.65));
-  const stem = new THREE.Mesh(new THREE.TubeGeometry(curve, 40, 0.024, 7, false), green);
+  const stem = new THREE.Mesh(cutStemGeometry(curve, specimen), green);
   group.add(stem);
   const bendX = -.37 * top.x + .10 * Math.sin(specimen.rotation);
   const bendZ = -.26 * top.z + .12;
   const drop = -.36 - .13 * Math.abs(top.x);
+  const bend = new THREE.Vector3(bendX, drop, bendZ);
   const flexStem = () => {
-    const rest = stem.geometry.getAttribute('position'), folded = rest.clone();
-    for (let i = 0; i < folded.count; i++) {
-      const y = rest.getY(i), weight = flexAt(y, top.y);
-      folded.setXYZ(i, rest.getX(i) + bendX * weight, y + drop * weight, rest.getZ(i) + bendZ * weight);
-    }
-    stem.geometry.morphAttributes.position = [folded];
+    flexCutStem(stem.geometry, bend, top.y);
     stem.updateMorphTargets();
   };
   flexStem();
 
-  const leafColors = { base: `hsl(${specimen.greenHue - 5}, 32%, 31%)`, tip: `hsl(${specimen.greenHue - 18}, 34%, 51%)`, root: '#264435' };
-  const leafWidths = { slender: 0.12, broad: 0.47, serrated: 0.31, strap: 0.22 };
-  const leafWidth = leafWidths[recipe.leaf];
-  const leafLength = recipe.leaf === 'strap' ? 1.9 : 1.15;
-  const leafCount = entry.leafCount ?? (recipe.leaf === 'strap' ? 2 : 3);
+  const strap = recipe.leaf === 'strap';
+  const leafCount = entry.leafCount ?? (strap ? 2 : 3);
   for (let i = 0; i < leafCount; i++) {
-    const pivot = new THREE.Group();
-    const stemPosition = (recipe.leaf === 'strap' ? 0.43 : 0.46) + i * 0.14;
-    pivot.position.copy(curve.getPoint(stemPosition));
-    pivot.userData.stemPosition = stemPosition;
-    pivot.rotation.y = i % 2 ? 1.45 : -1.45;
-    pivot.rotation.x = 0.8;
-    const leaf = new THREE.Mesh(botanicalGeometry(leafLength + random() * 0.3, leafWidth * (0.9 + random() * 0.2), leafColors, random, specimen, true), leafMaterial);
-    leaf.rotation.x = recipe.leaf === 'strap' ? -1.4 : -0.12 - random() * 0.15;
-    pivot.add(leaf);
-    pivot.scale.setScalar(0.55);
-    group.add(pivot);
-    leaves.push(pivot);
+    // Reserve exactly the old four shape draws and optional pitch draw before
+    // building the head. Leaflet counts do not advance the specimen RNG.
+    const variation = [random(), random(), random(), random()] as const;
+    const pitch = strap ? (specimen.key === 'iris' ? -.96 : -.62) : -.12 - random() * .15;
+    const leaf = new StemLeaf(specimen, variation, pitch, i % 2 ? 1.45 : -1.45, leafMaterial, bend);
+    leaf.userData.stemPosition = (strap ? .43 : .46) + i * .14;
+    leaf.socket(curve, leaf.userData.stemPosition);
+    leaf.orient(.8);
+    leaf.scale.setScalar(.55);
+    group.add(leaf);
+    leaves.push(leaf);
   }
 
   const head = new THREE.Group();
@@ -241,112 +219,38 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
     for (let i = 0; i < count; i++) {
       const stagger = layer * Math.PI / count;
       const angle = i / count * Math.PI * 2 + specimen.rotation + stagger;
-      const geometry = botanicalGeometry(specimen.length * size * (0.94 + random() * 0.12), specimen.width * size * (specimen.key === 'lily' && layer === 0 ? .76 : 1), palette, random, specimen);
-      const offset = random() * .04, openAngle = recipe.open - layer * .035 + (random() - .5) * .05;
-      blades.add(geometry, i, layer, angle, layer * recipe.lift + .009 * Math.sin(angle),
-        Math.max(.025, recipe.disk * .8 - layer * .025), openAngle, offset);
+      // Draw length, sway, phase, timing and lean in the original order.
+      const length = specimen.length * size * (0.94 + random() * 0.12);
+      const sway = random(), phase = random(), offset = random() * .04, lean = random();
+      const radius = Math.max(.025, recipe.disk * .8 - layer * .025);
+      const height = layer * recipe.lift + .009 * Math.sin(angle);
+      const geometry = freePetal(specimen, layer, radius, length, sway, phase, lean);
+      blades.add(geometry, i, layer, angle, height, radius, 0, offset);
     }
   }
   if (blades) petals.push(...blades.finish());
+  const leafColors = { base: `hsl(${specimen.greenHue - 5}, 32%, 31%)`, tip: `hsl(${specimen.greenHue - 18}, 34%, 51%)`, root: '#264435' };
   const sepalCount = recipe.sepalCount ?? (['tulip', 'lily', 'poppy'].includes(specimen.key) ? 0 : 5);
   for (let i = 0; i < sepalCount; i++) {
     const ring = new THREE.Group();
     ring.rotation.y = i * Math.PI * 2 / sepalCount;
     ring.position.y = -0.07;
-    const sepal = new THREE.Mesh(botanicalGeometry(0.40, 0.07, leafColors, random, specimen, true), leafMaterial);
+    const sepal = new THREE.Mesh(leafGeometry(0.40, 0.07, leafColors, random, specimen), sepalMaterial);
     ring.add(sepal);
     head.add(ring);
     sepals.push(sepal);
   }
 
-  const center = new THREE.Group();
-  head.add(center);
-  const diskRadius = recipe.disk;
-  const dark = recipe.center === 'seeds' || recipe.center === 'poppy';
-  const disk = new THREE.Mesh(new THREE.SphereGeometry(diskRadius, 32, 20), new THREE.MeshStandardMaterial({ color: dark ? '#3c281c' : '#a47720', roughness: 0.9 }));
-  disk.scale.set(1, 0.50, 1);
-  disk.position.y = 0.1;
-  if (['gold', 'seeds'].includes(recipe.center)) center.add(disk);
-  else { disk.geometry.dispose(); disk.material.dispose(); }
-  // Golden-angle phyllotaxis gives daisies and sunflowers real disk structure.
-  const pollenCount = recipe.center === 'seeds' ? 800 : 260;
-  const pollen = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 6, 5), new THREE.MeshStandardMaterial({ roughness: 0.8 }), pollenCount);
-  const dummy = new THREE.Object3D();
-  const color = new THREE.Color();
-  const honey = new THREE.Color('#c7913f');
-  for (let i = 0; i < pollenCount; i++) {
-    const radius = diskRadius * 0.97 * Math.sqrt(i / pollenCount);
-    const a = i * 2.3999632297;
-    const height = Math.sqrt(Math.max(0, 1 - (radius / diskRadius) ** 2));
-    dummy.position.set(Math.cos(a) * radius, 0.1 + height * diskRadius * 0.5, Math.sin(a) * radius);
-    const size = diskRadius / Math.sqrt(pollenCount) * (0.70 + random() * 0.12);
-    dummy.scale.set(size, size * 1.5, size);
-    dummy.updateMatrix();
-    pollen.setMatrixAt(i, dummy.matrix);
-    color.setHSL(0.10 + random() * 0.035, dark ? 0.40 : 0.85, dark ? 0.12 + random() * 0.13 : 0.4 + random() * 0.22);
-    if (dark) color.lerp(honey, .62 * ease((radius / diskRadius - .76) / .18));
-    pollen.setColorAt(i, color);
+  const center = buildCenter(specimen, head);
+  // Arrange the parts once. The live and GIF renderers sample the same score.
+  const petalScore = bloomPetalScore(specimen.key, petals, specimen.rotation, specimen.count, index === 0);
+  if (specimen.key === 'dahlia') {
+    // The florets open around a stationary receptacle, not an inflating disk.
+    const backing = head.children[0];
+    if (bouquet.version === 3) backing.scale.set(.24, .082, .24);
+    else backing.scale.set(.88, .39, .88);
   }
-  if (['gold', 'seeds'].includes(recipe.center)) center.add(pollen);
-  else { pollen.dispose(); pollen.geometry.dispose(); pollen.material.dispose(); }
-  if (recipe.center === 'poppy') {
-    const capsule = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 12), new THREE.MeshStandardMaterial({ color: '#7b9567', roughness: 0.9 }));
-    capsule.position.y = 0.17;
-    capsule.scale.y = 1.2;
-    center.add(capsule);
-    const capMaterial = new THREE.MeshStandardMaterial({ color: '#536b43', roughness: 0.95 });
-    for (let i = 0; i < 9; i++) {
-      const ridge = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.20, 5), capMaterial);
-      ridge.position.y = 0.33;
-      ridge.rotation.set(Math.PI / 2, 0, i * Math.PI / 9);
-      center.add(ridge);
-    }
-  }
-  if (recipe.center === 'stamens' || recipe.center === 'poppy') {
-    const stamenCount = recipe.center === 'poppy' ? 32 : 6;
-    const filamentMaterial = new THREE.MeshStandardMaterial({ color: recipe.center === 'poppy' ? '#443136' : '#bed27e', roughness: 0.7 });
-    const antherMaterial = new THREE.MeshStandardMaterial({ color: recipe.center === 'poppy' ? '#302532' : '#b77d20', roughness: 0.85 });
-    const antherGeometry = new THREE.SphereGeometry(1, 10, 8);
-    for (let i = 0; i < stamenCount; i++) {
-      const a = i / stamenCount * Math.PI * 2;
-      const radius = recipe.center === 'poppy' ? 0.31 : 0.2;
-      const height = recipe.center === 'poppy' ? 0.22 + random() * 0.08 : 0.55 + random() * 0.2;
-      const from = new THREE.Vector3(Math.cos(a) * radius * 0.5, 0.05, Math.sin(a) * radius * 0.5);
-      const to = new THREE.Vector3(Math.cos(a) * radius, height, Math.sin(a) * radius);
-      const filament = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.012, from.distanceTo(to), 5), filamentMaterial);
-      filament.position.copy(from).lerp(to, 0.5);
-      filament.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), to.clone().sub(from).normalize());
-      center.add(filament);
-      const anther = new THREE.Mesh(antherGeometry, antherMaterial);
-      anther.position.copy(to);
-      anther.scale.set(0.035, 0.025, recipe.center === 'poppy' ? 0.035 : 0.09);
-      anther.rotation.y = a;
-      center.add(anther);
-    }
-  }
-  if (recipe.center === 'stamens') {
-    const style = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.015, 0.83, 7), new THREE.MeshStandardMaterial({ color: '#b9cf79', roughness: 0.8 }));
-    style.position.y = 0.44;
-    center.add(style);
-    const stigma = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), new THREE.MeshStandardMaterial({ color: '#d7db95', roughness: 0.8 }));
-    stigma.position.y = 0.87;
-    center.add(stigma);
-  }
-  center.visible = recipe.center !== 'hidden' && specimen.key !== 'dahlia';
-  // Keep insertion rhythms and the exact rest sockets out of the frame loop.
-  const guard = leadingGuard(specimen.key, specimen.rotation, specimen.count);
-  const earlyRose = index === 0 && specimen.key === 'rose';
-  petals.forEach((p, i) => {
-    if (i === guard) { p.offset = 0; p.pace = earlyRose ? 2.38 : 1.88; return; }
-    p.pace = petalPace(specimen.key, p.layer, i, specimen.rotation) * (earlyRose && p.layer > 0 ? 1.34 : 1);
-    // Cluster branches and the florets at their tips share the initial lift.
-    p.offset = specimen.key === 'hydrangea' || specimen.key === 'billyButton' ? .035
-      : p.offset + petalWave(specimen.key, p.layer, i, specimen.rotation) * (earlyRose ? .42 : 1);
-  });
-  const backing = specimen.key === 'dahlia' ? head.children[0] : undefined;
-  const cutDahlia = !!backing && bouquet.version === 3;
   const nod = bouquet.version === 2 && specimen.key === 'ranunculus' ? .29 * Math.sin(specimen.rotation * 1.6) : 0;
-  const peak = hingePeak(specimen.key);
   const diskHead = specimen.key === 'sunflower' || specimen.key === 'daisy';
   const neck = (specimen.key === 'lily' || specimen.key === 'poppy' ? .29 : .16) * Math.cos(specimen.rotation + index);
   const focal = bouquet.flowers[0].position;
@@ -354,7 +258,7 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
   const startBeat = index === 0 ? .026 : bouquet.version === 2 ? .10 + .89 * bloomStart(index, entry.delay)
     : .19 + Math.min(.20, distance * .055) + (index > 3 ? .091 : 0) + entry.delay * .42;
   const endBeat = index === 0 ? .66 : index > 3 ? 1 : .88 + entry.delay;
-  return { head, center, petals, leaves, sepals, backing, cutDahlia, nod, peak, neck, diskHead, entry, curve, stem, flexStem, top, bendX, bendZ, drop, startBeat, endBeat };
+  return { head, center, petals, petalScore, leaves, sepals, nod, neck, diskHead, entry, curve, stem, flexStem, top, bendX, bendZ, drop, startBeat, endBeat };
 }
 
 // Lay out foliage once at full bloom, not every frame. The thin leaf surfaces
@@ -369,21 +273,23 @@ function settleFoliage(bouquet: BuiltBouquet) {
   const bounds = new THREE.Box3();
   blooms.forEach(({ leaves, curve, entry }, index) => {
     leaves.forEach(leaf => {
-      const initialYaw = leaf.rotation.y;
+      const initialYaw = leaf.yaw;
       const initialT = leaf.userData.stemPosition;
       const scale = entry.leafScale ?? 0.55;
       const sign = Math.sign(entry.position[0]) || Math.sign(initialYaw);
       for (const size of [1, 0.8, 0.63]) {
         leaf.scale.setScalar(scale * size);
         for (const t of [initialT, initialT - 0.08, initialT + 0.045, initialT - 0.15]) {
-          leaf.position.copy(curve.getPoint(t));
+          leaf.socket(curve, t);
           for (const angle of [initialYaw, sign * 1.29, sign * 2.12, sign * 0.54]) {
-            leaf.rotation.y = angle;
+            leaf.yaw = angle;
+            leaf.orient(.8);
             leaf.updateWorldMatrix(false, true);
             bounds.setFromObject(leaf).expandByScalar(0.009);
             if (bounds.min.y < -1.72 || headBounds.some(box => box.intersectsBox(bounds)) || placed.some(box => box.intersectsBox(bounds))) continue;
             if (stemPoints.some((points, other) => other !== index && points.some(point => bounds.containsPoint(point)))) continue;
             leaf.userData.clearanceScale = size;
+            leaf.userData.stemPosition = t;
             leaf.userData.rest = leaf.position.clone();
             leaf.userData.flex = flexAt(leaf.position.y, entry.position[1]);
             placed.push(bounds.clone());
@@ -396,9 +302,12 @@ function settleFoliage(bouquet: BuiltBouquet) {
   });
 }
 
-export function pose({ blooms, filler }: BuiltBouquet, p: number) {
+export function pose(bouquet: BuiltBouquet, p: number) {
+  if (bouquet.progress === p) return;
+  bouquet.progress = p;
+  const { blooms, filler } = bouquet;
   filler?.pose(p);
-  blooms.forEach(({ head, center, petals, leaves, sepals, backing, cutDahlia, nod, peak, neck, diskHead, entry, stem, top, bendX, bendZ, drop, startBeat, endBeat }) => {
+  blooms.forEach(({ head, center, petals, petalScore, leaves, sepals, nod, neck, diskHead, entry, stem, top, bendX, bendZ, drop, startBeat, endBeat }) => {
     const local = clamp((p - startBeat) / (endBeat - startBeat));
     const tension = stemTension(local);
     stem.morphTargetInfluences![0] = tension;
@@ -411,16 +320,7 @@ export function pose({ blooms, filler }: BuiltBouquet, p: number) {
     head.rotation.z = -.5 * entry.turn - .13 * bendX * tension + neck * .72 * lift;
     const unfurl = ease((local - .03) / .9);
     head.scale.setScalar(entry.scale); // the petal surface opens, not the silhouette's scale
-    if (backing) {
-      const girth = cutDahlia ? .09 + .15 * unfurl : .88 * (.20 + .80 * unfurl);
-      backing.scale.set(girth, cutDahlia ? .082 : .39, girth);
-    }
-    petals.forEach(petal => {
-      const opening = clamp(petalOpening(local, petal.offset) * (petal.pace ?? 1));
-      const weights = petal.mesh.morphTargetInfluences!;
-      if (weights.length === 2) foldWeights(weights, opening, peak);
-      else weights[0] = 1 - ease(opening);
-    });
+    petals.forEach(({ mesh }, i) => petalScore(mesh.morphTargetInfluences!, local, i));
     leaves.forEach((leaf, i) => {
       if (!leaf.visible) return;
       const rest = leaf.userData.rest as THREE.Vector3 | undefined;
@@ -428,14 +328,22 @@ export function pose({ blooms, filler }: BuiltBouquet, p: number) {
         const w = tension * leaf.userData.flex;
         leaf.position.set(rest.x + w * bendX, rest.y + w * drop, rest.z + w * bendZ);
       }
-      leaf.rotation.x = .8 - .58 * (1 - ease((local - i * .045) / .53));
+      leaf.orient(.8 - .58 * (1 - ease((local - i * .045) / .53)), tension);
       leaf.scale.setScalar((entry.leafScale ?? .55) * (leaf.userData.clearanceScale ?? 1) * (.73 + .27 * unfurl));
     });
-    sepals.forEach((sepal, i) => { sepal.rotation.x = -1.3 + 1.5 * ease((local - i * .013) / .38); });
+    const composite = diskHead || entry.specimen.key === 'cosmos';
+    sepals.forEach((sepal, i) => {
+      if (composite) {
+        // Bracts are short hinges under the rays. They turn before the ray
+        // hooks unroll, and stay under the disk instead of flaring to its face.
+        const lean = ease((local - .011 * i) / (diskHead ? .31 : .24));
+        sepal.rotation.x = -.93 + 1.13 * lean;
+      } else sepal.rotation.x = -1.3 + 1.5 * ease((local - i * .013) / .38);
+    });
     // The throat exists inside the bud; it does not pop into a vacant disk.
     const throat = ease((local - .13) / .69);
-    const coreWidth = diskHead ? .78 + .22 * throat : .31 + .69 * throat;
-    center.scale.set(coreWidth, .52 + .48 * throat, coreWidth);
+    const coreWidth = composite ? 1 : .31 + .69 * throat;
+    center.scale.set(coreWidth, (composite ? .83 : .52) + (composite ? .17 : .48) * throat, coreWidth);
   });
   // The binding and cut ends stay still throughout.
 }
@@ -480,7 +388,7 @@ function clearOpeningStems(bouquet: BuiltBouquet, envelopes: HeadEnvelope[]) {
     const [bottom, knot, middle] = b.curve.points;
     b.curve = routedStem(bottom, knot, middle, b.top, envelopes.filter((_, j) => j !== i),
       blooms.filter(other => other !== b).map(other => other.curve.getPoints(40).filter(p => p.y > -1.65)), cost);
-    b.stem.geometry.dispose(); b.stem.geometry = new THREE.TubeGeometry(b.curve, 40, .024, 7, false);
+    b.stem.geometry.dispose(); b.stem.geometry = cutStemGeometry(b.curve, b.entry.specimen);
     b.flexStem();
   });
 }
@@ -503,7 +411,7 @@ export function buildBouquet(plan: BouquetPlan, textures: Textures): BuiltBouque
   const plant = new THREE.Group();
   const ribbon = new THREE.Group();
   const materials = new Set<THREE.Material>();
-  const bouquet: BuiltBouquet = { plant, ribbon, plan, materials, blooms: [], framePoints: [], focalPoints: [], focus: new THREE.Vector3(0, 1.08, 0) };
+  const bouquet: BuiltBouquet = { progress: NaN, plant, ribbon, plan, materials, blooms: [], framePoints: [], focalPoints: [], focus: new THREE.Vector3(0, 1.08, 0) };
   try {
     const envelopes = plan.flowers.map(entry => {
       const envelope = Botany.headEnvelope(entry);
@@ -562,24 +470,14 @@ export function createRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   return renderer;
 }
 
-export function createScene(): THREE.Scene {
-  const scene = new THREE.Scene();
-  scene.add(new THREE.HemisphereLight(0xfff2dc, 0xcfb6a0, 1.02));
-  // A broad feeling of side light, with cream paper bounce in the folds. No
-  // shadow-map passes or post-processing: this light also prints in the PNG.
-  const sun = new THREE.DirectionalLight(0xffe7c7, 2.70);
-  sun.position.set(-5, 4, 3);
-  scene.add(sun);
-  const fill = new THREE.DirectionalLight(0xfff0dc, 0.64);
-  fill.position.set(5, 2, 2);
-  scene.add(fill);
-  const backlight = new THREE.DirectionalLight(0xffdda8, 1.25);
-  backlight.position.set(1, 4, -4);
-  scene.add(backlight);
-  return scene;
+export function createScene() {
+  return new BouquetStudio();
 }
 
 /** An imperative scene owned by one mounted canvas. React owns the postcard UI. */
@@ -860,6 +758,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
     if (disposed || !contextLost) return;
     // Three's earlier listener has rebuilt its GL caches. Reuse the original
     // geometry and textures, with the same bloom progress and presentation angle.
+    scene.resetShadows();
     contextLost = false;
     failed = false;
     changeView(false, true);
@@ -888,7 +787,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
     leafTexture?.dispose();
     petalTexture = undefined;
     leafTexture = undefined;
-    scene.clear();
+    scene.dispose();
     // Do not force context loss: StrictMode/HMR can reuse the same canvas before
     // the loss event arrives, and the next renderer needs that context.
     renderer.dispose();
@@ -945,7 +844,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
         if (current) disposeBouquet(current);
         framer.clear();
         current = next;
-        scene.add(current.plant);
+        scene.setBouquet(current);
         start = null;
         phase = 'ready';
         setProgress(contextLost ? 1 : 0);

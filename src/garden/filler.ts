@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { ease } from './bloom-score';
+import { sprayCalyx } from './spray-calyx';
 import type { ExpandedBouquetPlan } from './types';
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
@@ -122,9 +123,8 @@ export function buildFiller(plan: ExpandedBouquetPlan) {
           const angle = phase + 2.4 * j + i;
           const tip = b.clone().add(v(Math.cos(angle) * .13, .11 + .08 * j, Math.sin(angle) * .14));
           parts.push(paint(new THREE.TubeGeometry(new THREE.LineCurve3(b, tip), 1, .006, 4, false), stem));
-          const floret = new THREE.SphereGeometry(.046 + .008 * j, 7, 5);
-          floret.scale(1, .82, .9); floret.translate(tip.x, tip.y, tip.z);
-          parts.push(paint(floret, new THREE.Color(j ? '#e4d2ac' : '#c4b28b')));
+          const opening = .5 + .5 * Math.sin(angle + 1.17 * j);
+          parts.push(sprayCalyx(tip, tip.clone().sub(b), .046 + .008 * j, angle, opening));
         }
       }
     }

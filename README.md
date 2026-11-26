@@ -167,7 +167,7 @@ flowchart TD
 
 [`src/garden/botany.ts`](src/garden/botany.ts) chooses cultivars for a timestamp and recipe version. In v3 the [florist](src/garden/florist.ts) samples the crown’s width, rise, tilt, lean, depth and fullness. It reserves a forward-facing focal bloom, then tries sockets along two unequal arcs. Mature-head clearance, front visibility and bounds guide a bounded search; it can turn a stem, trim a companion, try a free position in the crown or use a compact safe cut. Foliage tips follow the resulting shoulders rather than imposing a fixed outline. The focal head is sized in relation to its largest companion; refining those proportions doesn’t move existing stem positions or reroll the gift. Each stem gets a derived seed for its geometry. Head envelopes guide placement and stem routing at selected stages of the bloom; crowded leaves are shortened, redirected, or omitted.
 
-Rose guards, tulip tepals, calla spathes and papery rays use [four vgpu-baked relief and pigment fields](tools/petal-bake/README.md). Each petal has its own seeded vein drift and blush. The shader gives petal backs a softer highlight and lets thin tissue catch warm backlight without adding a glow to every edge. WebGPU is used only to bake the fields; the live bouquet, saved postcard, and social preview all use the same WebGL 2 materials. Visitors don’t need WebGPU.
+Rose guards, tulip tepals, calla spathes and papery rays use [four vgpu-baked relief and pigment fields](tools/petal-bake/README.md). Each petal has its own seeded vein drift and blush. Each directional light can shine through thin margins; veins and thicker petal bases absorb more of that light, and the reverse face is rougher. WebGPU is used only to bake the fields; the live bouquet, animated GIF, saved postcard, and social preview all use the same WebGL 2 materials. Visitors don’t need WebGPU.
 
 Replay, rotation, and PNG export keep the existing bouquet. **Grow another** starts from a new timestamp and clears any bouquet seed from the address, so refreshing afterward is a fresh visit. The link carries the arrangement, not the sender’s camera angle. The self-hosted server gives messaging crawlers a 1200 × 630 PNG of that same seeded bouquet, fully bloomed in its canonical front view on the current stationery. The landscape layout adapts to the image dimensions; browser/GPU rendering can vary, so this is not a pixel-identical copy of the sender’s screen. The garden itself is client-only, while Next.js generates crawler metadata on the server; no server-rendered garden or external image service is involved.
 
@@ -179,7 +179,7 @@ Replay, rotation, and PNG export keep the existing bouquet. **Grow another** sta
 
 | Flower | Procedural construction |
 | --- | --- |
-| Rose | Nested angular-sector petals with overlapping lips and a closed center |
+| Rose | Broad outer guards peel back from a deep cup of off-center folded pockets |
 | Tulip | Two interleaved whorls of three curved shells forming an upright cup |
 | Dahlia | 97 florets arranged with golden-angle spacing, from tight central quills to broader outer petals |
 | Sunflower | Narrow ray petals surrounding a dark, densely sampled seed disk |
@@ -189,13 +189,13 @@ Replay, rotation, and PNG export keep the existing bouquet. **Grow another** sta
 | Cosmos | Eight broad rays with shallow tip notches and a golden center |
 | Ranunculus | Tightly layered, rounded petals |
 | Calla lily | A tapered, overlapping spathe with a turned lip and a seated spadix |
-| Orchid | Broad petals and a distinct labellum |
-| Iris | Upright standards and outward falls |
-| Hydrangea | A cluster of florets with rounded, overlapping sepal lobes |
-| Anemone | Broad petals and a dark central boss |
-| Billy button | A sphere of tiny golden florets |
+| Orchid | Two broad wings wrap around a column and a three-lobed, ridged lip |
+| Iris | Upright standards separate from drooping falls with veined patches and tapered beards |
+| Hydrangea | A branching cluster supports florets with four overlapping sepals and small toothed centers |
+| Anemone | Thin cupped tepals frame two staggered rows of stamens around a carpel cushion |
+| Billy button | Tightly packed buds, open five-toothed cups, and projecting styles form one rounded head |
 
-These are stylized procedural interpretations, not botanical simulations or photorealistic scanned models. Lighting, petal gradients, surface veins, and constrained pigment ranges help the species remain recognizable at postcard scale. Design observations and remaining refinement ideas are recorded in [`DESIGN-REVIEW.md`](DESIGN-REVIEW.md).
+These are stylized procedural interpretations, not botanical simulations or photorealistic scanned models. Lighting, petal gradients, surface veins, and constrained pigment ranges help the species remain recognizable at postcard scale. The [all-species proof tool](tools/realism-proof.md) captures the same flower at mid-opening, face-on, and oblique views, plus real postcard stages. [`DESIGN-REVIEW.md`](DESIGN-REVIEW.md) records the historical pre-React geometry review.
 
 ## Sound design
 

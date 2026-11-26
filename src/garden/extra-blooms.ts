@@ -120,7 +120,8 @@ function palette(specimen: Specimen) {
   return { color, base, tip, shade, fleck, tint, petal };
 }
 
-// Layer upon layer of fine, overlapping, almost circular petal edges.
+// A florist's double ranunculus: thin, broad laminae with a rounded lip.
+// Batches order the opening; the individual cups do not sit on circular tiers.
 function ranunculus(specimen: Specimen, batch: Batches, { petal, tip, base, shade, tint }: Palette) {
   const R = specimen.length;
   const rings = specimen.layers + 1;
@@ -128,279 +129,522 @@ function ranunculus(specimen: Specimen, batch: Batches, { petal, tip, base, shad
     const panels = batch(layer);
     const count = Math.max(5, specimen.count + 3 - layer);
     const pitch = TAU / count;
-    const progress = layer / (rings - 1);
-    const radius = R * (1 - 0.87 * progress ** 0.78);
-    const height = R * lerp(0.04, 0.47, progress ** 0.82);
+    const inner = layer / (rings - 1);
     if (layer === 0) {
-      panels.ellipsoid(scale([0, 0.115, 0], R), scale([0.306, 0.13, 0.306], R), t => tint.copy(base).lerp(shade, 0.53 + 0.23 * t));
+      panels.ellipsoid(scale([0, .052, 0], R), scale([.226, .083, .226], R),
+        t => tint.copy(base).lerp(shade, .52 + .31 * t), p => p, 8, 14);
     }
     for (let i = 0; i < count; i++) {
-      const angle = specimen.rotation + pitch * (i + layer * 0.52);
-      const phase = i * GOLDEN_ANGLE + specimen.rotation;
-      panels.surface(12, 10, (t, s) => {
-        const shoulder = smooth((t - 0.56) / 0.44);
-        const r = radius * (0.22 + 0.78 * t - 0.085 * s * s * shoulder);
-        const y = height + radius * (0.22 * Math.sin(t * 2.29) + 0.12 * t + 0.052 * s * s * t
-          + 0.02 * Math.sin(s * 5.8 + phase) * shoulder);
-        const a = angle + pitch * (0.70 * s * profile([0.14, 0.68, 1, 1, 0.90], t) + t * 0.29);
-        return polar(a, r, y);
-      }, (t, s) => {
-        // Pale paper edges with deeper pigment where the rings turn inward.
-        const rim = 0.31 * smooth((t - 0.86) / 0.14);
-        return petal(t, s).lerp(base, progress * 0.48).lerp(shade, progress * 0.23).lerp(tip, rim);
+      const phase = specimen.rotation * 1.8 + i * GOLDEN_ANGLE + layer * 1.437;
+      const hand = Math.sin(phase), tilt = Math.cos(phase * 1.33);
+      const angle = specimen.rotation + pitch * (i + .23 * hand) + layer * GOLDEN_ANGLE;
+      // A nearly round guard silhouette, with the next cup visible behind
+      // each seam. Keep the irregular insertions; taper their effect toward
+      // the lip so the outer ring doesn't divide into separate paddles.
+      const eye = smooth((inner - .75) / .25);
+      const reach = .96 - .88 * inner ** .84 + (.044 * hand + .015 * tilt) * (1 - inner) - eye * .041 * smooth(hand);
+      const root = .215 * (1 - inner) ** 1.45 + .014;
+      const foot = .024 + .373 * inner ** 1.28 + .011 * tilt * inner;
+      const top = .295 + .348 * inner ** .9 + .016 * hand;
+      const open: Sample = (t, s) => {
+        const lip = smooth((t - .65) / .35), side = smooth(t / .65);
+        const edge = s * s;
+        const arch = t - (.14 + .06 * s * tilt) * edge * lip;
+        const span = pitch * profile([.11, .49, .72, .79, .62], t) * (1 + .125 * hand * (1 - .55 * side) - .16 * eye * lip);
+        const sweep = angle + span * s + (hand * .025 + .13) * t + .032 * tilt * lip;
+        const radius = lerp(root, reach, arch ** .98) + (.054 * inner + .029) * Math.sin(Math.PI * t);
+        // One margin tucks, the other opens into a soft rolled hem. The
+        // radial rise makes neighbouring cups lap even when their lengths
+        // differ; the roll is localized to the free edge, not the whole blade.
+        const rise = lerp(Math.max(0, (radius - root) / (.96 - .88 * inner ** .84 - root)) ** 1.28, arch ** 1.15, inner);
+        const hem = lip * bell((s - .42 * tilt) * 1.55);
+        const y = lerp(foot, top, rise) + side * (.043 * s + .041 * edge * (1 - eye))
+          + .031 * Math.sin(Math.PI * t) * (1 - inner) - .042 * hem;
+        return polar(sweep, R * (radius + (.020 - .033 * inner) * hem), R * y);
+      };
+      panels.surface(12, 10, open, (t, s) => {
+        const rim = smooth((t - .86) / .14);
+        return petal(t, s).lerp(base, .24 * inner + .13 * (1 - t))
+          .lerp(shade, .13 * inner + .14 * Math.max(0, -s) * Math.sin(Math.PI * t))
+          .lerp(tip, (.19 + .09 * hand) * rim).multiplyScalar(1 + .047 * hand);
+      }, (point, t) => {
+        // Keep the insertion fixed and wrap the free blade around an ovoid.
+        // Use its existing azimuth so the same margins still make the lap.
+        const a = Math.atan2(point[0], point[2]);
+        const lip = smooth((t - .56) / .44);
+        const radial = root * (1 - t) + (.26 - .13 * inner) * Math.sin(Math.PI * t)
+          + (.053 - .047 * inner ** 3) * t;
+        // The outer laps cluster at the bud's shoulder, not all necklines
+        // sharing a ring. Stagger its edge height with the original hand.
+        const overlap = .058 * hand * lip + .025 * tilt * lip * (1 - inner);
+        const y = lerp(foot, .72 - .05 * inner, t) + (point[1] / R - lerp(foot, top, t * t)) * (.55 + .25 * lip) + overlap;
+        const lap = .024 * (Math.hypot(point[0], point[2]) / R - lerp(root, reach, t));
+        return polar(a, R * (radial + lap), R * y);
       });
     }
-    if (layer === rings - 1) {
-      panels.ellipsoid([0, height + 0.055 * R, 0], scale([0.095, 0.112, 0.095], R), t => tint.copy(base).lerp(shade, 0.24 + 0.46 * t));
-    }
   }
 }
 
-// One asymmetric, wrapping spathe; the golden spadix is exposed by its low front rim.
-function calla(specimen: Specimen, batch: Batches, { color, petal, tint, tip }: Palette) {
-  const R = specimen.length;
-  const yaw = 0.7 * (specimen.rotation / TAU - 0.5);
-  const green = color('#91a356'), cream = color('#fff4c8');
-  // Fold the entire flower with one transform so the spadix stays inside the wrap.
-  const fold: Fold = point => [point[0] * 0.34, point[1] * 0.99, point[2] * 0.34];
-  const spathe = batch(0);
-  spathe.surface(28, 64, (t, s) => {
-    const u = (s + 1) * 0.5;
-    const sweep = (u - 0.86) * TAU * 1.12 + 0.18 * t;
-    const back = (1 - Math.cos(sweep)) * 0.5;
-    const apex = Math.max(0, Math.cos(sweep + 2.91)) ** 3;
-    const lip = smooth((t - 0.72) / 0.28);
-    // Both laps have the same rise and flare at a given angle, but the outside
-    // lap stands proud of the inside lap rather than crossing through it.
-    const seam = (u - 0.5) * (0.034 + 0.078 * t);
-    const radius = 0.065 + t ** 1.34 * (0.44 + 0.14 * (1 - back) - 0.04 * apex)
-      + lip * 0.075 * (1 - back) + seam;
-    const y = 0.72 * t + (0.20 * back + 0.32 * apex) * t ** 2 + 0.016 * Math.sin(sweep * 3) * lip;
-    const point = polar(sweep + yaw, radius, y);
-    // The funnel bows away from the spadix as it opens.
-    point[0] += 0.08 * t * t;
-    point[2] -= (0.19 * apex + 0.07 * back) * lip;
-    return scale(point, R);
-  }, (t, s) => petal(t, s).lerp(cream, 0.18 * smooth((t - 0.6) / 0.4))
-    .lerp(tip, 0.28 * smooth((t - 0.8) / 0.2)).lerp(green, 0.87 * (1 - smooth(t / 0.34))), fold);
-  const gold = color('#db9c24');
-  spathe.surface(20, 14, (t, s) => {
-    const r = (0.006 + 0.066 * Math.sin(Math.PI * t) ** 0.45) * (1 - 0.29 * t);
-    return scale(polar(s * Math.PI, r, 0.1 + 0.73 * t, 0.032 * t * t), R);
-  }, (t, s) => tint.copy(gold).lerp(cream, 0.26 * t + 0.14 * (Math.cos(s * 36 + t * 35) * Math.cos(t * 47)) ** 2), fold, false);
+// The two cuts use the same continuous sheet. It overlaps at the throat and
+// unwinds into a low apron on one side and a high, recurved hood on the other.
+function calla(specimen: Specimen, batch: Batches, palette: Palette) {
+  callaWrap(specimen, batch, palette, false);
 }
 
-// One continuous spathe, not a cone capped with a second lip. The seam
-// overlaps down the neck and parts above it. Its hood bends back over a
-// short fleshy spadix; both start at the stem instead of leaving a pinhole.
-function cutCalla(specimen: Specimen, batch: Batches, { petal, tint, color }: Palette) {
-  const R = specimen.length, yaw = .32 * Math.sin(specimen.rotation);
-  const green = color('#829657'), gold = color('#dca642'), cream = color('#fff0c4');
-  const spathe = batch(0);
-  const fold: Fold = p => [p[0] * .34, p[1] * .99, p[2] * .34];
-  spathe.surface(32, 64, (t, s) => {
-    const u = (1 + s) / 2, lip = smooth((t - .78) / .22);
-    const a = yaw + .26 + (u - .5) * TAU * (1.17 - .10 * smooth(t)) + .36 * t + Math.PI;
-    const hood = (.5 - .5 * Math.cos(a - yaw)) ** 5;
-    const flank = Math.sin(a - yaw);
-    const seam = (u - .5) * (.012 + .065 * t);
-    const r = .025 + .095 * t + (.36 + .065 * flank) * t ** 1.72 + seam
-      + lip * (.12 + .12 * hood) - .025 * smooth((t - .93) / .07);
-    const y = -.018 + .71 * t + (.43 * hood + .13 * flank + .13 * (u - .5)) * t ** 2
-      - .072 * smooth((t - .90) / .1) * (1 - hood);
-    return scale([Math.sin(a) * r + .092 * t ** 2, y, Math.cos(a) * r - .105 * hood * lip], R);
-  }, (t, s) => petal(t, s).lerp(cream, .10 * t).lerp(green, .86 * (1 - smooth(t / .41))), fold);
-  // Ovary seals the passage between stem and spadix at the base of the wrap.
-  spathe.ellipsoid(scale([0, .073, 0], R), scale([.038, .09, .038], R),
-    t => tint.copy(green).lerp(gold, 1 - t), fold, 8, 12);
-  spathe.surface(24, 20, (t, s) => {
-    const r = .009 + .055 * Math.sin(Math.PI * t) ** .49 * (1 - .19 * t);
+function cutCalla(specimen: Specimen, batch: Batches, palette: Palette) {
+  callaWrap(specimen, batch, palette, true);
+}
+
+function callaWrap(specimen: Specimen, batch: Batches, { petal, tint, color, shade, tip }: Palette, cut: boolean) {
+  const R = specimen.length;
+  const yaw = cut ? .32 * Math.sin(specimen.rotation) : .70 * (specimen.rotation / TAU - .5);
+  const green = color('#829657'), ochre = color('#a86b26'), gold = color('#dda345'), cream = color('#fff1c7');
+  const panels = batch(0);
+  // The overlap becomes an opening at the rim. The low inner seam starts the
+  // apron while the higher outside edge rolls away from the spadix.
+  const sweep = (t: number, s: number) => Math.PI + .24 + .40 * t
+    + s * Math.PI * (1.17 - .22 * smooth((t - .40) / .60));
+  const spatheFold: Fold = (point, t) => {
+    const a = Math.atan2(point[0], point[2]);
+    const lip = smooth((t - .58) / .42);
+    const r = Math.hypot(point[0], point[2]);
+    return polar(a + .94 * smooth(t), r * (1 - .70 * smooth(t)) * (1 - .63 * lip),
+      point[1] + R * smooth(t) * (.29 + .10 * Math.cos(a - yaw)));
+  };
+  panels.surface(cut ? 32 : 28, cut ? 58 : 54, (t, s) => {
+    const a = sweep(t, s), lip = smooth((t - .75) / .25);
+    const back = .5 - .5 * Math.cos(a + .11), hood = back ** 6, flank = Math.sin(a);
+    const roll = Math.sin(lip * Math.PI * .90);
+    const apron = (.5 + .5 * Math.cos(a - .26)) ** 3;
+    const seam = s * (.009 + .042 * t);
+    const radius = (cut ? .028 : .035) + .095 * t + ((cut ? .37 : .43) + .065 * flank) * t ** 1.68
+      + seam + lip * (.099 + .075 * hood) + roll * (.043 + .051 * apron);
+    const y = -.017 + .71 * t + (.43 * hood + .11 * flank + .047 * s) * t ** 2
+      - (.077 + .048 * apron) * lip ** 2 * (1 - hood);
+    const center = polar(yaw, -.13 * hood * lip, y, .076 * t * t);
+    return scale(sum(center, polar(a + yaw, radius, 0)), R);
+  }, (t, s) => {
+    const a = sweep(t, s), lip = smooth((t - .70) / .30);
+    const throat = bell((t - .42) / .23) * (.54 + .46 * Math.sin(a * .5) ** 2);
+    const veins = Math.cos(8 * a + .85 * Math.sin(a + 4.2 * t)) ** 8;
+    return petal(t, .72 * Math.sin(a)).lerp(shade, .30 * throat + .13 * throat * veins)
+      .lerp(green, .86 * (1 - smooth(t / .40))).lerp(tip, .23 * lip)
+      .lerp(cream, .07 * t + .18 * lip * (.5 + .5 * Math.cos(a)));
+  }, spatheFold);
+  // The ovary closes the wrap at the stem. The fleshy spike stays put while
+  // the spathe unrolls; its staggered florets are relief, not painted noise.
+  panels.ellipsoid(scale([0, .062, 0], R), scale([.043, .080, .043], R),
+    t => tint.copy(green).lerp(gold, .77 * (1 - t)), p => p, cut ? 8 : 6, cut ? 12 : 10);
+  const spadixHeight = cut ? .62 : .59;
+  const grain = (t: number, a: number) => smooth((.12 + Math.cos(a * 6 + TAU * 4 * t) * Math.cos(TAU * 4 * t)) / 1.12);
+  panels.surface(24, cut ? 24 : 20, (t, s) => {
     const a = s * Math.PI;
-    return scale([r * Math.sin(a) + .036 * t ** 2, .131 + .63 * t,
-      r * Math.cos(a) - .036 * t ** 2], R);
-  }, (t, s) => tint.copy(gold).lerp(cream, .18 + .19 * t + .13 * (Math.cos(42 * s + t * 51) * Math.cos(30 * t)) ** 2), fold, false);
+    const shaft = Math.sin(Math.PI * t) ** .48 * (1 - .16 * t);
+    const r = .002 + shaft * (.058 + .012 * grain(t, a));
+    return scale(sum(polar(yaw, -.036 * t ** 2, .105 + spadixHeight * t, .038 * t ** 2), polar(a, r, 0)), R);
+  }, (t, s) => {
+    const raised = grain(t, s * Math.PI);
+    return tint.copy(ochre).lerp(gold, .56 + .44 * raised).lerp(cream, .16 * t + .21 * raised);
+  }, p => p, false);
 }
 
-// A moth orchid's two broad wings frame three sepals and a projecting, forked lip.
+// A Phalaenopsis face: three slim sepals sit behind the two overlapping
+// wings. The three-lobed labellum cups the column, then projects as a lip.
 function orchid(specimen: Specimen, batch: Batches, { color, petal, base, shade, tip, fleck, tint }: Palette) {
-  const R = specimen.length;
-  const twist = (specimen.rotation / TAU - 0.5) * 0.38;
-  const sepals = batch(0), wings = batch(1), lip = batch(2, 0.022);
-  for (const [i, aim] of [Math.PI, 0.73, -0.73].entries()) {
-    const angle = aim + twist;
-    const length = i ? 0.77 : 0.93;
+  const R = specimen.length, twist = (specimen.rotation / TAU - .5) * .38;
+  const sepals = batch(0), wings = batch(1), lip = batch(2, .022);
+  const ivory = color('#fff0d5'), pollen = color('#e8a132');
+  // The sepals wrap around the inner packet rather than shrinking the face
+  // about its center. Roots stay at the insertion throughout the bloom.
+  const wrap = (axis: number, height: number, girth: number, span: number,
+    turn: number, width: (t: number) => number, offset: (t: number) => number): Fold => (p, t) => {
+    const aim = axis + turn * t;
+    const s = (p[0] * Math.cos(aim) - p[2] * Math.sin(aim)) / width(t) - offset(t);
+    const shoulder = Math.sin(Math.PI * t), bend = smooth(t / .47);
+    const a = axis + .32 * t + s * span * (.55 + .45 * shoulder);
+    const closed = polar(a, R * (.025 + girth * shoulder ** .77 + s * .013 * shoulder),
+      R * (height * t - .036 * s * s * smooth(t)));
+    return p.map((n, i) => lerp(n, closed[i], bend));
+  };
+  for (const [i, aim] of [Math.PI, .70, -.70].entries()) {
+    const a = aim + twist;
+    const width = (t: number) => R * (i ? .207 : .235) * profile([.05, .56, .88, 1, .76], t);
+    const bias = i ? (i === 1 ? .11 : -.10) : .07 * Math.sin(specimen.rotation);
+    const offset = (t: number) => bias * t * t;
     sepals.surface(16, 12, (t, s) => {
-      const width = profile([0.05, 0.52, 0.94, 1, 0.66], t) * (i ? 0.24 : 0.26);
-      const curve = 0.10 * s * s * t ** 3;
-      const y = -0.035 + 0.13 * t ** 2 + 0.075 * s * s * Math.sin(Math.PI * t);
-      return scale(polar(angle, 0.035 + length * t - curve, y, s * width), R);
-    }, (t, s) => petal(t, s).lerp(shade, 0.16));
+      // A rounded end, not a pointed shield: retract the corner along the
+      // rib in proportion to the same radius used for the side of the cap.
+      const cap = 1 - Math.sqrt(1 - .95 * s * s);
+      const r = .035 + (i ? .76 : .935) * t - (.18 - bias * s * .15) * cap * smooth((t - .57) / .43);
+      const y = -.034 + .115 * t ** 2 + .058 * s * s * Math.sin(Math.PI * t)
+        - .028 * smooth((t - .74) / .26) * (1 - s * s);
+      return polar(a, r * R, y * R, (s + offset(t)) * width(t));
+    }, (t, s) => petal(t, s).lerp(shade, .13 + .11 * bell(s * 3) * (1 - t)),
+    wrap(a, i ? .682 : .704, .195, i ? .74 : .80, 0, width, offset));
   }
   for (const sign of [-1, 1]) {
-    const angle = Math.PI + sign * 1.35 + twist;
+    const a = sign * 1.63 + twist, turn = sign * .13;
+    const bias = .22 * Math.cos(specimen.rotation + sign * 1.7);
+    const offset = (t: number) => (-sign * .11 + bias) * t * t;
+    // Broad shoulders give way to a domed cap on each wing. The inward
+    // margin folds back early, leaving the opposite margin flatter and long.
+    const width = (t: number) => specimen.width * profile([.075, .46, .89, 1.10, 1.01], t);
     wings.surface(20, 16, (t, s) => {
-      const width = specimen.width * profile([0.038, 0.48, 0.94, 1.14, 0.82], t);
-      const shoulder = Math.sin(Math.PI * t);
-      const y = 0.014 + 0.25 * t * t + 0.093 * s * s * shoulder + 0.022 * Math.cos(s * 9 + sign * t * 18) * t ** 2;
-      const radial = 0.03 + 0.97 * t - 0.18 * s * s * t ** 3;
-      return polar(angle + sign * 0.11 * t, radial * R, y * R, width * (s + sign * 0.10 * t));
+      const wing = sign * s, cap = 1 - Math.sqrt(1 - .96 * s * s);
+      const shoulder = Math.sin(Math.PI * t), rim = smooth((t - .56) / .44);
+      const r = .035 + .955 * t - rim * ((.252 + .044 * wing) * cap + .019 * bias * wing);
+      const hem = bell((wing + .48) * 2.5) * smooth((t - .77) / .23);
+      const y = .038 + .112 * Math.sin(t * 2.1) + .123 * s * s * shoulder
+        + .058 * wing * shoulder * t - .066 * hem;
+      return polar(a + turn * t, r * R, y * R, width(t) * (s + offset(t)));
     }, (t, s) => {
-      const vein = (1 - smooth((t - 0.22) / 0.48)) * Math.cos(s * 15 + sign * t * 1.4) ** 12;
-      return petal(t, s).lerp(tip, 0.30).lerp(fleck, 0.17 * vein);
-    });
+      const vein = Math.cos(s * 13 / (.8 + .4 * t) + sign * t * 1.2) ** 12;
+      const throat = bell((t - .26) / .26) * bell(2 * s);
+      return petal(t, s).lerp(tip, .18 + .22 * t).lerp(ivory, .22 * throat)
+        .lerp(fleck, .18 * vein * throat);
+    }, wrap(a, .672, .170, .80, turn, width, offset));
   }
-  const throat = color('#fff0c9'), pollen = color('#e8a132');
+  const tuckLip: Fold = (p, t) => {
+    const pull = smooth(t), side = p[0] * Math.cos(twist) - p[2] * Math.sin(twist);
+    const reach = p[0] * Math.sin(twist) + p[2] * Math.cos(twist);
+    return polar(twist, reach * (1 - .84 * pull), p[1] + .112 * R * pull, side * (1 - .66 * pull));
+  };
+  const apron: Sample = (t, s) => {
+    const rim = smooth((t - .69) / .31), notch = bell(s * 3.15);
+    const w = profile([.028, .095, .16, .211, .141], t);
+    const r = .04 + .60 * t - rim * (.10 * notch + .105 * s * s);
+    const y = .132 + .155 * Math.sin(Math.PI * t * .91) - .027 * t
+      + .062 * s * s * t - .035 * rim * (1 - notch);
+    return scale(polar(twist, r, y, s * w), R);
+  };
+  const host = lip.surface(16, 14, apron, (t, s) => {
+    const flash = bell((t - .24) / .16) * bell(2.35 * s);
+    const streak = Math.cos(15 * s * (1 - .45 * t) + 1.3 * t) ** 8;
+    return tint.copy(base).lerp(fleck, .46 + .19 * streak * (1 - t))
+      .lerp(ivory, .85 * flash).lerp(pollen, .51 * flash * streak)
+      .lerp(tip, .67 * smooth((t - .65) / .35));
+  }, tuckLip);
   for (const sign of [-1, 1]) {
-    lip.surface(16, 12, (t, s) => {
-      const y = 0.13 + 0.28 * Math.sin(Math.PI * t) + 0.02 * t + 0.10 * s * s * Math.sin(Math.PI * t);
-      const side = sign * (0.02 + 0.08 * t + 0.15 * t ** 4) + s * profile([0.01, 0.115, 0.123, 0.14, 0.012], t);
-      return scale(polar(twist, 0.01 + 0.62 * t, y, side), R);
-    }, (t, s) => tint.copy(base).lerp(fleck, 0.40 + 0.18 * Math.sin(t * 20 + s * 9) ** 6)
-      .lerp(throat, 0.71 * (1 - smooth((t - 0.10) / 0.32)))
-      .lerp(pollen, 0.72 * bell((t - 0.24) / 0.12) * bell(s * 1.6)));
+    lip.surface(12, 8, (t, s) => {
+      const cheek = sign * (.048 + .15 * Math.sin(t * 2.36));
+      const w = profile([.026, .063, .078, .080, .024], t);
+      return scale(polar(twist, .044 + .324 * t - .058 * s * s * t ** 3,
+        .133 + .205 * Math.sin(t * 2.35) + .10 * s * Math.sin(Math.PI * t), cheek + s * w), R);
+    }, (t, s) => {
+      const stripes = Math.cos(s * 10 + t * 11) ** 9;
+      return tint.copy(ivory).lerp(pollen, .62 * bell((t - .41) / .31))
+        .lerp(fleck, .58 * Math.max(0, stripes) * Math.sin(Math.PI * t)).lerp(base, .63 * t ** 2);
+    }, tuckLip);
+    const t = .22, s = sign * .29, onLip = apron(t, s);
+    lip.ellipsoid(sum(onLip, [0, .017 * R, 0]), scale([.021, .028, .028], R),
+      a => tint.copy(ivory).lerp(pollen, .73 * a), p => tuckLip(p, t), 3, 4, { uv: [t, s], voice: host });
   }
-  lip.ellipsoid(scale([0, 0.22, -0.008], R), scale([0.092, 0.15, 0.10], R), t => tint.copy(throat).lerp(pollen, 0.7 * t));
-  sepals.ellipsoid([0, 0.02, 0], [0.105, 0.11, 0.11], t => tint.copy(shade).lerp(base, 0.28 * (1 - t)));
+  // Fused column behind the lip: an ivory hook with a broad anther cap,
+  // distinct from the two gold callus ridges growing out of the lip itself.
+  lip.surface(9, 8, (t, s) => {
+    const a = s * Math.PI, cap = bell((t - .81) / .19);
+    const r = profile([.056, .049, .046, .075, .003], t);
+    return scale(polar(twist, -.064 + .215 * t ** 2 + r * .85 * Math.cos(a),
+      .077 + .284 * Math.sin(1.66 * t) + r * .35 * cap * Math.cos(a), r * Math.sin(a)), R);
+  }, (t, s) => tint.copy(ivory).lerp(shade, .40 * (1 - t) + .12 * Math.cos(Math.PI * s) ** 2)
+    .lerp(pollen, .68 * bell((t - .88) / .14) * (.5 + .5 * Math.cos(Math.PI * s))),
+  p => [p[0] * .53, .077 * R + (p[1] - .077 * R) * .73, p[2] * .44], false);
+  sepals.ellipsoid([0, .02, 0], [.105, .11, .11], t => tint.copy(shade).lerp(base, .28 * (1 - t)), p => p, 6, 12);
 }
 
-// Three ruffled, drooping falls alternate with three tall upright standards.
+// Three spoon-shaped falls with a narrow haft alternate with three pale,
+// incurved standards. The beard sits on a veined signal patch on each fall.
 function iris(specimen: Specimen, batch: Batches, { color, petal, tint, fleck, tip }: Palette) {
   const R = specimen.length;
-  const twist = (specimen.rotation / TAU - 0.5) * 0.64;
+  // A gap between the two forward falls lets the stem approach from below
+  // without crossing a drooping blade. The face still shows both beards.
+  const twist = Math.PI / 3 + (specimen.rotation / TAU - .5) * .64;
   const falls = batch(0), standards = batch(1);
-  const cream = color('#f7e3a6'), gold = color('#dfa42f'), green = color('#77864c');
-  falls.ellipsoid([0, 0.082, 0], [0.102, 0.14, 0.10], t => tint.copy(green).lerp(tip, 0.64 * (1 - t)));
+  const cream = color('#f9eabf'), gold = color('#dd9428'), green = color('#77864c');
+  falls.ellipsoid([0, .082, 0], [.102, .14, .10], t => tint.copy(green).lerp(tip, .64 * (1 - t)), p => p);
   for (let i = 0; i < 3; i++) {
-    const angle = twist + i * TAU / 3;
+    const a = twist + i * TAU / 3, crown = a + Math.PI / 3;
     const fall: Sample = (t, s) => {
-      const width = specimen.width * profile([0.08, 0.30, 0.79, 1, 0.56], t);
-      const wave = 0.041 * Math.sin(t * 29 + s * 3.4 + i * 2) * t ** 0.8 * s ** 4;
-      const y = 0.082 + 0.24 * Math.sin(t * Math.PI) - 0.36 * t ** 2 + 0.14 * s * s * Math.sin(Math.PI * t) + wave;
-      return polar(angle + 0.09 * t, R * (0.035 + t - 0.13 * s * s * t ** 2), y * R, s * width);
+      const bias = Math.sin(a + 1.7), cap = 1 - Math.sqrt(1 - .96 * s * s);
+      const rim = smooth((t - .53) / .47), shoulder = Math.sin(Math.PI * t);
+      const w = specimen.width * profile([.078, .25, .68, .95, .65], t);
+      // Broad waves near the margins, with a bank in opposite directions
+      // across the falls. Keep the haft smooth where it carries the beard.
+      const wave = .051 * Math.sin(t * 16 + s * 3.1 + i * 2) * smooth((t - .29) / .58) * s ** 4;
+      const y = .082 + .267 * shoulder - .415 * t ** 2 + .103 * s * s * shoulder
+        + (.059 * bias * s + .12 * cap) * rim + wave;
+      return polar(a + .096 * t, R * (.035 + .945 * t - (.203 + .038 * bias * s) * cap * rim), y * R, (s + .13 * bias * rim) * w);
+    };
+    const foldFall: Fold = (p, t) => {
+      const bend = smooth(t / .78), rim = smooth((t - .57) / .43);
+      const aim = Math.atan2(p[0], p[2]);
+      const side = Math.sin(aim - a);
+      const r = lerp(Math.hypot(p[0], p[2]), R * (.216 - .167 * rim + .025 * side), bend);
+      return polar(aim + .26 * bend, r, lerp(p[1], R * (.07 + .72 * t ** 1.24 - .15 * side ** 2 * t), bend));
     };
     const voice = falls.surface(24, 20, fall, (t, s) => {
-      const blaze = bell((t - 0.36) / 0.31) * bell(s * (2.5 + 1.8 * t));
-      const streaks = Math.cos(s * 26 / (0.8 + t) + 2 * t) ** 10;
-      return petal(t, s).lerp(cream, 0.93 * blaze).lerp(fleck, 0.32 * streaks * blaze);
-    });
-    // Each fall has one blade plus fifteen attached beard grains.
+      const v = s * (1.6 + 2.7 * t), patch = 1 - smooth((Math.abs(v) + ((t - .24) / .39) ** 2 - .43) / .56);
+      const vein = Math.cos(17 * s / (.39 + t) + 5 * t + .7 * Math.sin(7 * s)) ** 10;
+      return petal(t, s).lerp(fleck, .15 * smooth(t / .55))
+        .lerp(cream, .94 * patch).lerp(gold, .40 * patch * bell(7.5 * s) * bell((t - .31) / .2))
+        .lerp(fleck, .41 * patch * vein * (1 - bell(4.5 * s)));
+    }, foldFall);
+    // Stagger the hairs in two close rows and taper the crest from the
+    // throat. Every hair has its own attachment but follows the fall's pose.
     for (let j = 0; j < 15; j++) {
-      const t = 0.13 + j * 0.026;
-      const s = 0.12 * Math.sin(j * GOLDEN_ANGLE);
-      const point = fall(t, s);
-      point[1] += 0.021 + 0.018 * Math.sin(j / 15 * Math.PI);
-      falls.ellipsoid(point, [0.026, 0.035, 0.026], a => tint.copy(gold).lerp(cream, 0.58 * (1 - a)), p => bud(p, t), 4, 7, { uv: [t, s], voice });
+      const t = .115 + j * .025, s = (j % 2 ? -.17 : .17) * (1 - .52 * j / 15);
+      const anchor = fall(t, s), shut = foldFall(anchor, t);
+      const size = .014 + .010 * Math.sin((j + 2) * Math.PI / 18);
+      const point = sum(anchor, [0, size * R * .68, 0]);
+      const lean = 1.38 * smooth(t / .37);
+      const foldGrain: Fold = p => {
+        // Rotate the beard with the haft instead of leaving it outside the bud.
+        const delta = p.map((n, k) => n - anchor[k]);
+        const side = delta[0] * Math.cos(a) - delta[2] * Math.sin(a);
+        const radial = delta[0] * Math.sin(a) + delta[2] * Math.cos(a);
+        return sum(shut, polar(Math.atan2(shut[0], shut[2]), radial * Math.cos(lean) - delta[1] * Math.sin(lean),
+          radial * Math.sin(lean) + delta[1] * Math.cos(lean), side));
+      };
+      falls.ellipsoid(point, scale([size * .69, size * 1.72, size * .87], R),
+        u => tint.copy(gold).lerp(cream, .67 * (1 - u) ** 2), foldGrain, 4, 7, { uv: [t, s], voice });
     }
     standards.surface(20, 16, (t, s) => {
-      const width = specimen.width * 0.91 * profile([0.05, 0.40, 0.83, 1, 0.57], t);
-      const r = 0.04 + 0.52 * t - 0.13 * t ** 5;
-      const y = 0.08 + 0.78 * Math.sin(1.48 * t) + 0.04 * Math.sin(t * 29 + s * 5 + i) * t * s ** 4;
-      return polar(angle + Math.PI / 3 + 0.20 * t, R * r, R * (y - 0.12 * s * s * t ** 3), s * width);
-    }, (t, s) => petal(t, s).lerp(tip, 0.27 + 0.16 * t).lerp(cream, 0.55 * (1 - smooth(t / 0.48))));
-  }
-}
-
-// A mophead cluster: four rounded showy sepals per floret on a branching dome.
-function hydrangea(specimen: Specimen, batch: Batches, { color, petal, tint, tip, base, shade }: Palette, cut = false) {
-  const R = specimen.length;
-  const ivory = color('#eee9ca'), spring = color('#a2b36b'), stalk = color('#56703d');
-  const branches = batch(0);
-  const rings = [[9, 0.81, 0.24], [8, 0.67, 0.57], [5, 0.39, 0.80], [1, 0, 0.89]];
-  for (const [ring, [count, radius, height]] of rings.entries()) {
-    const panels = batch(ring, 0.018);
-    for (let i = 0; i < count; i++) {
-      const phase = (ring * 9 + i) * GOLDEN_ANGLE + specimen.rotation;
-      const angle = specimen.rotation + TAU * i / count + ring * 0.23;
-      const size = (0.243 + 0.031 * Math.sin(phase) + (ring === 2 ? 0.012 : 0)) * R;
-      const r = R * (radius + 0.025 * Math.sin(phase * 2.6));
-      const y = R * (height + 0.034 * Math.sin(phase * 1.4));
-      const center = polar(angle, r, y);
-      const fork = polar(angle, r * 0.27, y * 0.58);
-      branches.twig([0, 0, 0], fork, 0.019, () => stalk);
-      branches.twig(fork, center, 0.014, () => stalk);
-      const fold: Fold = (point, t) => {
-        const node = compact(center);
-        return sum(node, [(point[0] - center[0]) * 0.24, (point[1] - center[1]) * 0.38 + t * 0.10, (point[2] - center[2]) * 0.24]);
-      };
-      const slope = radius * 0.93;
-      for (let j = 0; j < 4; j++) {
-        const aim = phase * 0.23 + j * TAU / 4;
-        panels.surface(9, 8, (t, s) => {
-          const w = cut ? .64 * profile([.065, .65, 1, .85, .16], t) : .61 * profile([.06, .40, .78, 1, .68], t);
-          const arch = cut ? .14 * s * s * Math.sin(Math.PI * t) + .10 * t * t * Math.sin(aim + phase) : .12 * s * s * t;
-          const delta = scale(polar(aim, t + .05 - (cut ? .065 : .20) * s * s * t ** 3,
-            .16 * Math.sin(t * Math.PI) + arch, s * w), size);
-          const out = delta[0] * Math.sin(angle) + delta[2] * Math.cos(angle);
-          return sum(center, sum(delta, polar(angle, slope * delta[1], -slope * out)));
-        }, (t, s) => petal(t, s).lerp(tip, 0.12 + 0.18 * Math.sin(phase)).lerp(ivory, 0.08 + 0.40 * (1 - smooth(t / 0.56))), fold);
-      }
-      panels.ellipsoid(sum(center, [0, size * 0.17, 0]), scale([0.18, 0.15, 0.18], size), t => tint.copy(spring).lerp(ivory, 0.68 * (1 - t)).lerp(base, 0.18), fold, 5, 9);
-    }
-  }
-  branches.ellipsoid([0, 0.045, 0], [0.057, 0.11, 0.057], t => tint.copy(stalk).lerp(shade, 0.06 + 0.1 * t));
-}
-
-// Broad satin petals around a dark, button-shaped eye and a visible ring of stamens.
-function anemone(specimen: Specimen, batch: Batches, { color, petal, tint, tip, base, shade }: Palette) {
-  const R = specimen.length;
-  const petals = batch(0), eye = batch(2, 0.032);
-  const ink = color('#18172b'), blue = color('#484161'), collar = color('#a9b9a4');
-  petals.ellipsoid(scale([0, 0.045, 0], R), scale([0.263, 0.098, 0.263], R), t => tint.copy(shade).lerp(collar, 0.14 + 0.21 * t));
-  const count = specimen.count;
-  for (let i = 0; i < count; i++) {
-    const angle = specimen.rotation + TAU * i / count;
-    const variation = Math.sin(i * GOLDEN_ANGLE + specimen.rotation);
-    petals.surface(20, 16, (t, s) => {
-      const width = specimen.width * profile([0.12, 0.66, 0.97, 1.10, 0.77], t);
-      const radius = 0.23 + (0.76 + 0.035 * variation) * t - 0.15 * s * s * t ** 3;
-      const wave = 0.015 * Math.sin(t * 22 + s * 9 + variation * 3) * t ** 2;
-      const y = 0.045 + 0.085 * Math.sin(Math.PI * t) + 0.105 * t * t + 0.11 * s * s * Math.sin(Math.PI * t) + wave;
-      return polar(angle + 0.12 * t + 0.035 * variation, R * radius, R * y, s * width);
+      const rim = smooth((t - .53) / .47), shoulder = Math.sin(Math.PI * t);
+      const bias = Math.cos(crown + 1.2), cap = 1 - Math.sqrt(1 - .96 * s * s);
+      const w = specimen.width * profile([.047, .29, .66, .90, .38], t);
+      const r = .043 + .56 * t - .33 * t ** 4 - .108 * s * s * shoulder
+        + .065 * rim * (1 - cap) * bell((s - .47 * bias) * 1.8);
+      const y = .078 + .756 * Math.sin(t * 1.47) - (.172 + .068 * bias * s) * cap * rim
+        + .042 * Math.sin(t * 15 + s * 3.2 + i) * s ** 4 * shoulder;
+      return polar(crown + .24 * t, R * r, R * y, (s + .14 * bias * rim) * w);
     }, (t, s) => {
-      const halo = 1 - smooth((t - 0.025 - 0.03 * Math.cos(s * 10)) / 0.41);
-      return petal(t, s).lerp(tip, 0.21).lerp(collar, 0.68 * halo * smooth(t / 0.16)).lerp(ink, 0.72 * halo ** 3);
+      const rib = bell((s + .13 * Math.sin(3 * t)) * 2.4) * Math.sin(Math.PI * t);
+      return petal(t, s).lerp(tip, .36 + .25 * t)
+        .lerp(cream, .35 * (1 - smooth(t / .43)) + .19 * rib);
+    }, (p, t) => {
+      const bend = smooth(t / .75), rim = smooth((t - .45) / .55);
+      const a = Math.atan2(p[0], p[2]);
+      const r = lerp(Math.hypot(p[0], p[2]), R * (.148 - .112 * rim), bend);
+      return polar(a + .21 * bend, r, lerp(p[1], R * (.07 + .70 * t), bend));
     });
   }
-  eye.ellipsoid(scale([0, 0.12, 0], R), scale([0.18, 0.15, 0.18], R), (t, s) => tint.copy(ink)
-    .lerp(blue, 0.35 + 0.22 * Math.cos(s * 29 + 22 * t) ** 2 * Math.sin(32 * t) ** 2));
-  for (let i = 0; i < 72; i++) {
-    const a = i * GOLDEN_ANGLE + specimen.rotation;
-    const radius = 0.145 + 0.173 * Math.sqrt((i + 0.5) / 72);
-    const y = 0.14 + 0.06 * Math.sin(a * 2) ** 2 + 0.08 * (1 - i / 72);
-    const end = polar(a, R * radius, R * y);
-    eye.twig(polar(a, R * radius * 0.74, 0.075), end, 0.012, () => blue);
-    eye.ellipsoid(end, scale([0.026, 0.040, 0.026], R), t => tint.copy(ink).lerp(blue, 0.77 * (1 - t)).lerp(base, 0.08), compact, 4, 7);
+}
+
+// A mophead branches into short cymes. Each showy floret carries four sepals
+// on a tilted socket, surrounding a much smaller flower with its own crown.
+function hydrangea(specimen: Specimen, batch: Batches, { color, petal, tint, tip, base, shade }: Palette, cut = false) {
+  const R = specimen.length;
+  const ivory = color('#eee9ca'), spring = color('#a2b36b');
+  const stalk = color('#657d45');
+  const branches = batch(0);
+  const trunk = [0, .42 * R, 0], crown = [.025 * R, .71 * R, -.02 * R];
+  const branchPaint: Paint = (t, s) => tint.copy(stalk).lerp(shade, .12 + .08 * Math.cos(s * Math.PI)).lerp(spring, .20 * t);
+  branches.twig([0, -.035, 0], trunk, .039, branchPaint);
+  branches.twig(trunk, crown, .024, branchPaint);
+  const forks = Array.from({ length: 6 }, (_, i) => {
+    const angle = specimen.rotation + i * TAU / 6;
+    const joint = polar(angle, R * .37, R * (.40 + .034 * Math.cos(3 * angle + .7)));
+    branches.twig(trunk, joint, .025, branchPaint);
+    return joint;
+  });
+  const rings = [[9, .79, .24], [9, .64, .53], [6, .36, .72], [1, 0, .86]];
+  // The old table cut has flatter outer faces and a slightly taller dome.
+  const rise = cut ? 0 : .02;
+  for (const [ring, [count, radius, height]] of rings.entries()) {
+    const panels = batch(ring, .018);
+    for (let i = 0; i < count; i++) {
+      const phase = (ring * 9 + i) * GOLDEN_ANGLE + specimen.rotation;
+      const angle = specimen.rotation + TAU * i / count + ring * .27 + .065 * Math.sin(phase * 1.7);
+      const size = (.264 + .030 * Math.sin(phase) + (ring === 2 ? .012 : 0)) * R;
+      const r = R * Math.max(0, radius + .034 * Math.sin(phase * 2.6));
+      const y = R * (height + rise * ring / 3 + (ring > 1 ? .029 : .051) * Math.sin(phase * 1.4));
+      const center = polar(angle, r, y);
+      const joint = ring > 1 ? crown : forks[Math.round((angle - specimen.rotation) * 6 / TAU + 6) % 6];
+      const elbow = sum(joint, scale(sum(center, scale(joint, -1)), .60));
+      elbow[1] -= R * .055;
+      branches.twig(joint, elbow, .015, branchPaint);
+      branches.twig(elbow, center, .009, branchPaint);
+
+      const tilt = radius * (cut ? .83 : .76) + .14 * Math.sin(phase * 2);
+      const pitchSin = Math.sin(tilt), pitchCos = Math.cos(tilt);
+      const local = (aim: number, reach: number, lift: number, side = 0) => {
+        const forward = Math.cos(aim) * reach - Math.sin(aim) * side;
+        const lateral = Math.sin(aim) * reach + Math.cos(aim) * side;
+        return sum(center, scale(polar(angle, forward * pitchCos + lift * pitchSin,
+          lift * pitchCos - forward * pitchSin, lateral), size));
+      };
+      const node = compact(center);
+      const close = (point: Point) => sum(node, scale(sum(point, scale(center, -1)), .38));
+      const fold: Fold = (point, t) => sum(close(point), [0, size * .31 * t, 0]);
+      for (let j = 0; j < 4; j++) {
+        const voice = phase + j * GOLDEN_ANGLE;
+        const aim = phase * .73 + j * TAU / 4 + .16 * Math.sin(voice);
+        const long = .97 + .10 * Math.sin(voice) + (j % 2 ? -.043 : .043);
+        panels.surface(8, 8, (t, s) => {
+          const width = .65 * profile([.06, .61, .94, 1, .66], t) * (1 + .10 * Math.cos(voice));
+          const shoulder = Math.sin(Math.PI * t);
+          const edge = t ** 2 * s ** 4;
+          const reach = .047 + long * t - .29 * s * s * t ** 3 + .016 * Math.sin(9 * s + voice) * t ** 4;
+          const lift = .036 + .145 * shoulder + .087 * s * s * shoulder
+            + (.12 * Math.sin(voice) + (j % 2 ? .082 : -.024)) * t * t
+            + edge * (.08 * Math.sin(6 * t + 3 * s + voice) + .045 * s);
+          return local(aim + .14 * t * Math.cos(voice), reach, lift, s * width);
+        }, (t, s) => {
+          const throat = 1 - smooth(t / .62);
+          const vein = bell((s + .10 * Math.sin(6 * t + voice)) * 7) * Math.sin(Math.PI * t);
+          return petal(t, s).lerp(base, .09 + .09 * Math.cos(phase)).lerp(tip, .23 + .15 * Math.sin(voice))
+            .lerp(ivory, .055 + .32 * throat + .11 * vein + .095 * smooth((t - .76) / .24))
+            .lerp(spring, .22 * throat ** 2).multiplyScalar(.94 + .06 * (1 - s * Math.sin(voice)));
+        }, fold);
+      }
+      // The pedicel enters the calyx; the little five-point crown is tissue,
+      // not a detached pale bead. It is anchored at the same node in the bud.
+      panels.surface(4, 8, (t, s) => local(s * Math.PI, .153 * Math.sin(Math.PI * t), -.12 + .34 * t),
+        t => tint.copy(stalk).lerp(spring, t).lerp(base, .25 * t), close, false);
+      panels.surface(4, 10, (t, s) => {
+        const a = s * Math.PI + phase;
+        const tooth = (1 + Math.cos(5 * s * Math.PI)) * .5;
+        return local(a, .025 + (.14 - .044 * smooth((t - .55) / .45)) * t + .032 * tooth * t ** 2,
+          .181 + .11 * Math.sin(t * 2.65) + .047 * tooth * t ** 2);
+      }, (t, s) => tint.copy(spring).lerp(ivory, .20 + .58 * smooth(t) * (.65 + .35 * Math.cos(5 * s * Math.PI))).lerp(tip, .14), close, false);
+    }
   }
 }
 
-// Craspedia: a small gold globe of fused five-point florets, not a daisy in miniature.
-function billyButton(specimen: Specimen, batch: Batches, { color, tint, base, tip }: Palette) {
-  const radius = specimen.length * 0.82;
-  const middle = radius * 1.16;
-  const count = specimen.count;
-  const gold = color('#dba12d'), ochre = color('#a46917'), honey = color('#f9d46b');
-  const stalk = color('#829041');
-  const core = batch(0);
-  core.ellipsoid([0, 0.075, 0], [0.075, 0.09, 0.075], t => tint.copy(stalk).lerp(ochre, 0.58 * (1 - t)));
-  core.ellipsoid([0, middle, 0], [radius, radius, radius], t => tint.copy(ochre).lerp(gold, 0.24 * (1 - t)), compact, 14, 24);
-  const florets = [batch(1, 0.015), batch(2, 0.028)];
+// Thin, unevenly cupped tepals frame a pin-cushion of carpels and curved stamens.
+function anemone(specimen: Specimen, batch: Batches, { color, petal, tint, tip, shade }: Palette, cut = false) {
+  const R = specimen.length, { count, rotation } = specimen;
+  // The v2 blade was a little wider and shallower at the lip.
+  const bladeLength = cut ? .765 : .788, lipHeight = cut ? .157 : .111;
+  const bladeFold: Fold = cut ? bud : (point, t) => [point[0] * .28, point[1] * .63 + t * .473, point[2] * .28];
+  const petals = batch(0), eye = batch(2, .032);
+  const ink = color('#21182d'), violet = color('#625173'), collar = color('#b3b99a');
+  const pollen = color('#aa9b9d'), moss = color('#66704d');
+  const throatFold: Fold = p => [p[0] * .28, p[1] * .63, p[2] * .28];
+  const socketHeight = cut ? .074 : .062;
+  petals.ellipsoid(scale([0, .043, 0], R), scale([.277, socketHeight, .277], R),
+    t => tint.copy(ink).lerp(moss, .28 + .56 * t), throatFold, 6, 14);
   for (let i = 0; i < count; i++) {
-    const z = 1 - 2 * (i + 0.5) / count;
-    const a = specimen.rotation + i * GOLDEN_ANGLE;
-    const r = Math.sqrt(1 - z * z);
-    const n = [r * Math.sin(a), z, r * Math.cos(a)];
-    const u = [Math.cos(a), 0, -Math.sin(a)];
-    const v = [-z * Math.sin(a), r, -z * Math.cos(a)];
-    const center = sum([0, middle, 0], scale(n, radius * (0.96 + 0.025 * Math.sin(i * 7))));
-    const spread = radius * (0.183 + 0.028 * Math.sin(i * 2.6));
-    florets[z > 0.12 ? 1 : 0].surface(5, 15, (t, s) => {
-      const angle = s * Math.PI + a;
-      const lobe = (1 + Math.cos(angle * 5)) * 0.5;
-      const size = spread * (0.20 + 0.76 * t + 0.14 * lobe * t);
-      const h = spread * (0.38 * t + (0.42 + 0.30 * lobe) * Math.sin(t * Math.PI) + 0.15 * lobe * t);
-      return sum(center, sum(scale(n, h), sum(scale(u, Math.cos(angle) * size), scale(v, Math.sin(angle) * size))));
-    }, (t, s) => tint.copy(gold).lerp(base, 0.21).lerp(tip, 0.14).lerp(ochre, 0.48 * (1 - smooth(t / 0.63)))
-      .lerp(honey, (0.32 + 0.10 * Math.sin(i * 7 + s * 9)) * smooth((t - 0.40) / 0.60)), compact);
+    const phase = i * GOLDEN_ANGLE + rotation;
+    const hand = Math.sin(phase), lean = Math.cos(phase * 2.3);
+    const angle = rotation + TAU * i / count + .055 * hand;
+    petals.surface(19, 16, (t, s) => {
+      const edge = smooth((t - .43) / .57), belly = Math.sin(Math.PI * t);
+      const width = specimen.width * profile([.084, .64, 1.01, 1.08, .70], t) * (1 + .08 * lean);
+      const radius = .177 + (bladeLength + .040 * hand) * t - (.17 + .02 * lean) * s * s * t ** 3
+        + .015 * Math.cos(8 * s + phase) * edge * edge;
+      const wave = .022 * Math.sin(t * 19 + s * 7 + phase) * edge * s ** 4;
+      const crease = .007 * Math.cos(11 * s + .7 * Math.sin(4 * t + phase)) * belly;
+      const y = .041 + .053 * belly + (lipHeight + .060 * lean) * t ** 2 + .085 * s * s * belly
+        + (.086 * s + .026 * hand - .055 * edge) * edge + wave + crease;
+      return polar(angle + (.06 + .10 * hand) * t, R * radius, R * y, width * (s + .10 * lean * t));
+    }, (t, s) => {
+      const veins = Math.cos(11 * s + .7 * Math.sin(4 * t + phase)) ** 6;
+      const halo = 1 - smooth((t - .017 - .024 * veins) / .39);
+      const rim = smooth((t - .82) / .18) * (.76 + .24 * Math.sin(phase + s * 3));
+      return petal(t, s).lerp(tip, .16 + .16 * rim + .07 * veins * Math.sin(Math.PI * t))
+        .lerp(shade, .095 * (.5 + .5 * hand)).lerp(collar, .45 * halo * smooth(t / .16)).lerp(ink, .80 * halo ** 2);
+    }, bladeFold);
+  }
+  eye.ellipsoid(scale([0, .123, 0], R), scale([.164, .123, .164], R), t => tint.copy(ink).lerp(moss, .34 * (1 - t)), throatFold, 8, 14);
+  for (let i = 0; i < 43; i++) {
+    const a = i * GOLDEN_ANGLE + rotation;
+    const r = .151 * Math.sqrt((i + .6) / 43);
+    const h = .123 + .123 * Math.sqrt(1 - (r / .164) ** 2);
+    const seed = Math.sin(4.9 * i + rotation);
+    eye.surface(3, 4, (t, s) => {
+      const rho = (.010 + .007 * Math.sin(Math.PI * t)) * (1.07 - .72 * t ** 3);
+      return scale(sum(polar(a + .1 * t, r * (1 + .12 * t), h - .012 + t * (.029 + .01 * seed)),
+        polar(s * Math.PI, rho, 0)), R);
+    }, t => tint.copy(ink).lerp(moss, .16 + .21 * t + .13 * seed).lerp(violet, .32 * t), throatFold, false);
+  }
+  for (let i = 0; i < 68; i++) {
+    const inner = i < 30, index = inner ? i : i - 30;
+    const phase = i * GOLDEN_ANGLE + rotation;
+    const swing = Math.sin(phase), h = Math.cos(phase * 2.2);
+    const a = rotation + TAU * (index + .30 * h + (inner ? .48 : 0)) / (inner ? 30 : 38);
+    const length = (inner ? .187 : .120) + .033 * h - (cut ? 0 : .017);
+    const reach = (inner ? .058 : .128) + .027 * swing;
+    const root = inner ? .138 : .160;
+    const filament = (t: number) => polar(a + .12 * swing * t, root + reach * t ** 1.65,
+      .079 + length * t - .022 * swing * t ** 4);
+    eye.surface(3, 4, (t, s) => {
+      const w = (.0095 - .004 * t) * (1 + .19 * swing);
+      return scale(sum(filament(t), polar(s * Math.PI, w, 0)), R);
+    }, t => tint.copy(ink).lerp(violet, .40 + .53 * t), throatFold, false);
+    const end = filament(1);
+    eye.surface(3, 8, (t, s) => {
+      const theta = (t - .5) * Math.PI, phi = s * Math.PI;
+      const cross = Math.cos(theta) * (.79 + .21 * Math.cos(2 * phi));
+      const lobe = .025 * Math.sin(theta) * (1 + .22 * h);
+      return scale(sum(end, polar(a + .76 + .85 * swing,
+        lobe * (.46 + .40 * h) + .010 * cross * Math.cos(phi),
+        lobe * .76 + .010 * cross * Math.sin(phi), .016 * cross * Math.cos(phi))), R);
+    }, (t, s) => tint.copy(ink).lerp(violet, .61 + .27 * t + .10 * swing)
+      .lerp(pollen, (.08 + .21 * t) * Math.cos(s * Math.PI) ** 4), throatFold, false);
+  }
+}
+
+// Craspedia: tightly interlocking, five-toothed tubular flowers at different
+// stages, each sunk into the receptacle rather than stacked on its surface.
+function billyButton(specimen: Specimen, batch: Batches, { color, tint, base, tip }: Palette, cut = false) {
+  const radius = specimen.length * .82;
+  const middle = radius * 1.16;
+  const count = Math.floor((cut ? 2.75 : 2.65) * specimen.count);
+  // The older cut holds a tighter ball while the floret mouths unfold.
+  const reach = cut ? 1 : .94;
+  const saffron = color('#e6aa2d'), bronze = color('#ab6e19'), honey = color('#f8ce62');
+  const stalk = color('#819044');
+  const core = batch(0);
+  core.ellipsoid([0, .052, 0], [.058, .076, .058], t => tint.copy(stalk).lerp(bronze, .48 * (1 - t)), compact, 6, 10);
+  const relief = (y: number, a: number) => .016 * Math.sin(23 * y + 3 * a) * Math.cos(12 * a + 9 * y)
+    + .014 * Math.sin(13 * y - 5 * a) + .013 * Math.cos(6 * a + 3 * y);
+  core.surface(14, 24, (t, s) => {
+    const a = s * Math.PI, y = Math.cos(Math.PI * t);
+    const r = radius * (.954 + relief(y, a) * Math.sin(Math.PI * t));
+    return polar(a, r * Math.sin(Math.PI * t), middle + r * y);
+  }, (t, s) => tint.copy(bronze).lerp(saffron, .41 + .23 * Math.sin(34 * t + 6 * s * Math.PI) * Math.cos(13 * s * Math.PI + 31 * t)), compact, false);
+  const florets = [batch(1, .015), batch(2, .028)];
+  for (let i = 0; i < count; i++) {
+    const phase = i * GOLDEN_ANGLE + specimen.rotation;
+    const hand = Math.sin(phase * 3.7), maturity = .5 + .5 * Math.cos(i * 5.13 + specimen.rotation);
+    const y = 1 - 2 * (i + .5 + .29 * hand) / count;
+    const a = phase + (.042 + .055 * (1 - Math.abs(y))) * Math.sin(i * 7.37 + specimen.rotation);
+    const r = Math.sqrt(1 - y * y);
+    const n = polar(a, r, y), u = polar(a, 0, 0, 1), v = polar(a, -y, r);
+    const center = sum([0, middle, 0], scale(n, radius * ((cut ? .929 : .925) + relief(y, a) * r + .011 * hand)));
+    const spread = radius * (.128 + .009 * maturity + .017 * hand);
+    const turn = phase * 1.64, opened = maturity > .66;
+    // Run small patches of uneven growth across the globe rather than
+    // roughening individual vertices. Splayed tubes keep their own sockets.
+    const patch = Math.sin(4.5 * y + 2 * a) * r * r;
+    const lean = .23 * hand + .27 * patch, nod = .21 * Math.cos(4 * y - a) * r;
+    const local = (h: number, x: number, z: number) => sum(center, sum(scale(n, h * reach), sum(scale(u, x), scale(v, z))));
+    const panel = florets[y > .12 ? 1 : 0];
+    // Narrow waists rise into splayed, notched mouths. The pressed buds
+    // remain small and domed, with their longest axis pointing out.
+    panel.surface(3, opened ? 10 : 6, (t, s) => {
+      const phi = s * Math.PI + turn;
+      const tooth = (1 + Math.cos((opened ? 5 : 3) * (s * Math.PI + Math.PI))) * .5;
+      const shape = opened ? profile([.24, .53, .77, .99, .94], t) : profile([.21, .75, .90, .63, .014], t);
+      const rim = t * t, asymmetry = .078 * Math.sin(phi * 2 + phase);
+      const width = spread * (shape * (1 + .13 * patch * t + asymmetry * t) + (opened ? .12 * tooth * rim : 0));
+      const h = spread * ((opened ? 1.23 : 1.02) * t + .28 * Math.sin(Math.PI * t * .80)
+        + (.25 * patch + .16 * hand) * t + (opened ? .24 * tooth * rim : .06 * tooth * t * (1 - t)));
+      return local(h, Math.cos(phi) * width + spread * lean * rim, Math.sin(phi) * width + spread * nod * rim);
+    }, (t, s) => {
+      const edge = smooth((t - .43) / .57), voice = .5 + .5 * Math.sin(phase + s * Math.PI);
+      return tint.copy(saffron).lerp(base, .22).lerp(bronze, (.43 - .27 * t) * (1 - edge) + .16 * (1 - maturity))
+        .lerp(honey, (.14 + .30 * maturity + .24 * voice) * edge).lerp(tip, .20 * voice * edge);
+    }, compact, opened || !cut);
+    if (opened && hand > 0) {
+      panel.surface(2, 3, (t, s) => {
+        const phi = s * Math.PI;
+        const width = spread * (.28 + .18 * Math.sin(Math.PI * t)) * (1 - .64 * t ** 3);
+        return local(spread * (.29 + (1 + .34 * hand) * t),
+          Math.cos(phi) * width + .23 * hand * spread * t, Math.sin(phi) * width);
+      }, t => tint.copy(bronze).lerp(saffron, smooth(t * 2)).lerp(honey, .69 * t ** 2), compact, false);
+    }
   }
 }
 

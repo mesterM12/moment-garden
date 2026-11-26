@@ -1,19 +1,20 @@
 # Baking the petal tissues
 
-[`petal.wgsl`](petal.wgsl) describes a sheet from its socket (v=0) to its lip (v=1). R is surface relief; G is pigment density. Both are linear data, not sRGB colour. The authoring script draws the same 64 × 96 **RG8** offscreen target four times with **Vercel Labs vgpu 0.6.0**, selecting a tissue by uniform:
+[`petal.wgsl`](petal.wgsl) draws a 128 × 128 linear RGBA8 sheet for each tissue, from its socket (`v=0`) to its lip (`v=1`). The offline draw uses Vercel Labs vgpu 0.6.0. None of its channels contain baked light or cultivar color:
 
-| Tissue | Drawing in the bake | On the bouquet |
-| --- | --- | --- |
-| Wax | Broad fleshy midrib and fading arcuate capillaries | Calla spathes and orchid wings |
-| Satin | Lengthwise bundles that split toward the shoulder | Tulip, lily and iris tepals |
-| Velvet | Diagonal tributaries and softly uneven tissue | Rose, ranunculus and clustered florets |
-| Paper | Flutes with irregular widths, spreading toward the lip | Rays, dahlia rolls and open poppy/anemone bowls |
+| Channel | Content |
+| --- | --- |
+| RG | Signed relief gradients along the blade's UV axes; 128 encodes a flat slope. Hardware mips average the gradients toward neutral. |
+| B | Relative pigment load in and around the vascular bundles, folds and broad mottled regions. |
+| A | Tissue packing. Denser tissue absorbs more backlight and changes the shape of the highlight. This channel is not opacity. |
 
-**Visitors never run WGSL or need WebGPU.** The [WebGL2 petal material](../../src/garden/petal-surface.ts) uses a single filtered RG lookup, differentiating relief for the normal and mixing pigment with the recipe's original vertex colours. Dense veins and the reverse face roughen the highlight. Thin, backlit tissue scatters a little pigment-coloured key light, most at the margin and none at the socket; this is an opaque lighting approximation, not a second transmission render. Veins stay on the moving petal rather than being projected onto the screen. Joined beard grains, spadices and other solid details opt out.
+Primary bundles spread unevenly from the insertion. Tapered tributaries leave identified parent bundles and arc toward their neighbors. Pinched shoulders, soft tucks and smaller-scale relief sit over that network; the proportions differ by tissue. Wax has a broad thick midrib and a smoother dielectric highlight. Satin has elongated fibers and finer split bundles. Velvet has raised cellular patches and pigment-colored grazing sheen. Paper has creased pleats and directional fibers rather than a slick lobe.
 
-The stem timestamp already identifies its bouquet slot. A [separate hash](../../src/garden/petal-hand.ts) of that timestamp, panel and blade provides two normalized bytes for vein drift and pigment per blade, even across a merged whorl. Other bits vary the tilt of a rose guard, the curl of a tulip shoulder or the flare of a calla. No recipe or animation RNG is consumed. The live scene, saved postcard and OG capture all use the same meshes and lighting.
+**Visitors do not run WGSL or need WebGPU.** The [WebGL2 material](../../src/garden/petal-surface.ts) takes one mip-filtered RGBA sample. Its slopes follow the blade using screen-space UV and position derivatives, but it does not differentiate neighboring texture samples across mip levels. Pigment applies channel-relative absorption to the original cultivar and vertex patterns instead of adding painted shade or light. Thin backlit tissue scatters a little pigment-colored light, using the same directional light visibility as reflection (including PCF when enabled). It is an opaque lighting approximation, not another pass. Negative blade UVs opt attached solids out of all four channels and transmission.
 
-The four fields total 48 KiB before mipmaps and travel in the lazy garden bundle (base64). Each tissue has its own clamp-to-edge mip chain: no padding, atlas bleed or per-species fetch. Only families encountered by the mounted renderer are decoded and uploaded, once each. The worst case is about 64 KiB of RG8 texels including mipmaps, excluding driver overhead. The blade identity costs two bytes per petal vertex and no draw call. There are no ongoing texture updates. Renderer teardown releases every field, not just those in the current bouquet.
+The [blade hash](../../src/garden/petal-hand.ts) uses the original stem timestamp, panel and blade to supply two normalized bytes for handedness, bounded UV drift and pigment load. No recipe or animation RNG is consumed. The live scene, saved postcard and OG capture use the same material.
+
+Each family costs 64 KiB of base texels, about 85.3 KiB with its separate mip chain. Four families fit in about 341.3 KiB of GPU texels, excluding driver overhead. [Paeth prediction](../../src/garden/petal-field-codec.ts) makes the base64 payload more compressible in the lazy garden bundle. Only families the renderer encounters are decoded and uploaded. There are no extra draws, runtime texture updates, or network images. The renderer releases the whole texture bank on teardown.
 
 ## Reproduce
 
@@ -29,6 +30,4 @@ node bake.mjs                                         # replace fields after suc
 node bake.mjs --check                                 # independent draw, byte-exact comparison
 ```
 
-The writer waits for native compilation, draw, readback and device errors. It checks the byte count, unclipped range, higher density at the socket than the tip, and four distinct field hashes. The [generated asset](../../src/garden/petal-field.generated.json) carries the WGSL checksum. `--check` is exact on the same driver; implementations can round differently. Review the actual bouquet before accepting a new bake. Without a usable native device, use the checked-in asset. No native tool is needed for app builds, offline visits or the production container.
-
-The separate manifest and lockfile keep Dawn out of the app. Consult this installed CLI's `vgpu docs cat no-bundler`, `shader-workflow`, `texture-formats`, `/vgpu/effect.docs.md`, `/vgpu/target.docs.md` and `/vgpu/core/texture.docs.md` for the authoring API. There is no WGSL loader or TSL material in the browser bundle.
+The writer waits for native compilation, draw, readback and device errors. It checks byte count, unclipped channel range, neutral mean slopes, denser socket pigment, distinct family hashes and the lossless decode round trip. The [generated asset](../../src/garden/petal-field.generated.json) carries the WGSL checksum. `--check` is exact on the same driver; implementations can round differently. Review actual bouquet renders when changing the bake. A native tool is not needed for application builds or visits; the separate manifest and lockfile keep Dawn out of the app.

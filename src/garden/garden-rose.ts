@@ -50,23 +50,22 @@ export function gardenRose(specimen: Specimen, head: THREE.Group, material: THRE
       const side = ease(t / .50);
       for (let i = 0; i <= across; i++) {
         const u = i / across, s = 2 * u - 1;
-        const wing = Math.abs(s) ** 2.4;
-        const midrib = t - (fold ? .18 : .23) * lip * wing;
-        const lobe = bell((s + .28 + .18 * skew) * 3.1) - .58 * bell((s - .30) * 4.1);
+        const wing = s * s;
+        const bias = fold ? hand : skew;
+        const midrib = t - (.22 + .07 * bias * s) * lip * wing;
         const turn = angle + sweep * t ** 1.35 + .14 * skew * t;
-        const loosen = ease((t - .73) / .27);
-        const curled = fold ? (1.12 + .29 * softness + .23 * hand * s) * s : (.85 + .26 * softness) * s;
-        const width = span * (.08 + .92 * Math.sin(Math.PI * (.018 + .75 * t)) ** .70);
+        const curled = (fold ? 1.12 + .29 * softness + .23 * hand * s + side * (.06 - .09 * softness - .07 * hand * s)
+          : .85 + .26 * softness) * s;
+        const width = span * (.08 + .92 * Math.sin(Math.PI * (.018 + .81 * t)) ** .70);
         const flank = width * (Math.sin(curled) + .08 * s * skew * side);
-        const cup = width * (1 - Math.cos(curled)) * (fold ? .66 : .72);
-        // Rose petals first grow out from the receptacle, then turn up the
-        // wall of the cup. The distal edge rolls back at a different rate per side.
-        const rim = lip * (.40 + .49 * lobe + .25 * skew * s);
+        const cup = width * (1 - Math.cos(curled)) * (fold ? .66 - .11 * side : .72);
+        // One broad corner reflexes over the petal's shoulder. Give this
+        // hem its own arc rather than putting scallops on a flat end row.
+        const hem = ease((t - .77) / .23) * (.46 + .51 * bell((s - .39 * bias) * 1.83));
         const r = mix(socket, reach, Math.sin(Math.PI * midrib * .51) ** (guard ? 1.83 : 1.32)) - cup
-          + (guard ? .068 : fold ? -.077 : -.062) * rim - wing * .024 * loosen;
-        const crimp = (fold ? .006 : .016 + .007 * softness) * loosen * (Math.sin(s * 5 + wave) - .37 * Math.sin(s * 9 + wave));
-        const y = floor + rise * midrib ** (guard ? 1.28 : fold ? .95 : 1.26) + cup * (fold ? .68 : .69)
-          + rim * (guard ? -.058 : fold ? -.015 : -.032) + crimp + (fold ? .049 * hand : .051 * skew) * s * t;
+          + (guard ? .084 : fold ? -.032 : .060) * hem;
+        const y = floor + rise * midrib ** (guard ? 1.28 : fold ? .95 : 1.26) + cup * (fold ? .68 - .06 * side : .69 + .03 * side)
+          - (guard ? .091 : fold ? .043 : .074) * hem + (fold ? .022 : .052) * bias * s * t * side;
         const x = cx + r * Math.sin(turn) + flank * Math.cos(turn);
         const z = cz + r * Math.cos(turn) - flank * Math.sin(turn);
         // Preserve the booked rose envelope rather than repacking its neighbours.
@@ -142,11 +141,13 @@ export function gardenRose(specimen: Specimen, head: THREE.Group, material: THRE
   for (const [a, r, y, radius, hand, breadth] of pockets) {
     const angle = a + rotation;
     const x = r * Math.sin(angle), z = r * Math.cos(angle);
-    petal(2, angle + hand * .25, radius, y - .11, radius * .83 * breadth, hand * .31, [x, .11, z]);
-    petal(2, angle + hand * (1.70 + .37 * breadth), radius * .84, y - .16, radius * .75, hand * .45, [x, .12, z]);
-    petal(2, angle - hand * (1.87 * breadth), radius * (.77 + .24 * breadth), y - .13, radius * .90, hand * .23, [x, .093, z]);
-    petal(3, angle - hand * 2.62, radius * .67, y - .26, radius * .72 / breadth, hand * .51, [x * .92, .178, z * .92]);
-    petal(3, angle + hand * .88, radius * .54, y - .25, radius * .61, -hand * .48, [x * 1.06, .191, z * 1.06]);
+    petal(2, angle + hand * .25, radius, y - .095, radius * .94 * breadth, hand * .29, [x, .11, z]);
+    petal(2, angle + hand * (1.52 + .37 * breadth), radius * .90, y - .152, radius * .89, hand * .28, [x, .12, z]);
+    petal(2, angle - hand * (1.76 * breadth), radius * (.77 + .24 * breadth), y - .095, radius * .99, hand * .19, [x, .093, z]);
+    // Nested shorter petals sit down inside the pocket. Raising all five
+    // hems to the rim makes an equally bright tangle instead of a hollow.
+    petal(3, angle - hand * 2.44, radius * .65, y - .34, radius * .81 / breadth, hand * .27, [x * .92, .178, z * .92]);
+    petal(3, angle + hand * .88, radius * .59, y - .35, radius * .66, -hand * .23, [x * 1.06, .191, z * 1.06]);
   }
   // Cover the stem insertion and the back of the folds with a buried base.
   const baseMaterial = new THREE.MeshStandardMaterial({ color: palette.root, roughness: 1 });
