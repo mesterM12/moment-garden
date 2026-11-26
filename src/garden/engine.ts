@@ -4,6 +4,7 @@ import * as ExtraBlooms from './extra-blooms';
 import * as PetalMeshes from './petal-meshes';
 import { BouquetRotation } from './rotation';
 import { CloseView } from './close-view';
+import { BLOOM_FOV, FOCAL_HOLD_MS, PULLBACK_END_MS, createBloomFramer, type HeldBloomLens } from './bloom-camera';
 import type { ExpandedBouquetPlan as BouquetPlan, GardenEngine, GardenEngineOptions, MorphPetal, Specimen, StemEntry } from './types';
 
 import { BLOOM_DURATION as DURATION, bloomStart, clamp, ease, flexAt, foldWeights, hingePeak, leadingGuard, petalOpening, petalPace, petalWave, stemTension } from './bloom-score';
@@ -21,9 +22,9 @@ type Random = () => number;
 type HeadEnvelope = { center: THREE.Vector3; axis: THREE.Vector3; radius: number; halfHeight: number };
 type Bloom = ReturnType<typeof buildBloom>;
 type Textures = { petal: ReturnType<typeof petalFields>; leaf: THREE.CanvasTexture };
-type BuiltBouquet = { framePoints: THREE.Vector3[]; focus: THREE.Vector3; plant: THREE.Group; blooms: Bloom[]; ribbon: THREE.Group; filler?: ReturnType<typeof buildFiller>; plan: BouquetPlan; materials: Set<THREE.Material> };
+type BuiltBouquet = { framePoints: THREE.Vector3[]; focalPoints: THREE.Vector3[]; focus: THREE.Vector3; plant: THREE.Group; blooms: Bloom[]; ribbon: THREE.Group; filler?: ReturnType<typeof buildFiller>; plan: BouquetPlan; materials: Set<THREE.Material> };
 
-function leafVeins(document: Document, anisotropy: number) {
+export function leafVeins(document: Document, anisotropy: number) {
   const surface = document.createElement('canvas');
   surface.width = 256;
   surface.height = 512;
@@ -334,12 +335,13 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
   center.visible = recipe.center !== 'hidden' && specimen.key !== 'dahlia';
   // Keep insertion rhythms and the exact rest sockets out of the frame loop.
   const guard = leadingGuard(specimen.key, specimen.rotation, specimen.count);
+  const earlyRose = index === 0 && specimen.key === 'rose';
   petals.forEach((p, i) => {
-    if (i === guard) { p.offset = 0; p.pace = 1.88; return; }
-    p.pace = petalPace(specimen.key, p.layer, i, specimen.rotation);
+    if (i === guard) { p.offset = 0; p.pace = earlyRose ? 2.38 : 1.88; return; }
+    p.pace = petalPace(specimen.key, p.layer, i, specimen.rotation) * (earlyRose && p.layer > 0 ? 1.34 : 1);
     // Cluster branches and the florets at their tips share the initial lift.
     p.offset = specimen.key === 'hydrangea' || specimen.key === 'billyButton' ? .035
-      : p.offset + petalWave(specimen.key, p.layer, i, specimen.rotation);
+      : p.offset + petalWave(specimen.key, p.layer, i, specimen.rotation) * (earlyRose ? .42 : 1);
   });
   const backing = specimen.key === 'dahlia' ? head.children[0] : undefined;
   const cutDahlia = !!backing && bouquet.version === 3;
@@ -349,9 +351,9 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
   const neck = (specimen.key === 'lily' || specimen.key === 'poppy' ? .29 : .16) * Math.cos(specimen.rotation + index);
   const focal = bouquet.flowers[0].position;
   const distance = Math.hypot(top.x - focal[0], top.y - focal[1], top.z - focal[2]);
-  const startBeat = bouquet.version === 2 ? bloomStart(index, entry.delay) : index === 0 ? .075
-    : .22 + Math.min(.20, distance * .055) + (index > 3 ? .091 : 0) + entry.delay * .42;
-  const endBeat = bouquet.version === 2 ? 1 : index === 0 ? .69 : index > 3 ? 1 : .88 + entry.delay;
+  const startBeat = index === 0 ? .026 : bouquet.version === 2 ? .10 + .89 * bloomStart(index, entry.delay)
+    : .19 + Math.min(.20, distance * .055) + (index > 3 ? .091 : 0) + entry.delay * .42;
+  const endBeat = index === 0 ? .66 : index > 3 ? 1 : .88 + entry.delay;
   return { head, center, petals, leaves, sepals, backing, cutDahlia, nod, peak, neck, diskHead, entry, curve, stem, flexStem, top, bendX, bendZ, drop, startBeat, endBeat };
 }
 
@@ -501,7 +503,7 @@ export function buildBouquet(plan: BouquetPlan, textures: Textures): BuiltBouque
   const plant = new THREE.Group();
   const ribbon = new THREE.Group();
   const materials = new Set<THREE.Material>();
-  const bouquet: BuiltBouquet = { plant, ribbon, plan, materials, blooms: [], framePoints: [], focus: new THREE.Vector3(0, 1.08, 0) };
+  const bouquet: BuiltBouquet = { plant, ribbon, plan, materials, blooms: [], framePoints: [], focalPoints: [], focus: new THREE.Vector3(0, 1.08, 0) };
   try {
     const envelopes = plan.flowers.map(entry => {
       const envelope = Botany.headEnvelope(entry);
@@ -529,10 +531,21 @@ export function buildBouquet(plan: BouquetPlan, textures: Textures): BuiltBouque
       pose(bouquet, beat); plant.updateMatrixWorld(true);
       pieces.forEach((piece, i) => swept[i].union(sample.setFromObject(piece)));
     }
-    for (const { min, max } of swept) {
-      for (const x of [min.x, max.x]) for (const y of [min.y, max.y]) for (const z of [min.z, max.z])
-        bouquet.framePoints.push(new THREE.Vector3(x, y, z));
+    function addCorners({ min, max }: THREE.Box3, points: THREE.Vector3[]) {
+      for (const x of [min.x, max.x]) for (const y of [min.y, max.y]) for (const z of [min.z, max.z]) points.push(new THREE.Vector3(x, y, z));
     }
+    for (const box of swept) addCorners(box, bouquet.framePoints);
+    // Fit the head alone, including its unfurl during the hold. Use the real
+    // morphed extrema once at setup; broad per-target boxes overstate the shot.
+    const focalBounds = new THREE.Box3();
+    for (const beat of [0, .09, .16, .23, .30, .42, .53, .66]) {
+      pose(bouquet, beat);
+      plant.updateMatrixWorld(true);
+      focalBounds.union(sample.setFromObject(bouquet.blooms[0].head, true));
+    }
+    addCorners(focalBounds, bouquet.focalPoints);
+    pose(bouquet, 1);
+    plant.updateMatrixWorld(true);
     return bouquet;
   } catch (error) {
     disposeBouquet(bouquet);
@@ -540,7 +553,7 @@ export function buildBouquet(plan: BouquetPlan, textures: Textures): BuiltBouque
   }
 }
 
-function createRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer {
+export function createRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer {
   // Check WebGL 2 support before Three attaches any canvas listeners.
   const attributes: WebGLContextAttributes = { alpha: true, antialias: true, depth: true, stencil: true };
   const context = canvas.getContext('webgl2', attributes);
@@ -552,7 +565,7 @@ function createRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer {
   return renderer;
 }
 
-function createScene(): THREE.Scene {
+export function createScene(): THREE.Scene {
   const scene = new THREE.Scene();
   scene.add(new THREE.HemisphereLight(0xfff2dc, 0xcfb6a0, 1.02));
   // A broad feeling of side light, with cream paper bounce in the folds. No
@@ -587,12 +600,12 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
   }
 
   const scene = createScene();
-  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 60);
+  const camera = new THREE.PerspectiveCamera(BLOOM_FOV, 1, 0.1, 60);
+  const framer = createBloomFramer(camera);
   const rotation = new BouquetRotation();
   const closeView = new CloseView();
-  const canopy = new THREE.Vector3(), projected = new THREE.Vector3();
-  const eyeFromPlant = new THREE.Matrix4(), plantRotation = new THREE.Matrix4();
-  let lastFit: { plant: THREE.Group; aspect: number; pitch: number; yaw: number; extra: number } | undefined;
+  let openingShot = false;
+  let heldLens: HeldBloomLens | undefined;
   const gl = renderer.getContext();
   const cleanups: (() => void)[] = [];
   let petalTexture: Textures['petal'] | undefined;
@@ -619,8 +632,9 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
   }
 
   function announceProgress(): void {
-    announce(phase === 'ready' ? 'Ready to bloom' : progress < 0.22 ? 'Buds loosening'
-      : progress < 0.45 ? 'Stems unfolding' : progress < 1 ? 'Opening up' : 'In full bloom');
+    const time = progress * DURATION;
+    announce(phase === 'ready' ? 'Ready to bloom' : time < FOCAL_HOLD_MS ? 'Buds loosening'
+      : time < PULLBACK_END_MS ? 'Stems unfolding' : progress < 1 ? 'Opening up' : 'In full bloom');
   }
 
   function cancelFrame(): void {
@@ -661,45 +675,24 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
     options.onError?.(RENDER_ERROR);
   }
 
-  function frameCamera(amount: number) {
-    // With pitch and yaw unconstrained, track the actual rotated canopy, not
-    // a fixed world-Y offset that would lose the heads on an upside-down turn.
-    if (current) canopy.copy(current.focus).applyEuler(current.plant.rotation);
-    const x = canopy.x * amount, y = .05 + canopy.y * amount, z = canopy.z * amount;
-    const tan = Math.tan(THREE.MathUtils.degToRad(17));
-    const detailWidth = current?.plan.version === 3 ? 1.66 : .36;
-    const distance = Math.max(12.3 - 3.65 * amount, (5.62 - detailWidth * amount) / (2 * tan * camera.aspect));
-    camera.position.set(x, y + 2.10, z + distance);
-    camera.lookAt(x, y, z);
-    if (!current?.framePoints.length || amount === 1) return;
-    const { plant, framePoints } = current;
-    const { x: pitch, y: yaw } = plant.rotation;
-    if (!lastFit || lastFit.plant !== plant || lastFit.aspect !== camera.aspect || lastFit.pitch !== pitch || lastFit.yaw !== yaw) {
-      // Test the four frustum planes at full fit, independently of zoom. The
-      // same cached correction is used for the live view and rotated export.
-      const full = Math.max(12.3, 5.62 / (2 * tan * camera.aspect));
-      const angle = Math.atan2(2.10, full);
-      eyeFromPlant.makeRotationX(angle).multiply(plantRotation.makeRotationFromEuler(plant.rotation));
-      let extra = 0;
-      for (const point of framePoints) {
-        projected.copy(point).applyMatrix4(eyeFromPlant);
-        const depth = projected.z + .05 * Math.sin(angle) - Math.hypot(full, 2.10);
-        extra = Math.max(extra, depth + Math.abs(projected.x) / (.96 * tan * camera.aspect),
-          depth + Math.abs(projected.y - .05 * Math.cos(angle)) / (.96 * tan));
-      }
-      lastFit = { plant, aspect: camera.aspect, pitch, yaw, extra };
-    }
-    camera.translateZ(lastFit.extra * (1 - amount));
-  }
-
   function changeView(close: boolean, instant = false) {
     if (closeView.set(close, view.performance.now(), instant || reducedMotion)) options.onCloseViewChange?.(close);
+  }
+
+  function takeOpeningLens() {
+    if (!openingShot || !current) return false;
+    openingShot = false;
+    if (progress * DURATION >= PULLBACK_END_MS) return false;
+    heldLens = framer.holdBloom(current, progress);
+    changeView(true, true);
+    return true;
   }
 
   function draw(): void {
     if (!current || !width || !height || !available() || document.hidden) return;
     current.plant.rotation.set(rotation.pitch, rotation.yaw, 0);
-    frameCamera(closeView.amount);
+    if (openingShot) framer.frameBloom(current, progress);
+    else framer.frameView(current, closeView.amount, heldLens);
     renderer.render(scene, camera);
   }
 
@@ -712,6 +705,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
     progress = next;
     if (next === 1) {
       phase = 'mature';
+      openingShot = false;
       start = null;
     }
     if (current) pose(current, next);
@@ -728,6 +722,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
     }
     rotation.step(now);
     closeView.step(now);
+    if (!closeView.selected && !closeView.moving) heldLens = undefined;
     paint(); // The last physics step can move the pose while returning false.
     wake();
   }
@@ -775,6 +770,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
     if (!current || !available() || drag || event.button !== 0 || (event.pointerType === 'touch' && !event.isPrimary)) return;
     try { canvas.setPointerCapture(event.pointerId); }
     catch { return; } // The pointer may already have been cancelled by the browser.
+    takeOpeningLens();
     drag = {
       id: event.pointerId, pointerType: event.pointerType,
       sensitivity: Math.PI * 2 / Math.max(240, Math.min(canvas.clientWidth, canvas.clientHeight)),
@@ -804,8 +800,10 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
   function resetView({ instant = false } = {}): void {
     if (!current || !available()) return;
     endDrag(view.performance.now(), true);
+    takeOpeningLens();
     rotation.reset(instant);
     changeView(false, instant);
+    if (!closeView.moving) heldLens = undefined;
     paint();
     wake();
   }
@@ -824,6 +822,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
     }
     event.preventDefault();
     endDrag(eventTime(event), true);
+    takeOpeningLens();
     rotation.nudge(yawDelta, pitchDelta);
     paint();
   }
@@ -864,6 +863,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
     contextLost = false;
     failed = false;
     changeView(false, true);
+    heldLens = undefined;
     resize(true);
     options.onContextChange?.(false);
     if (!failed) {
@@ -882,7 +882,8 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
     cleanups.length = 0;
     if (current) disposeBouquet(current);
     current = null;
-    lastFit = undefined;
+    heldLens = undefined;
+    framer.clear();
     petalTexture?.dispose();
     leafTexture?.dispose();
     petalTexture = undefined;
@@ -939,8 +940,10 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
         endDrag(view.performance.now(), true);
         rotation.reset(true);
         changeView(false, true);
+        heldLens = undefined;
+        openingShot = false;
         if (current) disposeBouquet(current);
-        lastFit = undefined;
+        framer.clear();
         current = next;
         scene.add(current.plant);
         start = null;
@@ -962,10 +965,14 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
     },
     bloom({ instant = false } = {}) {
       if (!current || !available()) return;
-      phase = 'blooming';
+      endDrag(view.performance.now(), true);
+      rotation.reset(true);
       changeView(false, true);
+      heldLens = undefined;
+      openingShot = !instant && !reducedMotion;
+      phase = 'blooming';
       start = document.hidden || !width || !height ? null : view.performance.now();
-      setProgress(instant || reducedMotion ? 1 : 0);
+      setProgress(openingShot ? 0 : 1);
       if (document.hidden || !width || !height) options.onBloomPause?.();
       announceProgress();
       paint();
@@ -975,7 +982,9 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
     resetView,
     setCloseView(close, { instant = false } = {}) {
       if (!current || !available()) return;
-      changeView(close, instant);
+      // Selecting detail during the opening keeps the lens already on screen.
+      if (!(close && takeOpeningLens())) changeView(close, instant);
+      if (!close && !closeView.moving) heldLens = undefined;
       paint();
       wake();
     },
@@ -983,11 +992,12 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
       if (disposed || reducedMotion === reduced) return;
       reducedMotion = reduced;
       rotation.setReducedMotion(reduced);
-      if (reduced) changeView(closeView.selected, true);
       if (reduced && phase === 'blooming') {
+        changeView(false, true);
+        heldLens = undefined;
         setProgress(1);
         if (available()) announceProgress();
-      }
+      } else if (reduced) changeView(closeView.selected, true);
       paint();
       if (phase !== 'blooming' && !rotation.moving && !closeView.moving) cancelFrame();
       wake();

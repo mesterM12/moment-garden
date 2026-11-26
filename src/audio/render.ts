@@ -1,6 +1,6 @@
 /** Original, offline sound synthesis. No browser, files, or bouquet RNG involved. */
 export const SAMPLE_RATE = 44_100
-export const SOUND_DURATIONS = { 'gift-open': 0.28, bloom: 3.8 } as const
+export const SOUND_DURATIONS = { 'gift-open': 0.28, bloom: 6.1 } as const
 export type SoundName = keyof typeof SOUND_DURATIONS
 
 const TAU = Math.PI * 2
@@ -154,19 +154,19 @@ function pluck(mix: Float64Array, start: number, midi: number, gain: number, pos
 export function renderBloom(): Float64Array {
   const samples = new Float64Array(Math.round(SOUND_DURATIONS.bloom * SAMPLE_RATE))
   const noise = noiseSource(0x7065746c)
-  // Let the paper finish first. The change to stems unfolding (22% of
-  // 4.6s) lifts to G; the heads opening (45%) resolve down to F.
-  pluck(samples, 0.323, 53, 0.068, 0.29, 0.32) // F3
-  pluck(samples, 0.411, 60, 0.039, 0.36, 0.30) // C4
-  pluck(samples, 1.013, 67, 0.069, 0.40, 0.39) // G4
-  pluck(samples, 2.070, 65, 0.042, 0.36, 0.41) // F4
-  pluck(samples, 2.694, 62, 0.029, 0.32, 0.30) // D4
+  // The held head gets the rolled fifth; G opens the pullback, F lands
+  // with the whole bouquet, and a softer D leaves the final fold unscored.
+  pluck(samples, 0.490, 53, 0.068, 0.29, 0.37) // F3
+  pluck(samples, 0.608, 60, 0.039, 0.36, 0.35) // C4
+  pluck(samples, 1.835, 67, 0.069, 0.40, 0.48) // G4
+  pluck(samples, 4.169, 65, 0.042, 0.36, 0.43) // F4
+  pluck(samples, 5.120, 62, 0.029, 0.32, 0.34) // D4
 
   // Leaves pass one another smoothly, without the regular teeth of woven silk.
   // A second, lighter blade briefly follows the first on each sweep.
   for (const [at, span, level] of [
-    [0.78, 0.125, 0.052], [1.58, 0.205, 0.065],
-    [2.38, 0.177, 0.054], [3.27, 0.125, 0.026],
+    [1.16, 0.125, 0.052], [2.72, 0.205, 0.065],
+    [3.79, 0.177, 0.054], [5.49, 0.125, 0.026],
   ] as const) {
     const edge = lowPass(2_800), shade = lowPass(720)
     addGesture(samples, at, span, t => {

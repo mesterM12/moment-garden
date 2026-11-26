@@ -1,4 +1,4 @@
-const FRONT_YAW = -0.10;
+import { BLOOM_FRONT_YAW as FRONT_YAW } from './bloom-camera';
 const FRONT_PITCH = 0;
 const TURN = 2 * Math.PI;
 const RESPONSE = 0.4; // seconds

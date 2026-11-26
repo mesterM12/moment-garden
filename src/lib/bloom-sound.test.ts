@@ -43,7 +43,7 @@ class MockAudioContext {
   gains: MockGain[] = []
   resume = vi.fn(() => Promise.resolve())
   close = vi.fn(() => Promise.resolve())
-  decodeAudioData = vi.fn((bytes: ArrayBuffer) => Promise.resolve(audioBuffer(new Uint8Array(bytes)[0] === 1 ? 0.28 : 3.8)))
+  decodeAudioData = vi.fn((bytes: ArrayBuffer) => Promise.resolve(audioBuffer(new Uint8Array(bytes)[0] === 1 ? 0.28 : 6.1)))
   createBufferSource = vi.fn(() => {
     const source = new MockSource()
     this.sources.push(source)
@@ -183,9 +183,9 @@ describe('asset bloom sound controller', () => {
     sound.sync(0)
     await flush()
     sound.sync(0.25)
-    decode.resolve(audioBuffer(3.8))
+    decode.resolve(audioBuffer(6.1))
     await flush()
-    expect(context().sources[0]!.start).toHaveBeenCalledWith(12, 1.15)
+    expect(context().sources[0]!.start).toHaveBeenCalledWith(12, 1.625)
     sound.dispose()
 
     MockAudioContext.configure = () => {}
@@ -194,7 +194,7 @@ describe('asset bloom sound controller', () => {
     await flush()
     expect(context(1).sources).toHaveLength(0)
     next.sync(0.5)
-    expect(context(1).sources[0]!.start).toHaveBeenCalledWith(12, 2.3)
+    expect(context(1).sources[0]!.start).toHaveBeenCalledWith(12, 3.25)
     next.dispose()
   })
 
@@ -202,7 +202,7 @@ describe('asset bloom sound controller', () => {
     const paper = deferred<AudioBuffer>()
     MockAudioContext.configure = audio => {
       audio.decodeAudioData.mockImplementation(bytes => new Uint8Array(bytes)[0] === 1
-        ? paper.promise : Promise.resolve(audioBuffer(3.8)))
+        ? paper.promise : Promise.resolve(audioBuffer(6.1)))
     }
     const sound = createBloomSound()
     sound.play('opening-and-bloom')
@@ -210,10 +210,10 @@ describe('asset bloom sound controller', () => {
     await flush()
     paper.resolve(audioBuffer(0.28))
     await flush()
-    expect(context().sources[0]!.buffer?.duration).toBe(3.8)
+    expect(context().sources[0]!.buffer?.duration).toBe(6.1)
     expect(context().gains[0]!.gain.setValueAtTime).toHaveBeenCalledWith(0, 12)
-    if (progress * 4.6 < 0.28) {
-      expect(context().sources[1]!.start).toHaveBeenCalledWith(12, progress * 4.6)
+    if (progress * 6.5 < 0.28) {
+      expect(context().sources[1]!.start).toHaveBeenCalledWith(12, progress * 6.5)
       expect(context().gains[1]!.gain.linearRampToValueAtTime).toHaveBeenCalledWith(1, 12.008)
     } else {
       expect(context().sources).toHaveLength(1)
@@ -231,8 +231,8 @@ describe('asset bloom sound controller', () => {
     sound.sync(0.2)
     resume.resolve()
     await flush()
-    expect(context().sources[0]!.start).toHaveBeenCalledWith(12, 0.9199999999999999)
-    context().currentTime = 12.046
+    expect(context().sources[0]!.start).toHaveBeenCalledWith(12, 1.3)
+    context().currentTime = 12.065
     sound.sync(0.21)
     expect(context().sources).toHaveLength(1)
     sound.dispose()
@@ -244,11 +244,11 @@ describe('asset bloom sound controller', () => {
     sound.sync(0)
     await flush()
     const opening = context().sources.find((source) => source.buffer?.duration === 0.28)!
-    const bloom = context().sources.find((source) => source.buffer?.duration === 3.8)!
+    const bloom = context().sources.find((source) => source.buffer?.duration === 6.1)!
     sound.sync(0.4)
     expect(context().sources).toHaveLength(3)
     const replacement = context().sources[2]!
-    expect(replacement.start).toHaveBeenCalledWith(12, 1.8399999999999999)
+    expect(replacement.start).toHaveBeenCalledWith(12, 2.6)
     expect(bloom.stop).toHaveBeenCalledWith(12.008)
     expect(context().gains[2]!.gain.linearRampToValueAtTime).toHaveBeenCalledWith(1, 12.008)
     context().currentTime = 12.004
@@ -279,7 +279,7 @@ describe('asset bloom sound controller', () => {
   it('skips bloom if progress has passed its asset end or is complete before decoding', async () => {
     const sound = createBloomSound()
     sound.play('bloom')
-    sound.sync(0.9)
+    sound.sync(0.96)
     await flush()
     expect(context().sources).toHaveLength(0)
     expect(context().close).toHaveBeenCalledOnce()
@@ -296,7 +296,7 @@ describe('asset bloom sound controller', () => {
     sound.play('opening-and-bloom')
     sound.sync(0)
     await flush()
-    const bloom = context().sources.find((source) => source.buffer?.duration === 3.8)!
+    const bloom = context().sources.find((source) => source.buffer?.duration === 6.1)!
     bloom.onended?.()
     sound.sync(0.1)
     expect(context().sources).toHaveLength(2)
@@ -333,7 +333,7 @@ describe('asset bloom sound controller', () => {
     sound.play('bloom')
     sound.sync(0)
     await flush()
-    vi.advanceTimersByTime(3_901)
+    vi.advanceTimersByTime(6_201)
     expect(context().close).toHaveBeenCalledOnce()
     expect(context().sources[0]!.onended).toBeNull()
     expect(context().sources[0]!.disconnect).toHaveBeenCalledOnce()

@@ -35,8 +35,8 @@ test.each([[28, 4, 5], [3, 3, 4], [4, 6, 1], [51, 6, 7]])(
     } finally { disposeBouquet(b); textures.petal.dispose(); textures.leaf.dispose(); }
   });
 
-// Includes the guards of the lavender tulip that exceeded the booked radius.
-test.each([1, 7, 28, 46])('finished cut %i fits its mature head profiles after rotation', seed => {
+// Includes the garden rose and the lavender tulip that exceeded the booked radius.
+test.each([1, 3, 6, 7, 13, 28, 31, 46, 47, 48])('finished cut %i fits its mature head profiles after rotation', seed => {
   const textures = { petal: petalFields(1), leaf: new THREE.CanvasTexture() };
   const b = buildBouquet(createBouquet(1748091600123 + seed, 3), textures);
   try {
