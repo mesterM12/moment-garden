@@ -36,7 +36,8 @@ const families = {
   '07-clusters': [['hydrangea', 28, 0], ['billyButton', 23, 3]],
 }
 const representative = [1, 6, 28, 46, 91].map(token)
-const softwareArgs = ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']
+const browserArgs = process.env.REALISM_ANGLE_BACKEND ? [`--use-angle=${process.env.REALISM_ANGLE_BACKEND}`]
+  : ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']
 
 await mkdir(output, { recursive: true })
 if ((await readdir(output)).length) throw new Error(`Output must be an empty directory: ${output}`)
@@ -56,7 +57,7 @@ h2{margin:0 0 6px;font-size:15px}small{margin-left:10px;font-weight:normal}stron
 img{display:block;background:#fff9f2}.whole img{width:288px;height:377px;object-fit:contain}
 </style>`
 
-const browser = await chromium.launch({ args: softwareArgs })
+const browser = await chromium.launch({ args: browserArgs })
 try {
   const isolated = await browser.newPage({ viewport, deviceScaleFactor: 1 })
   await isolated.goto('about:blank')
@@ -75,7 +76,7 @@ try {
     revision: git('rev-parse', 'HEAD'), workingTree: git('status', '--porcelain'), address: app.href,
     environment: { platform: platform(), release: release(), arch: arch(), cpu: cpus()[0]?.model, logicalCpus: cpus().length,
       memoryBytes: totalmem(), node: process.version, playwright: `${browser.browserType().name()} ${playwright}`,
-      browser: browser.version(), browserArgs: softwareArgs, ...diagnostic.environment },
+      browser: browser.version(), browserArgs, ...diagnostic.environment },
     specimenSize: diagnostic.size, representativeDimensions: dimensions, appViewport: viewport, dpr: 1,
     baselineRevision: before ? before.revision : undefined, families, specimens: {}, bouquets: [], postcards: [],
   }

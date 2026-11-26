@@ -16,6 +16,9 @@ const vector = (xyz: number[]) => new THREE.Vector3(xyz[0], xyz[1], xyz[2])
 const started = performance.now()
 const canvas = document.createElement('canvas')
 const renderer = createRenderer(canvas)
+renderer.debug.onShaderError = (gl, program, vertex, fragment) => {
+  throw new Error([gl.getProgramInfoLog(program), gl.getShaderInfoLog(vertex), gl.getShaderInfoLog(fragment)].join('\n'))
+}
 const scene = createScene()
 const gl = renderer.getContext()
 const anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy())
@@ -45,7 +48,7 @@ function open(token: string) {
   const bouquet = buildBouquet(plan, textures)
   const built = performance.now()
   bouquet.plant.rotation.y = BLOOM_FRONT_YAW
-  scene.add(bouquet.plant)
+  scene.setBouquet(bouquet)
   return { bouquet, planMs: planned - start, buildMs: built - planned }
 }
 
@@ -82,7 +85,12 @@ function measure(token: string, width: number, height: number, run: number) {
     return {
       run, token, name: bouquet.plan.name, tie: bouquet.plan.tie.style, species: bouquet.plan.kinds,
       stems: bouquet.blooms.length, planMs, buildMs, first,
+      // Each group is one changing pose, followed by four cached draws.
       warm: beats.flatMap(progress => Array.from({ length: 5 }, () => draw(progress))),
+      turns: Array.from({ length: 5 }, (_, i) => {
+        bouquet.plant.rotation.y = BLOOM_FRONT_YAW + (i + 1) * .15
+        return draw(1)
+      }),
     }
   } finally { disposeBouquet(bouquet) }
 }
@@ -133,6 +141,7 @@ function specimen(key: keyof typeof species, token: string, slot: number, elevat
     const { head, entry, startBeat, endBeat } = bloom
     const half = (startBeat + endBeat) / 2
     isolate(head, bouquet.plant)
+    scene.invalidateShadows()
     function setPose(progress: number) {
       pose(bouquet, progress)
       bouquet.plant.updateMatrixWorld(true)
@@ -188,5 +197,5 @@ function specimen(key: keyof typeof species, token: string, slot: number, elevat
 
 Object.assign(window, { realismProof: {
   environment, keys: Object.keys(species).sort(), size, measure, specimen,
-  dispose() { textures.petal.dispose(); textures.leaf.dispose(); renderer.dispose(); renderer.forceContextLoss() },
+  dispose() { scene.dispose(); textures.petal.dispose(); textures.leaf.dispose(); renderer.dispose(); renderer.forceContextLoss() },
 } })

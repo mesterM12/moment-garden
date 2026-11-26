@@ -17,6 +17,7 @@ import { freePetal } from './free-petals';
 import { buildCenter } from './floral-centers';
 import { petalFields, petalSurface } from './petal-surface';
 import { createPostcardPng, postcardCamera } from './postcard-png';
+import { BouquetStudio } from './bouquet-studio';
 const WEBGL_ERROR = 'These flowers need WebGL 2 to bloom. Try a current browser with hardware acceleration enabled.';
 const RENDER_ERROR = 'These flowers couldn’t open. Try reloading the page.';
 const CONTEXT_ERROR = 'The 3D preview paused. You can still send this bouquet, or reload it if the preview doesn’t return.';
@@ -26,7 +27,7 @@ type Random = () => number;
 type HeadEnvelope = { center: THREE.Vector3; axis: THREE.Vector3; radius: number; halfHeight: number };
 type Bloom = ReturnType<typeof buildBloom>;
 type Textures = { petal: ReturnType<typeof petalFields>; leaf: THREE.CanvasTexture };
-type BuiltBouquet = { framePoints: THREE.Vector3[]; focalPoints: THREE.Vector3[]; focus: THREE.Vector3; plant: THREE.Group; blooms: Bloom[]; ribbon: THREE.Group; filler?: ReturnType<typeof buildFiller>; plan: BouquetPlan; materials: Set<THREE.Material> };
+type BuiltBouquet = { progress: number; framePoints: THREE.Vector3[]; focalPoints: THREE.Vector3[]; focus: THREE.Vector3; plant: THREE.Group; blooms: Bloom[]; ribbon: THREE.Group; filler?: ReturnType<typeof buildFiller>; plan: BouquetPlan; materials: Set<THREE.Material> };
 
 export function leafVeins(document: Document, anisotropy: number) {
   const surface = document.createElement('canvas');
@@ -301,7 +302,10 @@ function settleFoliage(bouquet: BuiltBouquet) {
   });
 }
 
-export function pose({ blooms, filler }: BuiltBouquet, p: number) {
+export function pose(bouquet: BuiltBouquet, p: number) {
+  if (bouquet.progress === p) return;
+  bouquet.progress = p;
+  const { blooms, filler } = bouquet;
   filler?.pose(p);
   blooms.forEach(({ head, center, petals, petalScore, leaves, sepals, nod, neck, diskHead, entry, stem, top, bendX, bendZ, drop, startBeat, endBeat }) => {
     const local = clamp((p - startBeat) / (endBeat - startBeat));
@@ -407,7 +411,7 @@ export function buildBouquet(plan: BouquetPlan, textures: Textures): BuiltBouque
   const plant = new THREE.Group();
   const ribbon = new THREE.Group();
   const materials = new Set<THREE.Material>();
-  const bouquet: BuiltBouquet = { plant, ribbon, plan, materials, blooms: [], framePoints: [], focalPoints: [], focus: new THREE.Vector3(0, 1.08, 0) };
+  const bouquet: BuiltBouquet = { progress: NaN, plant, ribbon, plan, materials, blooms: [], framePoints: [], focalPoints: [], focus: new THREE.Vector3(0, 1.08, 0) };
   try {
     const envelopes = plan.flowers.map(entry => {
       const envelope = Botany.headEnvelope(entry);
@@ -466,24 +470,14 @@ export function createRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   return renderer;
 }
 
-export function createScene(): THREE.Scene {
-  const scene = new THREE.Scene();
-  scene.add(new THREE.HemisphereLight(0xfff2dc, 0xcfb6a0, 1.02));
-  // A broad feeling of side light, with cream paper bounce in the folds. No
-  // shadow-map passes or post-processing: this light also prints in the PNG.
-  const sun = new THREE.DirectionalLight(0xffe7c7, 2.70);
-  sun.position.set(-5, 4, 3);
-  scene.add(sun);
-  const fill = new THREE.DirectionalLight(0xfff0dc, 0.64);
-  fill.position.set(5, 2, 2);
-  scene.add(fill);
-  const backlight = new THREE.DirectionalLight(0xffdda8, 1.25);
-  backlight.position.set(1, 4, -4);
-  scene.add(backlight);
-  return scene;
+export function createScene() {
+  return new BouquetStudio();
 }
 
 /** An imperative scene owned by one mounted canvas. React owns the postcard UI. */
@@ -764,6 +758,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
     if (disposed || !contextLost) return;
     // Three's earlier listener has rebuilt its GL caches. Reuse the original
     // geometry and textures, with the same bloom progress and presentation angle.
+    scene.resetShadows();
     contextLost = false;
     failed = false;
     changeView(false, true);
@@ -792,7 +787,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
     leafTexture?.dispose();
     petalTexture = undefined;
     leafTexture = undefined;
-    scene.clear();
+    scene.dispose();
     // Do not force context loss: StrictMode/HMR can reuse the same canvas before
     // the loss event arrives, and the next renderer needs that context.
     renderer.dispose();
@@ -849,7 +844,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
         if (current) disposeBouquet(current);
         framer.clear();
         current = next;
-        scene.add(current.plant);
+        scene.setBouquet(current);
         start = null;
         phase = 'ready';
         setProgress(contextLost ? 1 : 0);
