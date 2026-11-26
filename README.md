@@ -41,8 +41,8 @@ The garden gathers **7–10 stems from at least three flower types**, brings the
 
 - **Always a surprise.** Each new seed varies the bouquet’s height, width, lean, and depth. One flower leads without dwarfing its neighbors; companion flowers and finer stems follow the sweep. Seven color stories and three ties (bow, twine, wrap) finish the gift. There are no selectors.
 - **15 botanical recipes.** Roses, tulips, dahlias, sunflowers, daisies, lilies, poppies, cosmos, ranunculus, calla lilies, orchids, irises, hydrangeas, anemones, and billy buttons.
-- **Different construction, not just recoloring.** Nested rose cups, rolled dahlia florets, trumpet-shaped calla lilies, ruffled irises, and hydrangea clusters.
-- **A 4.6-second bloom.** A leading stem opens first. Other flowers answer in overlapping waves: rose petals peel away, lily tips uncurl, and the rolled florets of a dahlia open from their edges. The arrangement settles to stillness. Use **Look closer** for a petal-level view.
+- **Different construction, not just recoloring.** Cupped garden roses with irregular pockets of folded petals, rolled dahlia florets, trumpet-shaped calla lilies, ruffled irises, and hydrangea clusters.
+- **A 6.5-second bloom.** The tissue clears on a close view of the whole focal head. The camera pulls back once to show the full bouquet as the other stems answer. The last folds settle in place; grab at any point to take over and turn. Use **Look closer** to inspect the petals.
 - **Unrestricted 360° rotation.** Explore above, below, and behind the bouquet. Dragging follows your pointer directly; a flick settles into a new angle. Arrow keys turn the bouquet in steps.
 - **A gift to open.** Send a link that holds your exact bouquet behind a sealed cover. Tapping or clicking the opener starts the bloom from the front.
 - **A keepsake.** Download the finished bouquet at its current angle as a PNG postcard.
@@ -229,7 +229,9 @@ pnpm exec playwright install --with-deps chromium
 pnpm test:e2e                    # Vitest browser config starts Next.js fixtures
 ```
 
-For a visual review, start the local build and run `node tools/florist-proof.mjs http://127.0.0.1:3000/ /tmp/florist-proof` (requires Playwright Chromium and ImageMagick). It opens **all 60 consecutive timestamps starting at 1748091600123**, in a 390 × 844 viewport, and writes the actual artwork stages in reading order to `contact60.jpg` and `contact60-gray.jpg`. For offsets 1, 28 and 46, it also writes close views and strips of the opening at 0.70, 1.25, 1.90, 2.70, 3.60 and 4.65 seconds. Inspect the focal before the shoulders open, the final gaps between heads, and the cut ends at phone scale. Pass `webkit` as the last argument with that Playwright browser installed to compare engines. These checks use local scratch output, not golden screenshot fixtures.
+For a visual review, start the local build and run `node tools/florist-proof.mjs http://127.0.0.1:3000/ /tmp/florist-proof` (requires Playwright Chromium and ImageMagick). It opens **all 60 consecutive timestamps starting at 1748091600123**, in a 390 × 844 viewport, and writes the actual artwork stages in reading order to `contact60.jpg` and `contact60-gray.jpg`. For offsets 1, 28 and 46, it also writes close views and strips of the opening at 0.90, 1.45, 1.80, 3.30, 4.80 and 6.51 seconds. Inspect the focal before the shoulders open, the final gaps between heads, and the cut ends at phone scale. Pass `webkit` as the last argument with that Playwright browser installed to compare engines. These checks use local scratch output, not golden screenshot fixtures.
+
+The [garden rose study](docs/rose-study.md) has a fixed-seed baseline and phone-size proof of the focal hold, pullback, and mature form.
 
 The social-preview checks use the actual Next.js production server and Playwright Chromium. Tests run locally; this repository does not include GitHub Actions CI/CD workflows.
 

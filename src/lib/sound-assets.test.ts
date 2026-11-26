@@ -101,23 +101,23 @@ describe.each(names)('%s offline sound asset', (name) => {
 })
 
 describe('sound timing and encoder guards', () => {
-  it('keeps bloom under 3.8s and gently releases well before the 4.6s geometry finishes', () => {
+  it('ends the phrase just before the 6.5s geometry finishes, with a soft tail', () => {
     const samples = renderSound('bloom')
-    expect(samples.length / SAMPLE_RATE).toBeLessThanOrEqual(3.8)
-    expect(4.6 - samples.length / SAMPLE_RATE).toBeCloseTo(0.8)
-    expect(rms(samples, 3.2, 3.4)).toBeLessThan(rms(samples, 2.6, 2.8))
-    expect(rms(samples, 3.6, 3.8)).toBeLessThan(rms(samples, 3.2, 3.4) * 0.15)
-    expect(rms(samples, 0, 0.1)).toBeLessThan(rms(samples, 0.8, 1.0) * 0.1)
+    expect(samples.length / SAMPLE_RATE).toBe(6.1)
+    expect(6.5 - samples.length / SAMPLE_RATE).toBeCloseTo(0.4)
+    expect(rms(samples, 5.50, 5.70)).toBeLessThan(rms(samples, 5.12, 5.32))
+    expect(rms(samples, 5.95, 6.10)).toBeLessThan(rms(samples, 5.50, 5.70) * 0.15)
+    expect(rms(samples, 0, 0.1)).toBeLessThan(rms(samples, 0.50, 0.70) * 0.1)
   })
 
   it('leaves room for the release, breathes between fingers, and answers more quietly than the melody', () => {
     const samples = renderSound('bloom')
-    const bass = rms(samples, 0.34, 0.49)
-    const melody = rms(samples, 1.04, 1.20)
-    const answer = rms(samples, 2.72, 2.83)
+    const bass = rms(samples, 0.51, 0.65)
+    const melody = rms(samples, 1.86, 2.02)
+    const answer = rms(samples, 5.15, 5.27)
     expect(rms(samples, 0, SOUND_DURATIONS['gift-open'])).toBeLessThan(bass / 50)
-    expect(rms(samples, 0.91, 1.005)).toBeLessThan(melody / 3)
-    expect(rms(samples, 1.83, 2.04)).toBeLessThan(rms(samples, 2.10, 2.28) / 4)
+    expect(rms(samples, 1.70, 1.82)).toBeLessThan(melody / 3)
+    expect(rms(samples, 4.00, 4.15)).toBeLessThan(rms(samples, 4.20, 4.38) / 4)
     expect(answer).toBeLessThan(melody * 0.7)
     expect(answer).toBeGreaterThan(melody * 0.3)
   })
@@ -137,7 +137,7 @@ describe('sound timing and encoder guards', () => {
   it('keeps every register of the plucked phrase present without relying on bass', () => {
     const raw = decodePcm(encodeWav(renderSound('bloom')))
     const band = phoneBand(raw)
-    for (const [start, end] of [[0.34, 0.49], [1.04, 1.20], [2.10, 2.28], [2.72, 2.83]] as const) {
+    for (const [start, end] of [[0.51, 0.65], [1.86, 2.02], [4.20, 4.38], [5.15, 5.27]] as const) {
       expect(rms(band, start, end)).toBeGreaterThan(0.01)
       expect(rms(band, start, end) / rms(raw, start, end)).toBeGreaterThan(0.43)
     }
@@ -147,8 +147,8 @@ describe('sound timing and encoder guards', () => {
     const samples = renderSound('bloom')
     // First-difference energy favors the little high-frequency edges of the brush.
     const edge = samples.map((sample, i) => sample - (samples[i - 1] ?? sample))
-    expect(rms(edge, 3.303, 3.37)).toBeGreaterThan(rms(edge, 3.12, 3.23) * 2)
-    expect(rms(samples, 3.303, 3.37)).toBeLessThan(rms(samples, 3.12, 3.23))
+    expect(rms(edge, 5.523, 5.59)).toBeGreaterThan(rms(edge, 5.37, 5.45) * 2)
+    expect(rms(samples, 5.523, 5.59)).toBeLessThan(rms(samples, 5.37, 5.45))
   })
 
   it.each([NaN, Infinity, -Infinity, 1.01, -1.01])('rejects unsafe sample %s instead of silently clipping', (value) => {
