@@ -6,63 +6,6 @@ import { handAttribute, petalHand } from './petal-hand';
 import { foldCluster, foldShell } from './petal-fold';
 import type { MorphPetal, Specimen } from './types';
 
-// Six spoon-shaped tepals: three outer guards open away from the three
-// longer inner sails. Rounded tips and a changing radius along the exposed
-// edge break the old continuous cup, especially from the presentation front.
-function tulipTepal(specimen: Specimen, j: number, mesh: MorphPetal['mesh'], cut: boolean) {
-  const inner = j >= 3, R = specimen.length;
-  const axis = specimen.rotation + j % 3 * Math.PI * 2 / 3 + (inner ? Math.PI / 3 : 0);
-  const hand = petalHand(specimen.timestamp, j, 0);
-  const variation = (hand >>> 16) / 32767.5 - 1;
-  const base = new THREE.Color(specimen.palette.base), tip = new THREE.Color(specimen.palette.tip);
-  const root = new THREE.Color(specimen.palette.root), ivory = new THREE.Color('#fff0c8');
-  const tint = new THREE.Color(), g = mesh.geometry;
-  const pos = g.getAttribute('position'), col = g.getAttribute('color'), uv = g.getAttribute('uv');
-  const closed = g.morphAttributes.position?.[0], normals = g.morphAttributes.normal;
-  if (!closed || !normals?.[0]) throw new Error('Tulip tepals require an authored closed pose.');
-  for (let i = 0; i < pos.count; i++) {
-    const s = uv.getX(i) * 2 - 1, t = uv.getY(i), lip = ease((t - .6) / .4);
-    const arch = t - .22 * s * s * lip;
-    // A tulip is spooned along its rib. The broad guards turn away at the
-    // rim while the taller inner sails hold their concave silhouette.
-    const rib = Math.exp(-((s * 4.1 - .18 * t) ** 2));
-    const margin = Math.abs(s) ** 3;
-    const radial = .045 + (inner ? .46 : .56) * Math.sin(Math.PI * arch * .73)
-      + (inner ? -.033 : .13 + .055 * variation) * lip - .034 * s * s * lip
-      + (.045 * rib - .058 * margin) * Math.sin(Math.PI * t)
-      + lip * (.056 * Math.sin(4.4 * s + variation) - .075 * (1 - s * s) * (inner ? 1 : -.5));
-    const span = (.12 + .98 * Math.sin(Math.PI * t * .82) ** .78) * (inner ? .90 : 1);
-    const theta = axis + s * span + (inner ? .19 : .12) * t + variation * .065 * lip;
-    // The reflexed guards previously flared outside the tulip socket's
-    // clearance profile. Keep the rim spooned in the dressed cut.
-    const girth = R * (cut ? .82 : 1);
-    const x = girth * Math.sin(theta) * radial, z = girth * Math.cos(theta) * radial;
-    const y = R * (((inner ? 1.09 : .87) + .075 * variation) * (arch ** 1.09)
-      + lip * (.037 * s - .044 * margin + .018 * Math.sin(5.2 * s + variation)));
-    pos.setXYZ(i, x, y, z);
-    const budRadius = R * (.042 + .19 * Math.sin(Math.PI * t * .93) + .017 * (inner ? 0 : 1));
-    closed.setXYZ(i, Math.sin(theta) * budRadius, R * arch * (inner ? 1.01 : .97), Math.cos(theta) * budRadius);
-    // Silky pigment collects along one overlapping margin; the other catches
-    // a translucent cream wash. Individual petals are not striped metal.
-    const edge = ease((Math.abs(s) - .70) / .30);
-    const blush = .08 + (inner ? .025 : .115) + .065 * variation;
-    tint.copy(root).lerp(base, .40 + .6 * ease(t / .66))
-      .lerp(tip, .08 + .40 * t + blush + .07 * Math.sin(s * 4 + t))
-      .lerp(ivory, blush * (.33 + .67 * t) + .10 * lip + edge * .13 * t);
-    // A single feather of basal pigment follows the rib up the cup.
-    tint.lerp(root, (.18 + .08 * variation) * rib * (1 - ease((t - .23) / .70)));
-    tint.lerp(base, .12 * (1 - Math.abs(s)) * Math.sin(t * Math.PI));
-    if (s < 0) tint.lerp(root, edge * .18 * Math.sin(t * Math.PI));
-    col.setXYZ(i, tint.r, tint.g, tint.b);
-  }
-  g.computeVertexNormals();
-  const openNormal = g.getAttribute('normal');
-  g.setAttribute('position', closed); g.deleteAttribute('normal'); g.computeVertexNormals();
-  normals[0] = g.getAttribute('normal');
-  g.setAttribute('position', pos); g.setAttribute('normal', openNormal);
-}
-
-
 // The cultivar builders remain the source of truth for the seeded cut and its
 // closed form. This last modelling pass works on their owned render buffers;
 // it doesn't draw from the geometry RNG, add lights, or run during animation.
@@ -74,7 +17,6 @@ export function finishPetals(specimen: Specimen, petals: MorphPetal[], head: THR
   const tint = new THREE.Color();
   for (let j = 0; j < petals.length; j++) {
     const { mesh, layer } = petals[j];
-    if (tulip) tulipTepal(specimen, j, mesh, cut);
     const g = mesh.geometry;
     const pos = g.getAttribute('position'), uv = g.getAttribute('uv'), color = g.getAttribute('color');
     const phase = rotation + j * 2.39996;

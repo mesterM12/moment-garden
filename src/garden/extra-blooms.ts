@@ -120,7 +120,8 @@ function palette(specimen: Specimen) {
   return { color, base, tip, shade, fleck, tint, petal };
 }
 
-// Layer upon layer of fine, overlapping, almost circular petal edges.
+// A florist's double ranunculus: thin, broad laminae with a rounded lip.
+// Batches order the opening; the individual cups do not sit on circular tiers.
 function ranunculus(specimen: Specimen, batch: Batches, { petal, tip, base, shade, tint }: Palette) {
   const R = specimen.length;
   const rings = specimen.layers + 1;
@@ -128,30 +129,54 @@ function ranunculus(specimen: Specimen, batch: Batches, { petal, tip, base, shad
     const panels = batch(layer);
     const count = Math.max(5, specimen.count + 3 - layer);
     const pitch = TAU / count;
-    const progress = layer / (rings - 1);
-    const radius = R * (1 - 0.87 * progress ** 0.78);
-    const height = R * lerp(0.04, 0.47, progress ** 0.82);
+    const inner = layer / (rings - 1);
     if (layer === 0) {
-      panels.ellipsoid(scale([0, 0.115, 0], R), scale([0.306, 0.13, 0.306], R), t => tint.copy(base).lerp(shade, 0.53 + 0.23 * t));
+      panels.ellipsoid(scale([0, .052, 0], R), scale([.226, .083, .226], R),
+        t => tint.copy(base).lerp(shade, .52 + .31 * t), p => p, 8, 14);
     }
     for (let i = 0; i < count; i++) {
-      const angle = specimen.rotation + pitch * (i + layer * 0.52);
-      const phase = i * GOLDEN_ANGLE + specimen.rotation;
-      panels.surface(12, 10, (t, s) => {
-        const shoulder = smooth((t - 0.56) / 0.44);
-        const r = radius * (0.22 + 0.78 * t - 0.085 * s * s * shoulder);
-        const y = height + radius * (0.22 * Math.sin(t * 2.29) + 0.12 * t + 0.052 * s * s * t
-          + 0.02 * Math.sin(s * 5.8 + phase) * shoulder);
-        const a = angle + pitch * (0.70 * s * profile([0.14, 0.68, 1, 1, 0.90], t) + t * 0.29);
-        return polar(a, r, y);
-      }, (t, s) => {
-        // Pale paper edges with deeper pigment where the rings turn inward.
-        const rim = 0.31 * smooth((t - 0.86) / 0.14);
-        return petal(t, s).lerp(base, progress * 0.48).lerp(shade, progress * 0.23).lerp(tip, rim);
+      const phase = specimen.rotation * 1.8 + i * GOLDEN_ANGLE + layer * 1.437;
+      const hand = Math.sin(phase), tilt = Math.cos(phase * 1.33);
+      const angle = specimen.rotation + pitch * (i + .23 * hand) + layer * GOLDEN_ANGLE;
+      // Alternate long and short blades across the nominal batches so that
+      // shoulders interrupt successive seams rather than making a rosette of bands.
+      const eye = smooth((inner - .75) / .25);
+      const reach = .96 - .88 * inner ** .84 + (.055 * hand + .023 * tilt) * (1 - inner) - eye * .046 * smooth(hand);
+      const root = .215 * (1 - inner) ** 1.45 + .014;
+      const foot = .024 + .373 * inner ** 1.28 + .011 * tilt * inner;
+      const top = .22 + .403 * inner ** .85 + .025 * hand;
+      const open: Sample = (t, s) => {
+        const lip = smooth((t - .55) / .45), edge = Math.abs(s) ** 2.7;
+        const arch = t - (.16 + .04 * hand) * s * s * lip;
+        const span = pitch * profile([.11, .46, .68, .72, .59], t) * (1 + .125 * hand - .16 * eye * lip);
+        const sweep = angle + span * s + (hand * .09 + .19) * t + .09 * tilt * lip;
+        const radius = lerp(root, reach, arch ** .98) + (.06 * inner + .032) * Math.sin(Math.PI * t)
+          - .024 * edge * t * (1 - inner);
+        // Give overlapping margins a signed pitch. Outside the eye, compute
+        // the rise in radial space so long/short petals remain lapped instead
+        // of cutting through each other along their shoulders.
+        const rise = lerp(Math.max(0, (radius - root) / (.96 - .88 * inner ** .84 - root)) ** 1.68, arch ** 1.2, inner);
+        const wave = .008 * edge * lip * Math.sin(s * 5 + phase);
+        const y = lerp(foot, top, rise) - .029 * Math.sin(Math.PI * t) * (1 - inner)
+          + (.044 * s + .021 * s * s) * t + wave + .009 * tilt * s * lip;
+        return polar(sweep, R * radius, R * y);
+      };
+      panels.surface(12, 10, open, (t, s) => {
+        const rim = smooth((t - .86) / .14);
+        return petal(t, s).lerp(base, .24 * inner + .13 * (1 - t))
+          .lerp(shade, .13 * inner + .14 * Math.max(0, -s) * Math.sin(Math.PI * t))
+          .lerp(tip, (.19 + .09 * hand) * rim).multiplyScalar(1 + .047 * hand);
+      }, (point, t) => {
+        // Keep the insertion fixed and wrap the free blade around an ovoid.
+        // Use its existing azimuth so the same margins still make the lap.
+        const a = Math.atan2(point[0], point[2]);
+        const lip = smooth((t - .56) / .44);
+        const radial = root * (1 - t) + (.26 - .13 * inner) * Math.sin(Math.PI * t)
+          + (.053 - .025 * inner) * t;
+        const y = lerp(foot, .72 - .05 * inner, t) + (point[1] / R - lerp(foot, top, t * t)) * (.55 + .25 * lip);
+        const lap = .024 * (Math.hypot(point[0], point[2]) / R - lerp(root, reach, t));
+        return polar(a, R * (radial + lap), R * y);
       });
-    }
-    if (layer === rings - 1) {
-      panels.ellipsoid([0, height + 0.055 * R, 0], scale([0.095, 0.112, 0.095], R), t => tint.copy(base).lerp(shade, 0.24 + 0.46 * t));
     }
   }
 }
