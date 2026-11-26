@@ -1,7 +1,22 @@
-import { Mesh } from 'three';
+import { Mesh, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { createBouquet } from './botany';
 import { buildFiller } from './filler';
+import { sprayCalyx } from './spray-calyx';
+
+it('roots each papery filler cup on its twig and keeps the throat below the five rim tips', () => {
+  const root = new Vector3(-.8, .7, 1.4), axis = new Vector3(.7, .2, -.1).normalize();
+  const g = sprayCalyx(root, axis, .055, 1.37, .72);
+  try {
+    const pos = g.getAttribute('position'), p = new Vector3();
+    const height = (i: number) => p.fromBufferAttribute(pos, i).sub(root).dot(axis);
+    expect(p.fromBufferAttribute(pos, 0).distanceTo(root)).toBeLessThan(1e-6);
+    const rim = Array.from({ length: 15 }, (_, i) => height(31 + i));
+    expect(rim.filter((y, i) => y > rim[(i + 14) % 15] + .001 && y > rim[(i + 1) % 15] + .001)).toHaveLength(5);
+    expect(height(pos.count - 1)).toBeLessThan(Math.min(...rim));
+    expect(g.index!.count / 3).toBeLessThanOrEqual(120);
+  } finally { g.dispose(); }
+});
 
 it('keeps foliage reproducible without consuming the flower geometry RNG', () => {
   const plan = createBouquet(1748091600123), control = createBouquet(plan.timestamp);
