@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import { afterAll, test } from 'vitest';
 import * as THREE from 'three';
+import { parseToken } from '../lib/bouquet-link';
 import { createBouquet, createSpecimen, headEnvelope } from './botany';
 import { build } from './extra-blooms';
 import { finishPetals } from './florist-finish';
@@ -10,10 +11,10 @@ import type { Specimen } from './types';
 const material = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide });
 afterAll(() => material.dispose());
 
-function head(specimen: Specimen) {
+function head(specimen: Specimen, cut = true) {
   const group = new THREE.Group();
   const local = { ...specimen, random: () => assert.fail('Anatomy must not advance the geometry PRNG') };
-  return finishPetals(local, build(local, group, material, true), group, true);
+  return finishPetals(local, build(local, group, material, cut), group, cut);
 }
 
 const limits = [
@@ -88,3 +89,60 @@ test('hydrangea cymes reach the sockets of the overlapping sepals in all three p
     batches.forEach(({ mesh }) => mesh.geometry.dispose());
   }
 });
+
+// [radius, upper axial reach] in each moving pose; the mature ellipsoid
+// does not describe the closed anemone's vertical blade tips.
+const legacyGifts = [
+  ['hydrangea', '1970260fcfd', [.56, 1.04], [1.35, 1.40]],
+  ['anemone', '1970260fd05', [.36, .74], [.74, .80]],
+  ['billyButton', '1970260fcfc', [.22, .81], [.56, 1.07]],
+] as const;
+
+for (const [key, token, sealed, bowed] of legacyGifts) {
+  test(`the unprefixed gift ${token} renders improved ${key} in its booked space`, () => {
+    const gift = parseToken(token);
+    assert.ok(gift);
+    assert.equal(gift.version, 2);
+    const plan = createBouquet(gift.timestamp, gift.version);
+    const stems = plan.flowers.filter(({ specimen }) => specimen.key === key);
+    assert.ok(stems.length > 0);
+    for (const entry of stems) {
+      const { specimen } = entry;
+      const batches = head(specimen, false);
+      try {
+        assert.equal(batches.length, limits.find(limit => limit[0] === key)?.[1]);
+        const e = headEnvelope({ ...entry, position: [0, 0, 0], scale: 1 });
+        const axialCenter = Math.hypot(...e.center);
+        let vertices = 0, triangles = 0;
+        for (const { mesh } of batches) {
+          const { geometry } = mesh;
+          const [closed, bent] = geometry.morphAttributes.position ?? [];
+          const pos = geometry.attributes.position;
+          vertices += pos.count;
+          triangles += geometry.index!.count / 3;
+          // The eye is a solid mesh; it has no free blades to bow separately.
+          assert.ok(closed && (bent || key === 'anemone'));
+          assert.deepEqual(mesh.morphTargetInfluences, bent ? [0, 0] : [0]);
+          for (let i = 0; i < pos.count; i++) {
+            const r = Math.hypot(pos.getX(i), pos.getZ(i));
+            assert.ok((r / e.radius) ** 2 + ((pos.getY(i) - axialCenter) / e.halfHeight) ** 2 <= 1);
+            for (const [shape, [radius, height]] of [[closed, sealed], [bent ?? pos, bowed]] as const) {
+              assert.ok(Math.hypot(shape.getX(i), shape.getZ(i)) < radius && shape.getY(i) < height);
+            }
+          }
+        }
+        assert.ok(vertices < 12000);
+        assert.ok(triangles < limits.find(limit => limit[0] === key)![2]);
+        const blades = batches.flatMap(batch => batch.blades ?? []);
+        if (key === 'hydrangea') assert.equal(blades.length, 25 * 4);
+        if (key === 'anemone') {
+          assert.equal(blades.length, specimen.count);
+          assert.ok(batches[1].mesh.geometry.attributes.position.count > 4500, 'carpels and tipped filaments are individual geometry');
+        }
+        if (key === 'billyButton') assert.ok(blades.length > 2.6 * specimen.count, 'the globe bears hundreds of florets');
+      } finally {
+        batches.forEach(({ mesh }) => mesh.geometry.dispose());
+      }
+    }
+  });
+}

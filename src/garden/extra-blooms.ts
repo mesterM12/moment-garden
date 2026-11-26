@@ -330,45 +330,6 @@ function iris(specimen: Specimen, batch: Batches, { color, petal, tint, fleck, t
 function hydrangea(specimen: Specimen, batch: Batches, { color, petal, tint, tip, base, shade }: Palette, cut = false) {
   const R = specimen.length;
   const ivory = color('#eee9ca'), spring = color('#a2b36b');
-  // Preserve the authored meshes of shared v1/v2 bouquets.
-  if (!cut) {
-    const stalk = color('#56703d');
-    const branches = batch(0);
-    const rings = [[9, 0.81, 0.24], [8, 0.67, 0.57], [5, 0.39, 0.80], [1, 0, 0.89]];
-    for (const [ring, [count, radius, height]] of rings.entries()) {
-      const panels = batch(ring, 0.018);
-      for (let i = 0; i < count; i++) {
-        const phase = (ring * 9 + i) * GOLDEN_ANGLE + specimen.rotation;
-        const angle = specimen.rotation + TAU * i / count + ring * 0.23;
-        const size = (0.243 + 0.031 * Math.sin(phase) + (ring === 2 ? 0.012 : 0)) * R;
-        const r = R * (radius + 0.025 * Math.sin(phase * 2.6));
-        const y = R * (height + 0.034 * Math.sin(phase * 1.4));
-        const center = polar(angle, r, y);
-        const fork = polar(angle, r * 0.27, y * 0.58);
-        branches.twig([0, 0, 0], fork, 0.019, () => stalk);
-        branches.twig(fork, center, 0.014, () => stalk);
-        const fold: Fold = (point, t) => {
-          const node = compact(center);
-          return sum(node, [(point[0] - center[0]) * 0.24, (point[1] - center[1]) * 0.38 + t * 0.10, (point[2] - center[2]) * 0.24]);
-        };
-        const slope = radius * 0.93;
-        for (let j = 0; j < 4; j++) {
-          const aim = phase * 0.23 + j * TAU / 4;
-          panels.surface(9, 8, (t, s) => {
-            const w = .61 * profile([.06, .40, .78, 1, .68], t);
-            const arch = .12 * s * s * t;
-            const delta = scale(polar(aim, t + .05 - .20 * s * s * t ** 3,
-              .16 * Math.sin(t * Math.PI) + arch, s * w), size);
-            const out = delta[0] * Math.sin(angle) + delta[2] * Math.cos(angle);
-            return sum(center, sum(delta, polar(angle, slope * delta[1], -slope * out)));
-          }, (t, s) => petal(t, s).lerp(tip, 0.12 + 0.18 * Math.sin(phase)).lerp(ivory, 0.08 + 0.40 * (1 - smooth(t / 0.56))), fold);
-        }
-        panels.ellipsoid(sum(center, [0, size * 0.17, 0]), scale([0.18, 0.15, 0.18], size), t => tint.copy(spring).lerp(ivory, 0.68 * (1 - t)).lerp(base, 0.18), fold, 5, 9);
-      }
-    }
-    branches.ellipsoid([0, 0.045, 0], [0.057, 0.11, 0.057], t => tint.copy(stalk).lerp(shade, 0.06 + 0.1 * t));
-    return;
-  }
   const stalk = color('#657d45');
   const branches = batch(0);
   const trunk = [0, .42 * R, 0], crown = [.025 * R, .71 * R, -.02 * R];
@@ -382,6 +343,8 @@ function hydrangea(specimen: Specimen, batch: Batches, { color, petal, tint, tip
     return joint;
   });
   const rings = [[9, .79, .24], [9, .64, .53], [6, .36, .72], [1, 0, .86]];
+  // The old table cut has flatter outer faces and a slightly taller dome.
+  const rise = cut ? 0 : .02;
   for (const [ring, [count, radius, height]] of rings.entries()) {
     const panels = batch(ring, .018);
     for (let i = 0; i < count; i++) {
@@ -389,7 +352,7 @@ function hydrangea(specimen: Specimen, batch: Batches, { color, petal, tint, tip
       const angle = specimen.rotation + TAU * i / count + ring * .27 + .065 * Math.sin(phase * 1.7);
       const size = (.264 + .030 * Math.sin(phase) + (ring === 2 ? .012 : 0)) * R;
       const r = R * Math.max(0, radius + .034 * Math.sin(phase * 2.6));
-      const y = R * (height + (ring > 1 ? .029 : .051) * Math.sin(phase * 1.4));
+      const y = R * (height + rise * ring / 3 + (ring > 1 ? .029 : .051) * Math.sin(phase * 1.4));
       const center = polar(angle, r, y);
       const joint = ring > 1 ? crown : forks[Math.round((angle - specimen.rotation) * 6 / TAU + 6) % 6];
       const elbow = sum(joint, scale(sum(center, scale(joint, -1)), .60));
@@ -397,7 +360,7 @@ function hydrangea(specimen: Specimen, batch: Batches, { color, petal, tint, tip
       branches.twig(joint, elbow, .015, branchPaint);
       branches.twig(elbow, center, .009, branchPaint);
 
-      const tilt = radius * .83 + .14 * Math.sin(phase * 2);
+      const tilt = radius * (cut ? .83 : .76) + .14 * Math.sin(phase * 2);
       const pitchSin = Math.sin(tilt), pitchCos = Math.cos(tilt);
       const local = (aim: number, reach: number, lift: number, side = 0) => {
         const forward = Math.cos(aim) * reach - Math.sin(aim) * side;
@@ -444,42 +407,17 @@ function hydrangea(specimen: Specimen, batch: Batches, { color, petal, tint, tip
 }
 
 // Thin, unevenly cupped tepals frame a pin-cushion of carpels and curved stamens.
-function anemone(specimen: Specimen, batch: Batches, { color, petal, tint, tip, base, shade }: Palette, cut = false) {
+function anemone(specimen: Specimen, batch: Batches, { color, petal, tint, tip, shade }: Palette, cut = false) {
   const R = specimen.length, { count, rotation } = specimen;
+  // The v2 blade was a little wider and shallower at the lip.
+  const bladeLength = cut ? .765 : .788, lipHeight = cut ? .157 : .111;
+  const bladeFold: Fold = cut ? bud : (point, t) => [point[0] * .28, point[1] * .63 + t * .473, point[2] * .28];
   const petals = batch(0), eye = batch(2, .032);
-  if (!cut) {
-    const ink = color('#18172b'), blue = color('#484161'), collar = color('#a9b9a4');
-    petals.ellipsoid(scale([0, 0.045, 0], R), scale([0.263, 0.098, 0.263], R), t => tint.copy(shade).lerp(collar, 0.14 + 0.21 * t));
-    for (let i = 0; i < count; i++) {
-      const angle = rotation + TAU * i / count;
-      const variation = Math.sin(i * GOLDEN_ANGLE + rotation);
-      petals.surface(20, 16, (t, s) => {
-        const width = specimen.width * profile([0.12, 0.66, 0.97, 1.10, 0.77], t);
-        const radius = 0.23 + (0.76 + 0.035 * variation) * t - 0.15 * s * s * t ** 3;
-        const wave = 0.015 * Math.sin(t * 22 + s * 9 + variation * 3) * t ** 2;
-        const y = 0.045 + 0.085 * Math.sin(Math.PI * t) + 0.105 * t * t + 0.11 * s * s * Math.sin(Math.PI * t) + wave;
-        return polar(angle + 0.12 * t + 0.035 * variation, R * radius, R * y, s * width);
-      }, (t, s) => {
-        const halo = 1 - smooth((t - 0.025 - 0.03 * Math.cos(s * 10)) / 0.41);
-        return petal(t, s).lerp(tip, 0.21).lerp(collar, 0.68 * halo * smooth(t / 0.16)).lerp(ink, 0.72 * halo ** 3);
-      });
-    }
-    eye.ellipsoid(scale([0, 0.12, 0], R), scale([0.18, 0.15, 0.18], R), (t, s) => tint.copy(ink)
-      .lerp(blue, 0.35 + 0.22 * Math.cos(s * 29 + 22 * t) ** 2 * Math.sin(32 * t) ** 2));
-    for (let i = 0; i < 72; i++) {
-      const a = i * GOLDEN_ANGLE + rotation;
-      const radius = 0.145 + 0.173 * Math.sqrt((i + 0.5) / 72);
-      const y = 0.14 + 0.06 * Math.sin(a * 2) ** 2 + 0.08 * (1 - i / 72);
-      const end = polar(a, R * radius, R * y);
-      eye.twig(polar(a, R * radius * 0.74, 0.075), end, 0.012, () => blue);
-      eye.ellipsoid(end, scale([0.026, 0.040, 0.026], R), t => tint.copy(ink).lerp(blue, 0.77 * (1 - t)).lerp(base, 0.08), compact, 4, 7);
-    }
-    return;
-  }
   const ink = color('#21182d'), violet = color('#625173'), collar = color('#b3b99a');
   const pollen = color('#aa9b9d'), moss = color('#66704d');
   const throatFold: Fold = p => [p[0] * .28, p[1] * .63, p[2] * .28];
-  petals.ellipsoid(scale([0, .043, 0], R), scale([.277, .074, .277], R),
+  const socketHeight = cut ? .074 : .062;
+  petals.ellipsoid(scale([0, .043, 0], R), scale([.277, socketHeight, .277], R),
     t => tint.copy(ink).lerp(moss, .28 + .56 * t), throatFold, 6, 14);
   for (let i = 0; i < count; i++) {
     const phase = i * GOLDEN_ANGLE + rotation;
@@ -488,11 +426,11 @@ function anemone(specimen: Specimen, batch: Batches, { color, petal, tint, tip, 
     petals.surface(19, 16, (t, s) => {
       const edge = smooth((t - .43) / .57), belly = Math.sin(Math.PI * t);
       const width = specimen.width * profile([.084, .64, 1.01, 1.08, .70], t) * (1 + .08 * lean);
-      const radius = .177 + (.765 + .040 * hand) * t - (.17 + .02 * lean) * s * s * t ** 3
+      const radius = .177 + (bladeLength + .040 * hand) * t - (.17 + .02 * lean) * s * s * t ** 3
         + .015 * Math.cos(8 * s + phase) * edge * edge;
       const wave = .022 * Math.sin(t * 19 + s * 7 + phase) * edge * s ** 4;
       const crease = .007 * Math.cos(11 * s + .7 * Math.sin(4 * t + phase)) * belly;
-      const y = .041 + .053 * belly + (.157 + .060 * lean) * t ** 2 + .085 * s * s * belly
+      const y = .041 + .053 * belly + (lipHeight + .060 * lean) * t ** 2 + .085 * s * s * belly
         + (.086 * s + .026 * hand - .055 * edge) * edge + wave + crease;
       return polar(angle + (.06 + .10 * hand) * t, R * radius, R * y, width * (s + .10 * lean * t));
     }, (t, s) => {
@@ -501,7 +439,7 @@ function anemone(specimen: Specimen, batch: Batches, { color, petal, tint, tip, 
       const rim = smooth((t - .82) / .18) * (.76 + .24 * Math.sin(phase + s * 3));
       return petal(t, s).lerp(tip, .16 + .16 * rim + .07 * veins * Math.sin(Math.PI * t))
         .lerp(shade, .095 * (.5 + .5 * hand)).lerp(collar, .45 * halo * smooth(t / .16)).lerp(ink, .80 * halo ** 2);
-    });
+    }, bladeFold);
   }
   eye.ellipsoid(scale([0, .123, 0], R), scale([.164, .123, .164], R), t => tint.copy(ink).lerp(moss, .34 * (1 - t)), throatFold, 8, 14);
   for (let i = 0; i < 43; i++) {
@@ -520,7 +458,7 @@ function anemone(specimen: Specimen, batch: Batches, { color, petal, tint, tip, 
     const phase = i * GOLDEN_ANGLE + rotation;
     const swing = Math.sin(phase), h = Math.cos(phase * 2.2);
     const a = rotation + TAU * (index + .30 * h + (inner ? .48 : 0)) / (inner ? 30 : 38);
-    const length = (inner ? .187 : .120) + .033 * h;
+    const length = (inner ? .187 : .120) + .033 * h - (cut ? 0 : .017);
     const reach = (inner ? .058 : .128) + .027 * swing;
     const root = inner ? .138 : .160;
     const filament = (t: number) => polar(a + .12 * swing * t, root + reach * t ** 1.65,
@@ -547,35 +485,9 @@ function anemone(specimen: Specimen, batch: Batches, { color, petal, tint, tip, 
 function billyButton(specimen: Specimen, batch: Batches, { color, tint, base, tip }: Palette, cut = false) {
   const radius = specimen.length * .82;
   const middle = radius * 1.16;
-  if (!cut) {
-    const count = specimen.count;
-    const gold = color('#dba12d'), ochre = color('#a46917'), honey = color('#f9d46b');
-    const stalk = color('#829041');
-    const core = batch(0);
-    core.ellipsoid([0, 0.075, 0], [0.075, 0.09, 0.075], t => tint.copy(stalk).lerp(ochre, 0.58 * (1 - t)));
-    core.ellipsoid([0, middle, 0], [radius, radius, radius], t => tint.copy(ochre).lerp(gold, 0.24 * (1 - t)), compact, 14, 24);
-    const florets = [batch(1, 0.015), batch(2, 0.028)];
-    for (let i = 0; i < count; i++) {
-      const z = 1 - 2 * (i + 0.5) / count;
-      const a = specimen.rotation + i * GOLDEN_ANGLE;
-      const r = Math.sqrt(1 - z * z);
-      const n = [r * Math.sin(a), z, r * Math.cos(a)];
-      const u = [Math.cos(a), 0, -Math.sin(a)];
-      const v = [-z * Math.sin(a), r, -z * Math.cos(a)];
-      const center = sum([0, middle, 0], scale(n, radius * (0.96 + 0.025 * Math.sin(i * 7))));
-      const spread = radius * (0.183 + 0.028 * Math.sin(i * 2.6));
-      florets[z > 0.12 ? 1 : 0].surface(5, 15, (t, s) => {
-        const angle = s * Math.PI + a;
-        const lobe = (1 + Math.cos(angle * 5)) * 0.5;
-        const size = spread * (0.20 + 0.76 * t + 0.14 * lobe * t);
-        const h = spread * (0.38 * t + (0.42 + 0.30 * lobe) * Math.sin(t * Math.PI) + 0.15 * lobe * t);
-        return sum(center, sum(scale(n, h), sum(scale(u, Math.cos(angle) * size), scale(v, Math.sin(angle) * size))));
-      }, (t, s) => tint.copy(gold).lerp(base, 0.21).lerp(tip, 0.14).lerp(ochre, 0.48 * (1 - smooth(t / 0.63)))
-        .lerp(honey, (0.32 + 0.10 * Math.sin(i * 7 + s * 9)) * smooth((t - 0.40) / 0.60)), compact);
-    }
-    return;
-  }
-  const count = Math.floor(2.75 * specimen.count);
+  const count = Math.floor((cut ? 2.75 : 2.65) * specimen.count);
+  // The older cut holds a tighter ball while the floret mouths unfold.
+  const reach = cut ? 1 : .94;
   const saffron = color('#e6aa2d'), bronze = color('#ab6e19'), honey = color('#f8ce62');
   const stalk = color('#819044');
   const core = batch(0);
@@ -595,10 +507,10 @@ function billyButton(specimen: Specimen, batch: Batches, { color, tint, base, ti
     const a = phase + (.042 + .055 * (1 - Math.abs(y))) * Math.sin(i * 7.37 + specimen.rotation);
     const r = Math.sqrt(1 - y * y);
     const n = polar(a, r, y), u = polar(a, 0, 0, 1), v = polar(a, -y, r);
-    const center = sum([0, middle, 0], scale(n, radius * (.929 + relief(y, a) * r + .011 * hand)));
+    const center = sum([0, middle, 0], scale(n, radius * ((cut ? .929 : .925) + relief(y, a) * r + .011 * hand)));
     const spread = radius * (.128 + .009 * maturity + .017 * hand);
     const turn = phase * 1.64, opened = maturity > .66;
-    const local = (h: number, x: number, z: number) => sum(center, sum(scale(n, h), sum(scale(u, x), scale(v, z))));
+    const local = (h: number, x: number, z: number) => sum(center, sum(scale(n, h * reach), sum(scale(u, x), scale(v, z))));
     const panel = florets[y > .12 ? 1 : 0];
     // Pressed buds still have angular creases. Some open into small notched
     // cups, but their styles fill the throats rather than leaving large pits.
@@ -616,7 +528,7 @@ function billyButton(specimen: Specimen, batch: Batches, { color, tint, base, ti
       const edge = smooth((t - .43) / .57), voice = .5 + .5 * Math.sin(phase + s * Math.PI);
       return tint.copy(saffron).lerp(base, .22).lerp(bronze, (.43 - .27 * t) * (1 - edge) + .16 * (1 - maturity))
         .lerp(honey, (.14 + .30 * maturity + .24 * voice) * edge).lerp(tip, .20 * voice * edge);
-    }, compact, opened);
+    }, compact, opened || !cut);
     if (opened && hand > 0) {
       panel.surface(2, 3, (t, s) => {
         const phi = s * Math.PI;
