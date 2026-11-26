@@ -14,7 +14,8 @@ import { assertEnvelopesEqual } from './parity-compare';
 
 // Frozen from the pre-migration root implementation with Three.js r160.
 // Three sphere hashes were updated from that same baseline by canonicalizing
-// axis round-off; see attributeSnapshot. Tests never regenerate the fixtures.
+// axis round-off; see attributeSnapshot. Only the rose mesh hash is newer,
+// recording the intentional garden-rose sculpt. Tests never regenerate these fixtures.
 const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
 function planWithGeometry({ flowers, ...plan }: BouquetPlan) {

@@ -235,11 +235,13 @@ function chooseCultivar(random: Random, role: Role, swatch: Swatch, used: Set<Sp
   } };
 }
 
+export const ROSE_HEAD_PROFILE = [1.48, .76, .28] as const;
+
 // Conservative mature-head spheroids measured from the renderer's meshes.
 // [radial radius, axial half-height, axial center offset], in local head units.
-const headProfiles: Record<SpeciesKey, [radius: number, halfHeight: number, offset: number]> = {
+const headProfiles: Record<SpeciesKey, readonly [radius: number, halfHeight: number, offset: number]> = {
   daisy: [2.08, .39, .07], sunflower: [2.08, .49, .07], poppy: [1.87, .76, .49], tulip: [1.24, 1.36, 1],
-  rose: [1.48, .76, .28], dahlia: [1.57, .99, .38], lily: [2.25, 1.08, -.09], cosmos: [2.08, .36, .07],
+  rose: ROSE_HEAD_PROFILE, dahlia: [1.57, .99, .38], lily: [2.25, 1.08, -.09], cosmos: [2.08, .36, .07],
   ranunculus: [1.48, .73, .36], calla: [1.30, 1.56, 1.20], orchid: [1.47, .64, .28], iris: [1.68, 1.34, .07],
   hydrangea: [1.58, 1.13, .24], anemone: [1.34, .48, .12], billyButton: [.62, .81, .40],
 };

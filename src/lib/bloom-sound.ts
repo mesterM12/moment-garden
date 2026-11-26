@@ -1,6 +1,8 @@
+import { BLOOM_DURATION } from '../garden/bloom-score'
+
 const START_BUDGET_MS = 240
 const FETCH_TIMEOUT_MS = 4_000
-const BLOOM_SECONDS = 4.6
+const BLOOM_SECONDS = BLOOM_DURATION / 1000
 const DRIFT_SECONDS = 0.12
 const FADE_SECONDS = 0.008
 

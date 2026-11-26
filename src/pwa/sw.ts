@@ -29,6 +29,14 @@ self.addEventListener('fetch', event => {
       return cached || new Response('Open these flowers online once before going offline.', { status: 503 })
     }))
   } else if (__PRECACHE_URLS__.includes(url.pathname)) {
-    event.respondWith(caches.open(cacheName).then(async cache => (await cache.match(request)) || fetch(request)))
+    event.respondWith(caches.open(cacheName).then(async cache => {
+      const cached = await cache.match(request)
+      if (!cached) return fetch(request)
+      // Turbopack puts dedicated worker config in the script URL's fragment.
+      // A Cache API response has a fragment-less URL; returning it directly
+      // replaces the worker's location. A synthetic response preserves it.
+      if (request.destination === 'worker') return new Response(cached.body, { headers: cached.headers })
+      return cached
+    }))
   }
 })

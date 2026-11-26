@@ -1,5 +1,6 @@
 /* Dedicated botanical surfaces: rose cups, tulip shells, and rolled dahlia florets. */
 import * as THREE from 'three';
+import { gardenRose } from './garden-rose';
 import type { MorphPetal, Specimen } from './types';
 
 type Sample = (t: number, s: number) => number[];
@@ -108,6 +109,7 @@ function cutDahlia(specimen: Specimen, head: THREE.Group, material: THREE.Materi
 }
 
 function build(specimen: Specimen, head: THREE.Group, material: THREE.Material, cut = false): MorphPetal[] {
+  if (specimen.key === 'rose') return gardenRose(specimen, head, material);
   if (cut && specimen.key === 'dahlia') return cutDahlia(specimen, head, material);
   const meshes: MorphPetal[] = [];
   function add(geometry: THREE.BufferGeometry, layer: number) {
@@ -116,34 +118,7 @@ function build(specimen: Specimen, head: THREE.Group, material: THREE.Material, 
     meshes.push({ mesh, layer, offset: 0 });
   }
   const R = specimen.length;
-  if (specimen.key === 'rose') {
-    const rings = [
-      { n: 8, r: [.18, .34, .62, .84, 1], y: [0, .04, .12, .18, .14] },
-      { n: 6, r: [.09, .17, .30, .48, .64], y: [.17, .22, .31, .39, .36] },
-      { n: 5, r: [.035, .06, .11, .20, .30], y: [.37, .42, .51, .60, .57] },
-      { n: 3, r: [.008, .015, .028, .065, .12], y: [.52, .55, .60, .66, .65] },
-    ];
-    const heart = new THREE.Mesh(new THREE.SphereGeometry(R * .065, 16, 12), new THREE.MeshStandardMaterial({ color: specimen.palette.root, roughness: .85 }));
-    heart.position.y = R * .61;
-    head.add(heart);
-    const receptacle = new THREE.Mesh(new THREE.SphereGeometry(R * .20, 16, 12), new THREE.MeshStandardMaterial({ color: specimen.palette.base, roughness: .85 }));
-    receptacle.scale.y = .5;
-    receptacle.position.y = R * .10;
-    head.add(receptacle);
-    rings.forEach((ring, layer) => {
-      const pitch = Math.PI * 2 / ring.n;
-      for (let i = 0; i < ring.n; i++) {
-        const angle = specimen.rotation + i * pitch + (layer % 2 ? pitch * 0.5 : 0);
-        add(surface(specimen, (t, s) => {
-          const longitudinal = t * (1 - 0.10 * s * s);
-          const radius = profile(ring.r, longitudinal) * R;
-          const theta = angle + 0.14 * t + pitch * profile([.12, .38, .55, .55, .51], t) * s;
-          const height = (profile(ring.y, longitudinal) + .028 * s - .045 * s * s * smooth((t - .7) / .3)) * R;
-          return [Math.sin(theta) * radius, height, Math.cos(theta) * radius];
-        }), layer);
-      }
-    });
-  } else if (specimen.key === 'tulip') {
+  if (specimen.key === 'tulip') {
     const scale = R * 0.64;
     for (let layer = 0; layer < 2; layer++) {
       for (let i = 0; i < 3; i++) {

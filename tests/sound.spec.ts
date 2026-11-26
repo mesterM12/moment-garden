@@ -6,7 +6,7 @@ const test = createBrowserTest(options, isMobile)
 
 test('opening and bloom assets are local PCM audio and decode in the browser', async ({ page, request }) => {
   await page.goto('/')
-  for (const [file, expected] of [['gift-open.wav', .28], ['bloom.wav', 3.8]] as const) {
+  for (const [file, expected] of [['gift-open.wav', .28], ['bloom.wav', 6.1]] as const) {
     const response = await request.get(`/audio/${file}`)
     expect(response.ok()).toBe(true)
     const bytes = await response.body()

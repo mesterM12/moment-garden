@@ -1,6 +1,6 @@
 import type { SpeciesKey } from './types';
 
-export const BLOOM_DURATION = 4600;
+export const BLOOM_DURATION = 6500;
 export const clamp = (t: number) => Math.min(1, Math.max(0, t));
 export const ease = (t: number) => { t = clamp(t); return t * t * (3 - 2 * t); };
 const beat = (t: number, from: number, to: number) => ease((t - from) / (to - from));

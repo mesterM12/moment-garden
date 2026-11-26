@@ -113,6 +113,73 @@ test('opens the exact shared bouquet and preserves it through replay and saving'
   expect(errors).toEqual([])
 })
 
+test('the opening hands off the exact live lens on grab, while save and replay use the correct shots', async ({ page }) => {
+  const roseSeed = '1748091600129'
+  await page.goto('/?bouquet=v3-1970260fd01')
+  const art = page.locator('canvas')
+  const ready = page.locator('.flower-postcard-details [role="status"]').first()
+  const open = page.getByRole('button', { name: 'Open your flowers', exact: true })
+  const detail = page.getByRole('button', { name: 'Look closer', exact: true })
+  const replay = page.getByRole('button', { name: 'Replay bloom', exact: true })
+  await expect(open).toBeEnabled()
+  await page.clock.install()
+  await page.clock.pauseAt(new Date(Date.now() + 1000))
+  await open.dispatchEvent('click', { detail: 1 })
+  await page.clock.fastForward(3150)
+  await art.blur()
+  await expect(ready).toHaveText('Stems unfolding')
+  const box = (await art.boundingBox())!
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  const beforeGrab = await art.screenshot()
+  async function pictureDifference(before: Buffer) {
+    const after = await art.screenshot()
+    // Chromium's mobile compositor occasionally rounds a few edge samples
+    // differently after a focus/scroll change. Compare pixel distances, not PNG bytes.
+    return page.evaluate(async (pngs) => {
+      const pixels = await Promise.all(pngs.map(async png => {
+        const image = new Image(); image.src = `data:image/png;base64,${png}`
+        await image.decode()
+        const copy = document.createElement('canvas'); copy.width = image.width; copy.height = image.height
+        const ctx = copy.getContext('2d')!; ctx.drawImage(image, 0, 0)
+        return ctx.getImageData(0, 0, copy.width, copy.height).data
+      }))
+      return pixels[0].reduce((sum, value, i) => sum + Math.abs(value - pixels[1][i]), 0) / pixels[0].length
+    }, [before, after].map(png => png.toString('base64')))
+  }
+  await page.mouse.down()
+  await art.blur()
+  expect(await pictureDifference(beforeGrab)).toBeLessThan(.12)
+  await expect(detail).toHaveAttribute('aria-pressed', 'true')
+  await page.mouse.move(box.x + box.width / 2 + 12, box.y + box.height / 2)
+  expect(await pictureDifference(beforeGrab)).toBeGreaterThan(.4)
+  await art.dispatchEvent('pointercancel', { pointerId: 1 })
+  await page.mouse.up()
+  const download = async () => {
+    const keep = page.waitForEvent('download')
+    await page.getByRole('button', { name: /Save postcard/ }).dispatchEvent('click')
+    const image = await keep, stream = await image.createReadStream()
+    const chunks: Buffer[] = []
+    for await (const chunk of stream!) chunks.push(Buffer.from(chunk))
+    return Buffer.concat(chunks)
+  }
+  const previewSave = await download()
+  await expect(ready).toHaveText('In full bloom')
+  await expect(detail).toHaveAttribute('aria-pressed', 'true')
+  await detail.press('Enter') // Keep the rotation, switch back to whole bouquet.
+  expect(await sameBouquetArtwork(page, previewSave, await download())).toBe(true)
+  await replay.press('Enter')
+  await page.clock.fastForward(3150)
+  await art.blur()
+  expect(await pictureDifference(beforeGrab)).toBeLessThan(.12)
+  await expect(detail).toHaveAttribute('aria-pressed', 'false')
+  await expect(art).toHaveAttribute('data-seed', roseSeed)
+  await page.clock.fastForward(3400)
+  await expect(ready).toHaveText('In full bloom')
+  const finished = await art.screenshot()
+  await page.clock.fastForward(2000)
+  expect(await pictureDifference(finished)).toBeLessThan(.12)
+})
+
 test('reading the petals up close does not crop the saved gift or change the seed', async ({ page }) => {
   await openGift(page, 3)
   const art = page.locator('canvas')

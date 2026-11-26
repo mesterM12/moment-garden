@@ -120,16 +120,6 @@ export function foldShell(g: THREE.BufferGeometry, specimen: Specimen, layer: nu
           rm * Math.cos(sweep));
         continue;
       }
-      if (key === 'rose') {
-        const r = Math.hypot(x, z) || 1;
-        const budR = R * (.10 + .23 * belly + .074 * t + .029 * s * belly) * inner + .03 * r;
-        // The margins wind over one another, rather than meeting on straight
-        // meridians. Leave the basal socket in the same place in all poses.
-        const wind = (.61 + .16 * s) * ease(t), a = Math.atan2(x, z) + wind;
-        const radius = budR + (r - budR) * (1 - ease(t / .32));
-        const height = (.80 * t + .07 * s * t - .046 * s * s * lip) * R + y * (1 - .71 * ease(t));
-        shut.setXYZ(i, radius * Math.sin(a), height, radius * Math.cos(a));
-      }
       const sx = shut.getX(i), sy = shut.getY(i), sz = shut.getZ(i);
       if (cup) {
         // The tulip's shoulder bows OUT while its lip is still folded back
@@ -143,11 +133,10 @@ export function foldShell(g: THREE.BufferGeometry, specimen: Specimen, layer: nu
         bent.setXYZ(i, rm * Math.sin(a), sy + (y - sy) * reach + R * (.12 * lip - .08 * belly), rm * Math.cos(a));
         continue;
       }
-      // On a rose one shoulder leads and the trailing margin stays cupped.
-      const seam = key === 'rose' ? .24 * s * inner : .055 * s * variation;
+      const seam = .055 * s * variation;
       const spread = .81 + .095 * variation - (roll ? .48 : .52) * lip + seam * lip;
       const bx = sx + (x - sx) * spread, bz = sz + (z - sz) * spread;
-      const twist = (key === 'rose' ? .40 : roll ? .22 : .13 * variation) * lip;
+      const twist = (roll ? .22 : .13 * variation) * lip;
       const c = Math.cos(twist), d = Math.sin(twist);
       const lift = (roll ? .12 : .19) * inner * R * (belly + .65 * lip);
       let mx = bx * c + bz * d, my = sy + (y - sy) * spread + lift, mz = bz * c - bx * d;

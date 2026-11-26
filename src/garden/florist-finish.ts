@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { ease } from './bloom-score';
+import { ROSE_GUARDS } from './garden-rose';
 import { handAttribute, petalHand } from './petal-hand';
 import { foldCluster, foldShell } from './petal-fold';
 import type { MorphPetal, Specimen } from './types';
@@ -67,7 +68,7 @@ function tulipTepal(specimen: Specimen, j: number, mesh: MorphPetal['mesh'], cut
 // it doesn't draw from the geometry RNG, add lights, or run during animation.
 export function finishPetals(specimen: Specimen, petals: MorphPetal[], head: THREE.Group, cut = false): MorphPetal[] {
   const { key, rotation, length } = specimen;
-  const dense = key === 'dahlia' || key === 'ranunculus' || key === 'rose';
+  const dense = key === 'dahlia' || key === 'ranunculus';
   const tulip = key === 'tulip';
   const shade = new THREE.Color(specimen.palette.root);
   const tint = new THREE.Color();
@@ -82,6 +83,7 @@ export function finishPetals(specimen: Specimen, petals: MorphPetal[], head: THR
     for (const { first, end, voice, anchor } of blades) {
       if (!anchor) mark(first, end, petalHand(specimen.timestamp, j, voice));
     }
+    if (key === 'rose') continue; // The rose owns its pigment and both folded targets.
     const turn = (petalHand(specimen.timestamp, j, 0) >>> 16) / 32767.5 - 1;
     for (let i = 0; !tulip && i < pos.count; i++) {
       const t = uv.getY(i), s = 2 * uv.getX(i) - 1;
@@ -91,16 +93,7 @@ export function finishPetals(specimen: Specimen, petals: MorphPetal[], head: THR
       const rib = Math.cos(s * 8 + .67 * Math.sin(phase + t * 3));
       const crease = rib * rib * rib * rib;
       const lip = ease((t - .67) / .33);
-      if (key === 'rose') {
-        // Overlapping guards turn up into a scalloped bowl. The centre
-        // stays wound: its taller, narrower shoulders show more than a lip.
-        const radius = Math.hypot(x, z), cap = 1 - s * s;
-        const r = radius * (1 - .07 * s * s * t + .035 * turn * t);
-        const a = Math.atan2(x, z) + t * t * (.26 + .05 * turn + .064 * layer) + .083 * s * t;
-        const fold = (.21 + .04 * turn) * cap * t * t + .075 * shoulder * s * s
-          + .075 * s * t - lip * (.087 + .062 * Math.cos(4.1 * s + turn)) * cap;
-        pos.setXYZ(i, r * Math.sin(a), y + length * fold / (1 + .34 * layer), r * Math.cos(a));
-      } else if (key === 'calla' && !cut && i < blades[0].end) {
+      if (key === 'calla' && !cut && i < blades[0].end) {
         // The folded spathe has one high tail and a lower, reflexed apron.
         // Their asymmetry reads even when the surface veins are subpixel.
         const a = Math.atan2(x, z), apex = Math.max(0, -Math.cos(a)) ** 3;
@@ -121,12 +114,6 @@ export function finishPetals(specimen: Specimen, petals: MorphPetal[], head: THR
       const root = (1 - ease(t / .64)) * (.05 + .10 * crease);
       tint.fromBufferAttribute(color, i).lerp(shade, root)
         .multiplyScalar(.95 + .042 * shoulder + .039 * lip + .028 * rib * shoulder + .025 * Math.sin(phase));
-      if (key === 'rose') {
-        // The trailing flank tucks under its neighbour. Warm occlusion on
-        // the inner whorls keeps cream roses readable against cream paper.
-        const tuck = ease((s - .27) / .73) * t * .26 + (1 - t) ** 2 * .19;
-        tint.lerp(shade, tuck).multiplyScalar(1 - tuck * .44 - layer * .031 * (1 - lip));
-      }
       color.setXYZ(i, tint.r, tint.g, tint.b);
     }
     if (dense || key === 'calla') g.computeVertexNormals();
@@ -149,23 +136,25 @@ export function finishPetals(specimen: Specimen, petals: MorphPetal[], head: THR
       for (let i = next; i < uv.count; i++) uv.setXY(i, -1, -1);
     }
   }
-  // Dense dahlias used to submit a separate draw for every floret. Retain their
-  // layer order and split each ring into three overlapping opening cohorts.
-  if (key !== 'dahlia') return petals;
-  const rings = new Map<number, MorphPetal[]>();
-  petals.forEach((petal, i) => {
+  // Keep rose guards individually timed. Join the smaller folds (and dense
+  // dahlia florets) into staggered draws rather than submitting every sheet.
+  if (key !== 'dahlia' && key !== 'rose') return petals;
+  const groups = new Map<number, MorphPetal[]>();
+  const solo = key === 'rose' ? ROSE_GUARDS : 0;
+  for (let i = solo; i < petals.length; i++) {
+    const petal = petals[i];
     const cohort = petal.layer * 3 + i % 3;
-    if (!rings.has(cohort)) rings.set(cohort, []);
-    rings.get(cohort)!.push(petal);
-  });
-  return Array.from(rings.values(), ring => {
+    if (!groups.has(cohort)) groups.set(cohort, []);
+    groups.get(cohort)!.push(petal);
+  }
+  return [...petals.slice(0, solo), ...Array.from(groups.values(), ring => {
     const { layer, mesh: first } = ring[0];
     const geometry = mergeGeometries(ring.map(p => p.mesh.geometry));
     const mesh = new THREE.Mesh(geometry, first.material);
     head.add(mesh);
     for (const p of ring) { p.mesh.removeFromParent(); p.mesh.geometry.dispose(); }
     return { mesh, layer, offset: 0 };
-  });
+  })];
 }
 
 // A satin strip can turn on its edge and show a reverse; toruses and flat

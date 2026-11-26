@@ -10,7 +10,7 @@ const root = resolve(destination), art = join(root, 'cards')
 await mkdir(art, { recursive: true })
 const browser = await (engine === 'webkit' ? webkit : chromium).launch(engine === 'chromium' ? { args: ['--enable-unsafe-swiftshader'] } : {})
 const file = (i, suffix) => join(art, `${String(i).padStart(2, '0')}${suffix}.png`)
-const seed = 1748091600123, selected = [1, 28, 46], times = [700, 1250, 1900, 2700, 3600, 4650]
+const seed = 1748091600123, selected = [1, 28, 46], times = [900, 1450, 1800, 3300, 4800, 6505]
 try {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, serviceWorkers: 'block' })
   const open = page.getByRole('button', { name: 'Open your flowers', exact: true }), stage = page.locator('.flower-stage')
