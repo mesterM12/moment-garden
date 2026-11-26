@@ -13,6 +13,8 @@ import { buildFiller } from './filler';
 import { bladeBatches } from './blade-batches';
 import { cutStemGeometry, cutStemMaterial } from './cut-stem';
 import { foliageMaterial, StemLeaf } from './foliage';
+import { freePetal } from './free-petals';
+import { buildCenter } from './floral-centers';
 import { petalFields, petalSurface } from './petal-surface';
 import { createPostcardPng, postcardCamera } from './postcard-png';
 const WEBGL_ERROR = 'These flowers need WebGL 2 to bloom. Try a current browser with hardware acceleration enabled.';
@@ -50,8 +52,7 @@ export function leafVeins(document: Document, anisotropy: number) {
   return texture;
 }
 
-// A petal is a cupped, gently ruffled surface, not a flat billboard.
-function botanicalGeometry(length: number, width: number, palette: PetalPalette, random: Random, specimen: Specimen, isLeaf = false) {
+function leafGeometry(length: number, width: number, palette: PetalPalette, random: Random, specimen: Specimen) {
   const across = 18;
   const along = 28;
   const positions = [];
@@ -64,43 +65,24 @@ function botanicalGeometry(length: number, width: number, palette: PetalPalette,
   const asymmetry = (random() - 0.5) * 0.15;
   const phase = random() * Math.PI * 2;
   const recipe = specimen.recipe;
-  const fleck = new THREE.Color(palette.fleck || palette.root);
   const tint = new THREE.Color();
-  const broadLip = !isLeaf && (specimen.key === 'cosmos' || specimen.key === 'poppy' || specimen.key === 'daisy');
-  const poppy = !isLeaf && specimen.key === 'poppy';
-  const ink = new THREE.Color('#442131');
   for (let j = 0; j <= along; j++) {
     const t = j / along;
-    const profile = Math.pow(Math.max(0, Math.sin(Math.PI * t)), isLeaf ? (recipe.leaf === 'broad' ? 0.5 : 0.8) : recipe.shape);
-    const serration = isLeaf && recipe.leaf === 'serrated' ? 1 - 0.12 * Math.abs(Math.sin(t * 55)) : 1;
-    // Keep a finite distal lip on blunt ray florets, not a collapsed point.
-    const silhouette = (broadLip ? Math.max(profile, ease(t) * (poppy ? .63 : .52)) : profile) * serration;
+    const profile = Math.pow(Math.max(0, Math.sin(Math.PI * t)), recipe.leaf === 'broad' ? 0.5 : 0.8);
+    const serration = recipe.leaf === 'serrated' ? 1 - 0.12 * Math.abs(Math.sin(t * 55)) : 1;
+    const silhouette = profile * serration;
     for (let i = 0; i <= across; i++) {
       const u = i / across;
       const s = u * 2 - 1;
-      const ruffle = Math.sin(t * 23 + phase + s * 3) * (isLeaf ? 0.014 : recipe.ruffle) * Math.pow(Math.abs(s), 3) * t;
+      const ruffle = Math.sin(t * 23 + phase + s * 3) * 0.014 * Math.pow(Math.abs(s), 3) * t;
       const x = s * width * silhouette * (1 + asymmetry * s) + Math.sin(t * 4) * asymmetry * t;
-      const cosmosNotch = !isLeaf && specimen.key === 'cosmos' ? (Math.exp(-(((s - 0.42) / 0.10) ** 2)) + Math.exp(-(((s + 0.42) / 0.10) ** 2))) * 0.07 * ease((t - 0.78) / 0.22) : 0;
-      const z = length * t - cosmosNotch - (broadLip ? length * .094 * s * s * ease((t - .70) / .30) : 0);
       const ridge = Math.exp(-s * s * 26) * silhouette;
-      const folds = Math.cos(s * (poppy ? 10 : 6) + t * 1.2 + phase) * silhouette;
-      const y = isLeaf
-        ? .17 * Math.sin(Math.PI * t) + .055 * ridge - .15 * s * s * silhouette + .09 * s * t * silhouette + ruffle
-        : .16 * Math.sin(t * Math.PI) + recipe.curl * t * t + recipe.cup * s * s * silhouette + ruffle + (poppy ? .067 : .018) * folds;
-      positions.push(x, y, z);
+      const folds = Math.cos(s * 6 + t * 1.2 + phase) * silhouette;
+      const y = .17 * Math.sin(Math.PI * t) + .055 * ridge - .15 * s * s * silhouette + .09 * s * t * silhouette + ruffle;
+      positions.push(x, y, length * t);
       uvs.push(u, t);
-      const color = tint.copy(root).lerp(base, ease(t / 0.42));
-      const pattern = isLeaf ? 'gradient' : specimen.pattern;
-      const tipBlend = pattern === 'picotee'
-        ? ease((Math.abs(s) - 0.65) / 0.35) * 0.85 + ease((t - 0.82) / 0.18) * 0.5
-        : ease((t - 0.35) / 0.65) * 0.86;
-      color.lerp(tip, Math.min(1, tipBlend));
-      if (!isLeaf && (pattern === 'speckled' || specimen.key === 'lily') && t > 0.15 && t < 0.7) {
-        const spots = Math.sin(u * 93 + phase) * Math.sin(t * 127 + phase);
-        if (spots > 0.87) color.lerp(fleck, 0.75);
-      }
-      if (poppy) color.lerp(ink, .82 * (1 - ease((t - .06) / .24)) * (1 - .6 * s * s));
-      if (isLeaf) color.lerp(tip, .24 * ridge);
+      const color = tint.copy(root).lerp(base, ease(t / 0.42))
+        .lerp(tip, ease((t - 0.35) / 0.65) * 0.86).lerp(tip, .24 * ridge);
       const vein = 1 - Math.pow(Math.cos(s * 15 + t * 2 + phase), 8) * .068;
       color.multiplyScalar(vein * (.98 - .09 * s * s + .04 * folds));
       colors.push(color.r, color.g, color.b);
@@ -159,7 +141,7 @@ function routedStem(bottom: THREE.Vector3, knot: THREE.Vector3, middle: THREE.Ve
 
 function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envelopes: HeadEnvelope[], earlierStems: THREE.Vector3[][], plant: THREE.Group, materials: Set<THREE.Material>, textures: Textures) {
   const specimen = entry.specimen;
-  const { random, palette, recipe } = specimen;
+  const { random, recipe } = specimen;
   const petals: MorphPetal[] = [];
   const leaves: StemLeaf[] = [];
   const sepals: THREE.Mesh[] = [];
@@ -241,10 +223,13 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
     for (let i = 0; i < count; i++) {
       const stagger = layer * Math.PI / count;
       const angle = i / count * Math.PI * 2 + specimen.rotation + stagger;
-      const geometry = botanicalGeometry(specimen.length * size * (0.94 + random() * 0.12), specimen.width * size * (specimen.key === 'lily' && layer === 0 ? .76 : 1), palette, random, specimen);
-      const offset = random() * .04, openAngle = recipe.open - layer * .035 + (random() - .5) * .05;
-      blades.add(geometry, i, layer, angle, layer * recipe.lift + .009 * Math.sin(angle),
-        Math.max(.025, recipe.disk * .8 - layer * .025), openAngle, offset);
+      // Draw length, sway, phase, timing and lean in the original order.
+      const length = specimen.length * size * (0.94 + random() * 0.12);
+      const sway = random(), phase = random(), offset = random() * .04, lean = random();
+      const radius = Math.max(.025, recipe.disk * .8 - layer * .025);
+      const height = layer * recipe.lift + .009 * Math.sin(angle);
+      const geometry = freePetal(specimen, layer, radius, length, sway, phase, lean);
+      blades.add(geometry, i, layer, angle, height, radius, 0, offset);
     }
   }
   if (blades) petals.push(...blades.finish());
@@ -254,86 +239,13 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
     const ring = new THREE.Group();
     ring.rotation.y = i * Math.PI * 2 / sepalCount;
     ring.position.y = -0.07;
-    const sepal = new THREE.Mesh(botanicalGeometry(0.40, 0.07, leafColors, random, specimen, true), sepalMaterial);
+    const sepal = new THREE.Mesh(leafGeometry(0.40, 0.07, leafColors, random, specimen), sepalMaterial);
     ring.add(sepal);
     head.add(ring);
     sepals.push(sepal);
   }
 
-  const center = new THREE.Group();
-  head.add(center);
-  const diskRadius = recipe.disk;
-  const dark = recipe.center === 'seeds' || recipe.center === 'poppy';
-  const disk = new THREE.Mesh(new THREE.SphereGeometry(diskRadius, 32, 20), new THREE.MeshStandardMaterial({ color: dark ? '#3c281c' : '#a47720', roughness: 0.9 }));
-  disk.scale.set(1, 0.50, 1);
-  disk.position.y = 0.1;
-  if (['gold', 'seeds'].includes(recipe.center)) center.add(disk);
-  else { disk.geometry.dispose(); disk.material.dispose(); }
-  // Golden-angle phyllotaxis gives daisies and sunflowers real disk structure.
-  const pollenCount = recipe.center === 'seeds' ? 800 : 260;
-  const pollen = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 6, 5), new THREE.MeshStandardMaterial({ roughness: 0.8 }), pollenCount);
-  const dummy = new THREE.Object3D();
-  const color = new THREE.Color();
-  const honey = new THREE.Color('#c7913f');
-  for (let i = 0; i < pollenCount; i++) {
-    const radius = diskRadius * 0.97 * Math.sqrt(i / pollenCount);
-    const a = i * 2.3999632297;
-    const height = Math.sqrt(Math.max(0, 1 - (radius / diskRadius) ** 2));
-    dummy.position.set(Math.cos(a) * radius, 0.1 + height * diskRadius * 0.5, Math.sin(a) * radius);
-    const size = diskRadius / Math.sqrt(pollenCount) * (0.70 + random() * 0.12);
-    dummy.scale.set(size, size * 1.5, size);
-    dummy.updateMatrix();
-    pollen.setMatrixAt(i, dummy.matrix);
-    color.setHSL(0.10 + random() * 0.035, dark ? 0.40 : 0.85, dark ? 0.12 + random() * 0.13 : 0.4 + random() * 0.22);
-    if (dark) color.lerp(honey, .62 * ease((radius / diskRadius - .76) / .18));
-    pollen.setColorAt(i, color);
-  }
-  if (['gold', 'seeds'].includes(recipe.center)) center.add(pollen);
-  else { pollen.dispose(); pollen.geometry.dispose(); pollen.material.dispose(); }
-  if (recipe.center === 'poppy') {
-    const capsule = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 12), new THREE.MeshStandardMaterial({ color: '#7b9567', roughness: 0.9 }));
-    capsule.position.y = 0.17;
-    capsule.scale.y = 1.2;
-    center.add(capsule);
-    const capMaterial = new THREE.MeshStandardMaterial({ color: '#536b43', roughness: 0.95 });
-    for (let i = 0; i < 9; i++) {
-      const ridge = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.20, 5), capMaterial);
-      ridge.position.y = 0.33;
-      ridge.rotation.set(Math.PI / 2, 0, i * Math.PI / 9);
-      center.add(ridge);
-    }
-  }
-  if (recipe.center === 'stamens' || recipe.center === 'poppy') {
-    const stamenCount = recipe.center === 'poppy' ? 32 : 6;
-    const filamentMaterial = new THREE.MeshStandardMaterial({ color: recipe.center === 'poppy' ? '#443136' : '#bed27e', roughness: 0.7 });
-    const antherMaterial = new THREE.MeshStandardMaterial({ color: recipe.center === 'poppy' ? '#302532' : '#b77d20', roughness: 0.85 });
-    const antherGeometry = new THREE.SphereGeometry(1, 10, 8);
-    for (let i = 0; i < stamenCount; i++) {
-      const a = i / stamenCount * Math.PI * 2;
-      const radius = recipe.center === 'poppy' ? 0.31 : 0.2;
-      const height = recipe.center === 'poppy' ? 0.22 + random() * 0.08 : 0.55 + random() * 0.2;
-      const from = new THREE.Vector3(Math.cos(a) * radius * 0.5, 0.05, Math.sin(a) * radius * 0.5);
-      const to = new THREE.Vector3(Math.cos(a) * radius, height, Math.sin(a) * radius);
-      const filament = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.012, from.distanceTo(to), 5), filamentMaterial);
-      filament.position.copy(from).lerp(to, 0.5);
-      filament.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), to.clone().sub(from).normalize());
-      center.add(filament);
-      const anther = new THREE.Mesh(antherGeometry, antherMaterial);
-      anther.position.copy(to);
-      anther.scale.set(0.035, 0.025, recipe.center === 'poppy' ? 0.035 : 0.09);
-      anther.rotation.y = a;
-      center.add(anther);
-    }
-  }
-  if (recipe.center === 'stamens') {
-    const style = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.015, 0.83, 7), new THREE.MeshStandardMaterial({ color: '#b9cf79', roughness: 0.8 }));
-    style.position.y = 0.44;
-    center.add(style);
-    const stigma = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), new THREE.MeshStandardMaterial({ color: '#d7db95', roughness: 0.8 }));
-    stigma.position.y = 0.87;
-    center.add(stigma);
-  }
-  center.visible = recipe.center !== 'hidden' && specimen.key !== 'dahlia';
+  const center = buildCenter(specimen, head);
   // Keep insertion rhythms and the exact rest sockets out of the frame loop.
   const guard = leadingGuard(specimen.key, specimen.rotation, specimen.count);
   const earlyRose = index === 0 && specimen.key === 'rose';

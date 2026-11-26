@@ -15,7 +15,8 @@ export function bladeBatches(key: SpeciesKey, head: THREE.Group, material: THREE
     add(g: THREE.BufferGeometry, i: number, layer: number, yawAngle: number, height: number,
       radius: number, openAngle: number, offset: number) {
       handAttribute(g)(0, g.attributes.position.count, petalHand(timestamp, layer, i));
-      const { positions, normals } = foldBlade(g, key, openAngle, yawAngle, radius);
+      if (!g.morphAttributes.position) foldBlade(g, key, openAngle, yawAngle, radius);
+      const { position: positions = [], normal: normals = [] } = g.morphAttributes;
       matrix.multiplyMatrices(yaw.makeRotationY(yawAngle), hinge.makeRotationX(openAngle));
       matrix.setPosition(socket.set(Math.sin(yawAngle) * radius, height, Math.cos(yawAngle) * radius));
       normal.getNormalMatrix(matrix);
