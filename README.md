@@ -27,7 +27,7 @@
   <a href="LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/license-MIT-c18c75?style=flat-square" /></a>
 </p>
 
-Try the [live app](https://flowers.joojoo-lab.xyz/) or [open a reproducible bouquet](https://flowers.joojoo-lab.xyz/?bouquet=1970260fcfb). No account is required. The project is a self-hosted Next.js application with browser-side 3D rendering.
+[Grow a fresh bouquet](https://flowers.joojoo-lab.xyz/) or [open a red dahlia gift](https://flowers.joojoo-lab.xyz/?bouquet=v3-1970260fd29). No account is required. The project is a self-hosted Next.js app with browser-side 3D rendering.
 
 ## The garden
 
@@ -39,7 +39,7 @@ The garden gathers **7–10 stems from at least three flower types**, brings the
 
 ### Made to be explored
 
-- **Always a surprise.** One flower leads; companions gather at a shoulder and finer stems follow the sweep. The cut can be tall and open, low and densely gathered, or lean well past its binding. Seven color stories and three ties (bow, twine, wrap) finish the gift. There are no selectors.
+- **Always a surprise.** Each new seed varies the bouquet’s height, width, lean, and depth. One flower leads without dwarfing its neighbors; companion flowers and finer stems follow the sweep. Seven color stories and three ties (bow, twine, wrap) finish the gift. There are no selectors.
 - **15 botanical recipes.** Roses, tulips, dahlias, sunflowers, daisies, lilies, poppies, cosmos, ranunculus, calla lilies, orchids, irises, hydrangeas, anemones, and billy buttons.
 - **Different construction, not just recoloring.** Nested rose cups, rolled dahlia florets, trumpet-shaped calla lilies, ruffled irises, and hydrangea clusters.
 - **A 4.6-second bloom.** A leading stem opens first. Other flowers answer in overlapping waves: rose petals peel away, lily tips uncurl, and the rolled florets of a dahlia open from their edges. The arrangement settles to stillness. Use **Look closer** for a petal-level view.
@@ -51,15 +51,15 @@ The garden gathers **7–10 stems from at least three flower types**, brings the
 
 ### One garden, many bouquets
 
-Compare these same-scale examples from the florist generator: a tall, open calla, a low hydrangea cut, and a dahlia with lilies climbing one shoulder. They are individual seeds, not three presets.
+Three gifts from the live florist generator, captured at the same viewport size. Each arrangement comes from its own seed, not a preset.
 
 <p align="center">
   <img src="docs/images/florist-cuts.jpg" width="800" alt="Three hand-tied bouquets on cream paper, each with a different silhouette and focal flower" />
 </p>
 
-To open them locally, append `?bouquet=v3-1970260fcfc`, `?bouquet=v3-1970260fd17` or `?bouquet=v3-1970260fd29` to your app URL.
+Open the [blush calla](https://flowers.joojoo-lab.xyz/?bouquet=v3-1970260fcfc), [lavender hydrangea](https://flowers.joojoo-lab.xyz/?bouquet=v3-1970260fd17), or [red dahlia](https://flowers.joojoo-lab.xyz/?bouquet=v3-1970260fd29). The same `bouquet` query works on a local build.
 
-These four studies show some of the original flowers, which are still in the mix.
+These earlier studies show some of the original flowers, which are still in the mix.
 
 <p align="center">
   <img src="docs/images/bouquet-gallery.jpg" width="920" alt="Four procedural bouquets featuring roses, tulips, dahlias, and sunflowers, each with supporting flowers" />
@@ -73,11 +73,11 @@ These four studies show some of the original flowers, which are still in the mix
 
 ### Desktop & mobile
 
-The postcard design, shown with the same reproducible bouquet (`?bouquet=1970260fcfb`) on desktop and mobile. Screenshots capture the finished bouquet; the bloom plays when opened by pointer with motion enabled.
+The same [red dahlia bouquet](https://flowers.joojoo-lab.xyz/?bouquet=v3-1970260fd29) on desktop and mobile. The screenshots show the finished bouquet; pull the ribbon or tap the opener with motion enabled to watch it unfold.
 
 <table>
   <tr>
-    <td width="72%" valign="top"><img src="docs/images/desktop.png" alt="Rose-and-cream desktop postcard with The Last Light bouquet, sharing, replay, and save actions" /></td>
+    <td width="72%" valign="top"><img src="docs/images/desktop.png" alt="Desktop postcard with a red dahlia and cream companion flowers, with sharing, replay, and save actions" /></td>
     <td width="28%" valign="top"><img src="docs/images/mobile.png" alt="The same bouquet postcard in a narrow mobile layout" /></td>
   </tr>
 </table>
@@ -164,9 +164,9 @@ flowchart TD
 
 ### A shared seed, independent details
 
-[`src/garden/botany.ts`](src/garden/botany.ts) chooses cultivars for a timestamp and recipe version. In v3 the [florist](src/garden/florist.ts) samples the crown’s width, rise, tilt, lean, depth and fullness. It reserves a forward-facing focal bloom, then tries sockets along two unequal arcs. Mature-head clearance, front visibility and bounds guide a bounded search; it can turn a stem, trim a companion, try a free position in the crown or use a compact safe cut. Foliage tips follow the resulting shoulders, rather than imposing a fixed outline. Each stem gets a derived seed for its geometry, while repeated species share cultivar colors. Layout is chosen before tessellation. Flower-head envelopes keep the mature blooms apart in 3D. Stem paths make room around neighboring heads, and crowded leaves are shortened, redirected, or omitted.
+[`src/garden/botany.ts`](src/garden/botany.ts) chooses cultivars for a timestamp and recipe version. In v3 the [florist](src/garden/florist.ts) samples the crown’s width, rise, tilt, lean, depth and fullness. It reserves a forward-facing focal bloom, then tries sockets along two unequal arcs. Mature-head clearance, front visibility and bounds guide a bounded search; it can turn a stem, trim a companion, try a free position in the crown or use a compact safe cut. Foliage tips follow the resulting shoulders rather than imposing a fixed outline. The focal head is sized in relation to its largest companion; refining those proportions doesn’t move existing stem positions or reroll the gift. Each stem gets a derived seed for its geometry. Head envelopes guide placement and stem routing at selected stages of the bloom; crowded leaves are shortened, redirected, or omitted.
 
-Rose guards, tulip tepals, calla spathes and papery rays use [four vgpu-baked relief and pigment fields](tools/petal-bake/README.md). Each blade has its own seeded vein drift and blush. Warm side light, a cream-paper fill and the baked relief distinguish folded petals from their illuminated lips. WebGPU is used only to author the fields; the live bouquet, saved postcard and social preview use the same WebGL2 materials.
+Rose guards, tulip tepals, calla spathes and papery rays use [four vgpu-baked relief and pigment fields](tools/petal-bake/README.md). Each petal has its own seeded vein drift and blush. The shader gives petal backs a softer highlight and lets thin tissue catch warm backlight without adding a glow to every edge. WebGPU is used only to bake the fields; the live bouquet, saved postcard, and social preview all use the same WebGL 2 materials. Visitors don’t need WebGPU.
 
 Replay, rotation, and PNG export keep the existing bouquet. **Grow another** starts from a new timestamp and clears any bouquet seed from the address, so refreshing afterward is a fresh visit. The link carries the arrangement, not the sender’s camera angle. The self-hosted server gives messaging crawlers a 1200 × 630 PNG of that same seeded bouquet, fully bloomed in its canonical front view on the current stationery. The landscape layout adapts to the image dimensions; browser/GPU rendering can vary, so this is not a pixel-identical copy of the sender’s screen. The garden itself is client-only, while Next.js generates crawler metadata on the server; no server-rendered garden or external image service is involved.
 
@@ -180,17 +180,17 @@ Replay, rotation, and PNG export keep the existing bouquet. **Grow another** sta
 | --- | --- |
 | Rose | Nested angular-sector petals with overlapping lips and a closed center |
 | Tulip | Two interleaved whorls of three curved shells forming an upright cup |
-| Dahlia | 140 rolled florets arranged with golden-angle spacing over a rounded backing |
+| Dahlia | 97 florets arranged with golden-angle spacing, from tight central quills to broader outer petals |
 | Sunflower | Narrow ray petals surrounding a dark, densely sampled seed disk |
 | Daisy | Slender ray petals surrounding a gold floret center |
 | Poppy | Broad, ruffled petals around a capsule and dark stamens |
 | Lily | Six recurved tepals, dark flecks, elongated anthers, and a central style |
 | Cosmos | Eight broad rays with shallow tip notches and a golden center |
 | Ranunculus | Tightly layered, rounded petals |
-| Calla lily | A curled spathe wrapped around a spadix |
+| Calla lily | A tapered, overlapping spathe with a turned lip and a seated spadix |
 | Orchid | Broad petals and a distinct labellum |
 | Iris | Upright standards and outward falls |
-| Hydrangea | A rounded cluster of four-lobed florets |
+| Hydrangea | A cluster of florets with rounded, overlapping sepal lobes |
 | Anemone | Broad petals and a dark central boss |
 | Billy button | A sphere of tiny golden florets |
 
@@ -220,7 +220,7 @@ pnpm test:server                 # Vitest server project (also included above)
 pnpm start                       # Next.js production server on port 3000
 ```
 
-Open **http://localhost:3000/**. Open a shared URL such as `/?bouquet=1970260fcfb` in a private window and verify it restores the same bouquet. Try **Grow another** and refresh: the old seed should not return.
+Open **http://localhost:3000/**. Open a shared URL such as `/?bouquet=v3-1970260fd29` in a private window and verify it restores the same bouquet. A bare token such as `/?bouquet=1970260fcfb` should still restore its legacy arrangement. Try **Grow another** and refresh: the old seed should not return.
 
 To run the desktop and mobile browser checks against the built site, build first, then run:
 
@@ -268,6 +268,7 @@ Read [Contributing](CONTRIBUTING.md) for setup, checks, bug reports, and pull re
 ## Credits & license
 
 - Rendering: [Three.js](https://threejs.org/), MIT; its license is retained in [`vendor/THREE-LICENSE.txt`](vendor/THREE-LICENSE.txt).
+- Petal texture baking: [Vercel Labs vgpu](https://github.com/vercel-labs/vgpu); see the [WGSL source and bake instructions](tools/petal-bake/README.md).
 - Typography: locally hosted Instrument Serif and DM Sans under the SIL Open Font License; see [font sources](public/fonts/README.md), [Instrument Serif license](public/fonts/Instrument-Serif-OFL.txt), and [DM Sans license](public/fonts/DM-Sans-OFL.txt).
 - Sound: original, code-generated WAVs; see [sound sources and format](public/audio/README.md).
 - All bouquet geometry and screenshot examples are generated by this project.
