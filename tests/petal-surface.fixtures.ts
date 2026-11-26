@@ -134,6 +134,9 @@ export function probePetal() {
     const clear: [number, number] = [75, 123]
     renderer.shadowMap.type = THREE.PCFShadowMap
     renderer.shadowMap.enabled = true
+    // The production studio invalidates its cache by pose. This standalone
+    // scene has no studio owner: request the blocker’s initial depth pass.
+    renderer.shadowMap.needsUpdate = true
     mesh.receiveShadow = true
     const shadowed = draw([tip, clear], shadowScene)
     mesh.receiveShadow = false
