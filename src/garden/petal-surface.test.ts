@@ -10,7 +10,7 @@ import { petalFields, petalSurface } from './petal-surface';
 import { petalHand } from './petal-hand';
 import field from './petal-field.generated.json';
 
-test('four linear, socket-first fields share by tissue, never across mip chains', () => {
+test('four linear, socket-first fields share by tissue and converge to a flat slope at distant mips', () => {
   const source = readFileSync(new URL('../../tools/petal-bake/petal.wgsl', import.meta.url));
   expect(createHash('sha256').update(source).digest('hex')).toBe(field.source);
   const bank = petalFields(2);
@@ -18,21 +18,32 @@ test('four linear, socket-first fields share by tissue, never across mip chains'
   const disposed = vi.fn();
   for (const key of ['calla', 'tulip', 'rose', 'cosmos'] as const) {
     const mat = petalSurface(createSpecimen(5, key), bank), tex = bank.forSpecies(key);
-    const rg = tex.image.data!;
-    expect(rg.length).toBe(2 * field.width * field.height);
-    seen.add(createHash('sha256').update(rg).digest('hex'));
-    expect(tex.format).toBe(THREE.RGFormat);
+    const rgba = tex.image.data!;
+    expect(rgba.length).toBe(4 * field.width * field.height);
+    expect(rgba.length).toBeLessThanOrEqual(64 * 1024);
+    seen.add(createHash('sha256').update(rgba).digest('hex'));
+    expect(tex.format).toBe(THREE.RGBAFormat);
+    expect(tex.colorSpace).toBe(THREE.NoColorSpace);
     expect(tex.flipY).toBe(false);
     expect(tex.wrapS).toBe(THREE.ClampToEdgeWrapping);
+    expect(tex.wrapT).toBe(THREE.ClampToEdgeWrapping);
+    expect(tex.minFilter).toBe(THREE.LinearMipmapLinearFilter);
     expect(tex.generateMipmaps).toBe(true);
     expect(mat.bumpMap).toBe(tex);
     tex.addEventListener('dispose', disposed);
-    let socket = 0, tip = 0;
+    let socket = 0, tip = 0, u = 0, v = 0;
+    const area = field.width * field.height;
     for (let x = 0; x < field.width; x++) {
-      socket += rg[2 * x + 1];
-      tip += rg[2 * (field.width * (field.height - 1) + x) + 1];
+      socket += rgba[4 * x + 2];
+      tip += rgba[4 * (field.width * (field.height - 1) + x) + 2];
     }
-    expect((socket - tip) / field.width).toBeGreaterThan(70);
+    for (let i = 0; i < area; i++) {
+      u += rgba[4 * i];
+      v += rgba[4 * i + 1];
+    }
+    expect((socket - tip) / field.width).toBeGreaterThan(65);
+    expect(Math.abs(u / area - 128)).toBeLessThan(1);
+    expect(Math.abs(v / area - 128)).toBeLessThan(1);
     mat.dispose();
   }
   expect(seen.size).toBe(4);

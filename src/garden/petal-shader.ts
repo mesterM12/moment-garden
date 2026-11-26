@@ -1,69 +1,85 @@
-import type { Color, WebGLProgramParametersWithUniforms } from 'three';
+import { ShaderChunk, type Color, type WebGLProgramParametersWithUniforms } from 'three';
 
 type PetalOptics = {
-  root: Color;
-  wash: number;
+  absorption: Color;
+  pigmentBias: number;
   reverseRoughness: number;
   opticalDepth: number;
+  packingRoughness: number;
 };
 
+// Insert just after Three has applied directional shadow visibility. Sharing
+// directLight.color gives reflection and transmission the *same* PCF result,
+// also when shadows are disabled or a receiver opts out. Keep Three's loop,
+// guard, and shadow type handling verbatim; a browser probe exercises both
+// the no-shadow and PCF variants against the installed Three.
+const directionalAnchor = '\t\tgetDirectionalLightInfo( directionalLight, directLight );';
+const directAnchor = '\t\tRE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );';
+const directionalIndex = ShaderChunk.lights_fragment_begin.indexOf(directionalAnchor);
+const directIndex = ShaderChunk.lights_fragment_begin.indexOf(directAnchor, directionalIndex);
+if (directionalIndex < 0 || directIndex < 0) throw new Error('Three directional light chunk changed; check petal transmission');
+const tissueLights = ShaderChunk.lights_fragment_begin.slice(0, directIndex) + `
+    reflectedLight.directDiffuse += directLight.color * throughPigment
+      * pow2(max(0.0, -dot(nonPerturbedNormal, directLight.direction)));
+` + ShaderChunk.lights_fragment_begin.slice(directIndex);
+
 export function shadePetal(shader: WebGLProgramParametersWithUniforms, optics: PetalOptics) {
-  shader.uniforms.petalRoot = { value: optics.root };
-  shader.uniforms.petalWash = { value: optics.wash };
+  shader.uniforms.petalAbsorption = { value: optics.absorption };
+  shader.uniforms.petalPigmentBias = { value: optics.pigmentBias };
   shader.uniforms.petalReverseRoughness = { value: optics.reverseRoughness };
   shader.uniforms.petalOpticalDepth = { value: optics.opticalDepth };
+  shader.uniforms.petalPackingRoughness = { value: optics.packingRoughness };
   shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>
     attribute vec2 petalHand;
     varying vec3 vPetalBlade;`).replace('#include <uv_vertex>', `#include <uv_vertex>
     vPetalBlade = vec3(uv, petalHand.y);
-    // Move the veins within each blade, not the lip or the socket. Solid
-    // details (e.g. the calla's spadix) keep their negative UV sentinel.
+    // Break repetition inside the blade; its socket and lip remain registered.
+    // Solid details sharing the mesh keep their negative UV sentinel.
     float blade = step(0.0, uv.y);
     float bow = 4.0 * uv.y * (1.0 - uv.y) * uv.x * (1.0 - uv.x);
-    vBumpMapUv.x += (petalHand.x - 0.5) * 0.68 * bow * blade;
-    vBumpMapUv.y += (petalHand.y - 0.5) * 0.36 * uv.y * (1.0 - uv.y) * blade;`);
+    vBumpMapUv.x += ((petalHand.x - 0.5) * 1.09 * bow + (petalHand.y - 0.5) * .27 * uv.x * (1.0 - uv.x)) * blade;
+    vBumpMapUv.y += (petalHand.y - 0.5) * 0.83 * uv.y * (1.0 - uv.y) * blade;
+    // Deterministic handedness reverses the whole sheet, not individual veins.
+    vBumpMapUv.x = mix(vBumpMapUv.x, 1.0 - vBumpMapUv.x, blade * step(0.5, petalHand.x));`);
   shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>
     varying vec3 vPetalBlade;
-    uniform vec3 petalRoot;
-    uniform float petalWash;
+    uniform vec3 petalAbsorption;
+    uniform float petalPigmentBias;
     uniform float petalReverseRoughness;
-    uniform float petalOpticalDepth;`).replace('#include <color_fragment>', `#include <color_fragment>
+    uniform float petalOpticalDepth;
+    uniform float petalPackingRoughness;`).replace('#include <color_fragment>', `#include <color_fragment>
     float blade = step(0.0, vPetalBlade.y);
-    vec2 tissue = texture2D(bumpMap, vBumpMapUv).rg;
-    float density = smoothstep(0.12, 0.79, tissue.g);
-    float socket = 1.0 - smoothstep(0.05, 0.65, vPetalBlade.y);
+    vec4 tissue = texture2D(bumpMap, vBumpMapUv);
     float reverse = gl_FrontFacing ? 0.0 : blade;
-    float blush = petalWash * (0.38 * socket + 0.62 * density) * mix(0.78, 1.20, vPetalBlade.z);
-    diffuseColor.rgb = mix(diffuseColor.rgb, petalRoot, blade * blush);
-    diffuseColor.rgb *= 1.0 - blade * (0.10 * socket + 0.06 * density);`)
+    float packing = tissue.a - 0.55;
+    // Beer-like relative absorption around a neutral concentration. Rich
+    // cultivars deepen toward their own hue; near-neutral petals keep theirs.
+    // No painted highlights or replacement of geometry's cultivar gradients.
+    float load = blade * (tissue.b - 0.46 + petalPigmentBias + 0.15 * (vPetalBlade.z - 0.5) - 0.04 * reverse);
+    diffuseColor.rgb *= exp2(-load * petalAbsorption);`)
     .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
-      roughnessFactor = clamp(roughnessFactor + blade * (0.12 * density - 0.045) + petalReverseRoughness * reverse, 0.23, 1.0);`)
-    // Reuse the filtered height lookup: no extra samples for the slopes.
-    .replace('#include <normal_fragment_maps>', `vec2 relief = vec2(dFdx(tissue.r), dFdy(tissue.r));
-      vec3 grainNormal = perturbNormalArb(-vViewPosition, normal, bumpScale * (1.0 - 0.50 * reverse) * relief, faceDirection);
-      normal = blade > 0.0 ? grainNormal : normal;`)
-    .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+      roughnessFactor = clamp(roughnessFactor + blade * petalPackingRoughness * packing + petalReverseRoughness * reverse, 0.28, 1.0);`)
+    .replace('#include <normal_fragment_maps>', `
+      // Pre-filtered slopes, not derivatives of a varying mip level. The
+      // UV Jacobian follows the free blade as it folds and reverses. Use the
+      // larger basis length so tapering sockets don't amplify the grain.
+      vec2 du = dFdx(vBumpMapUv), dv = dFdy(vBumpMapUv);
+      vec3 qx = dFdx(-vViewPosition), qy = dFdy(-vViewPosition);
+      vec3 across = cross(qy, normal) * du.x + cross(normal, qx) * dv.x;
+      vec3 along = cross(qy, normal) * du.y + cross(normal, qx) * dv.y;
+      float scale = inversesqrt(max(1e-18, max(dot(across, across), dot(along, along))));
+      vec2 slope = (tissue.rg - vec2(128.0 / 255.0)) * bumpScale;
+      normal = normalize(normal - blade * scale * (1.0 - 0.58 * reverse) * (across * slope.x + along * slope.y));`)
+    .replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>
+      #ifdef USE_SHEEN
+        material.sheenColor *= 1.0 + blade * packing * 0.86 - 0.76 * reverse;
+      #endif`)
+    .replace('#include <lights_fragment_begin>', `
       #if NUM_DIR_LIGHTS > 0
-        // Both the distal lip and the free sides thin; the buried socket and
-        // dark vascular bundles (G) absorb more. Use unwarped blade UVs for
-        // the shape and the same mip-filtered sample as the reflected color.
-        float lip = smoothstep(0.60, 1.0, vPetalBlade.y);
-        float side = smoothstep(0.33, 0.50, abs(vPetalBlade.x - 0.50)) * (1.0 - socket);
-        float margin = lip + side - lip * side;
-        float depth = petalOpticalDepth * mix(1.55, 0.50, margin) + 1.65 * density + 1.35 * socket;
-        float transmittance = blade * exp2(-depth);
-        // Attenuate the existing cultivar color, especially the channels
-        // its pigment already absorbs. No independent cream highlight.
-        vec3 transmittedPigment = diffuseColor.rgb * mix(vec3(0.55), sqrt(clamp(diffuseColor.rgb, 0.0, 1.0)), 0.45);
-        vec3 through = vec3(0.0);
-        #pragma unroll_loop_start
-        for ( int i = 0; i < NUM_DIR_LIGHTS; i ++ ) {
-          // The light vectors and the face-oriented, unbumped normal are
-          // already in view space. Grazing rays expose less area and have a
-          // longer path. No view/Fresnel term, emissive color or screen pass.
-          through += directionalLights[ i ].color * pow2(max(0.0, -dot(nonPerturbedNormal, directionalLights[ i ].direction)));
-        }
-        #pragma unroll_loop_end
-        reflectedLight.directDiffuse += through * (RECIPROCAL_PI * transmittance) * transmittedPigment;
-      #endif`);
+        float socket = 1.0 - smoothstep(0.04, 0.65, vPetalBlade.y);
+        float thin = smoothstep(0.24, 1.0, vPetalBlade.y);
+        float depth = petalOpticalDepth * mix(1.40, 0.52, thin) + 1.8 * packing + 1.7 * socket;
+        vec3 throughPigment = diffuseColor.rgb * exp2(-depth - 0.24 * petalAbsorption) * (blade * RECIPROCAL_PI);
+      #endif
+      ${tissueLights}`);
 }
