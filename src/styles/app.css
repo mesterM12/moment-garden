@@ -166,6 +166,7 @@
 .flower-motion-note { margin: .15rem auto 0; color: var(--muted); font-size: .8125rem; text-wrap: balance; }
 .flower-action-feedback { max-inline-size: 38ch; color: var(--muted); font-size: .8125rem; line-height: 1.5; text-wrap: balance; }
 .flower-card-footer .flower-action-feedback:not(:empty) { flex-basis: 100%; margin-block-start: .3rem; }
+.flower-secondary .flower-action-feedback:not(:empty) { flex-basis: 100%; max-inline-size: none; margin-block: .15rem; }
 .flower-action-feedback:empty { position: absolute; }
 .flower-app .flower-manual-share { width: min(100%, 26rem); margin-block: .5rem .75rem; gap: .5rem; text-align: start; }
 .flower-manual-share [data-slot="field-label"] { font-size: .8125rem; font-weight: 500; }
@@ -233,7 +234,8 @@
   .flower-identity p { margin-block-start: .125rem; }
   .flower-garden { margin-block-start: .75rem; }
   .flower-secondary { margin-block-start: .25rem; gap: .25rem; }
-  .flower-secondary .flower-control { padding-inline: .5rem; }
+  .flower-app .flower-secondary .flower-control { padding-inline: .25rem; font-size: .8125rem; }
+  .flower-secondary .flower-control > svg { display: none; }
   .flower-stem-note { margin-block-start: .25rem; font-size: .9375rem; line-height: 1.3; }
 }
 @media (max-width: 430px) {
@@ -242,6 +244,7 @@
 }
 @media (max-width: 375px) {
   .flower-time { display: none; }
+  .flower-app .flower-secondary .flower-control { padding-inline: .125rem; gap: .125rem; font-size: .75rem; }
 }
 @container (max-width: 22rem) {
   .flower-stage-controls { column-gap: .25rem; }

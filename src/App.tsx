@@ -6,6 +6,7 @@ import { ArrowDownToLine, Move, RotateCcw, RotateCw, Sprout, ZoomIn, ZoomOut } f
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ActionFeedback, ActionIcon } from './components/ActionFeedback'
 import { GiftCover } from './components/GiftCover'
+import { SaveBloomGif } from './components/SaveBloomGif'
 import { ShareFlowers } from './components/ShareFlowers'
 import { SoundToggle } from './components/SoundToggle'
 import { Button } from './components/ui/button'
@@ -206,6 +207,7 @@ export default function App() {
     }
   }
 
+  const gifGift = activeSeed.current
   const kinds = bouquet ? flowerNames.format(bouquet.kinds) : ''
   const date = bouquet ? new Date(bouquet.timestamp) : null
 
@@ -312,6 +314,12 @@ export default function App() {
                 render={<Button variant="ghost" className="flower-control flower-render-control" />}
               ><RotateCw aria-hidden="true" />Replay bloom</ActionButton>
             )}
+            <SaveBloomGif
+              key={`${gifGift.version}-${gifGift.timestamp}`}
+              gift={gifGift}
+              ready={ready}
+              isCurrent={() => activeSeed.current === gifGift && canvas.current !== null}
+            />
           </div>
           {reducedMotion && ready ? <p className="flower-motion-note">Bloom animation is off with your reduced-motion setting.</p> : null}
           {bouquet ? <p className="flower-stem-note">{bouquet.flowerCount} stems with {kinds}</p> : null}
