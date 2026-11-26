@@ -25,7 +25,7 @@ test('the default v2 plan repeats for the same timestamp, including independent 
   assert.equal(new Set(a[1].map(stream => JSON.stringify(stream))).size, a[0].flowers.length);
   assert.notDeepEqual(plain(a[0]), plain(createBouquet(seed + 1)));
   assert.notDeepEqual(plain(a[0]), plain(createBouquet(seed, 1)));
-  for (const version of [0, 3, '1', '2', null, true, 1.5, NaN, Infinity]) {
+  for (const version of [0, 4, '1', '2', null, true, 1.5, NaN, Infinity]) {
     // @ts-expect-error Deliberately exercise invalid input at the runtime boundary.
     assert.throws(() => createBouquet(seed, version), RangeError);
   }

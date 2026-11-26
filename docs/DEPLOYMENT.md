@@ -83,7 +83,7 @@ For a canonical valid `?bouquet=` token, App Router **`generateMetadata`** suppl
 og/<16hex-build-ID-hash>/<bouquet-token>.png
 ```
 
-Pages without a valid gift token use the fixed default preview seed `1970260fcfb`; they cannot preview a fresh timestamp that the browser has not chosen yet. Valid shared pages use their own seed. The preview always uses the canonical front view, not a saved sender camera angle.
+Pages without a valid gift token use the fixed default preview seed `1970260fcfb`; they cannot preview a fresh timestamp that the browser has not chosen yet. Valid shared pages use their full token: `<hex>.png` for bare legacy links or `v3-<hex>.png` for new cuts. The recipe version is separate from the build namespace. The preview always uses the canonical front view, not a saved sender camera angle.
 
 The version is the first 16 hexadecimal characters of the SHA-256 hash of `.next/BUILD_ID`, so each new Next.js build gets its own image namespace. PNGs are served as `image/png`, at **1200 × 630**, with immutable caching. Social platforms cache independently; request a platform re-scrape when necessary. An image URL for an old build version is not a permanent archive: an old version may no longer be served after an update. The original shared page URL still regenerates that seed with the current build.
 
@@ -95,13 +95,14 @@ The supported deployment needs the Next.js server; it is not a static export. A 
 
 ## Shared-link contract
 
-The gift contract is the app path plus a canonical lowercase hexadecimal timestamp, for example:
+A gift uses one `bouquet` parameter: a lowercase hexadecimal timestamp for legacy v2 or `v3-` followed by the timestamp for the florist generator. For example:
 
 ```text
 https://flowers.example/moment-garden/?bouquet=1970260fcfb
+https://flowers.example/moment-garden/?bouquet=v3-1970260fcfb
 ```
 
-Keep the path and query intact in your reverse proxy. The token format has not changed: no leading zeros except `0`, a nonnegative millisecond Unix timestamp within the JavaScript `Date` range. Seeded generation needs no server-side gift lookup.
+Keep the path and query intact in your reverse proxy. Do not strip `v3-` or rewrite bare links: the same timestamp in these two URLs produces different bouquets. The timestamp rules have not changed: no leading zeros except `0`, a nonnegative millisecond Unix timestamp within the JavaScript `Date` range. Seeded generation needs no server-side gift lookup.
 
 When changing domains or app paths, existing shared URLs need redirects at their original host. Preserve the bouquet query when redirecting so recipients open the same arrangement.
 
@@ -128,7 +129,7 @@ curl --fail https://flowers.example/moment-garden/healthz
 curl --fail 'https://flowers.example/moment-garden/?bouquet=1970260fcfb'
 ```
 
-Use `/healthz` only for a root build; subpath builds expose health under that subpath. Inspect the fetched HTML, not just the live DOM: `og:image` and `twitter:image` must name the public HTTPS versioned PNG for `1970260fcfb`, with no localhost address. Fetch that exact URL, verify HTTP 200, `Content-Type: image/png`, and 1200 × 630 dimensions, then view it to confirm the seeded arrangement on stationery. Try a second valid seed and confirm its image URL and bouquet differ. Verify that an invalid shared-page token still loads the app with HTTP 200, default preview metadata, and an invalid-link notice followed by a fresh bouquet. Invalid image tokens should return HTTP 404 without starting Chromium; invalid internal capture tokens should produce the capture-readiness error state instead of a ready image. Re-request a completed image to check the persisted cache path.
+Use `/healthz` only for a root build; subpath builds expose health under that subpath. Inspect the fetched HTML, not just the live DOM: `og:image` and `twitter:image` must name the public HTTPS versioned PNG for `1970260fcfb`, with no localhost address. Fetch that exact URL, verify HTTP 200, `Content-Type: image/png`, and 1200 × 630 dimensions, then view it to confirm the seeded arrangement on stationery. Try the same timestamp with the `v3-` prefix and confirm its image URL, ETag and bouquet differ. Verify that an invalid shared-page token still loads the app with HTTP 200, default preview metadata, and an invalid-link notice followed by a fresh bouquet. Invalid image tokens should return HTTP 404 without starting Chromium; invalid internal capture tokens should produce the capture-readiness error state instead of a ready image. Re-request a completed image to check the persisted cache path.
 
 In a browser, check that:
 

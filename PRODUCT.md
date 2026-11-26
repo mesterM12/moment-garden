@@ -16,7 +16,7 @@ Make it easy to give someone a one-of-a-kind botanical postcard. The gift works 
 
 ## Positioning
 
-Flowers for You grows a full-color 3D arrangement from the timestamp rather than asking the sender to compose one or pick a stock image. New bouquets use 7–10 stems from 3–4 flower types, drawn from 15 procedural varieties. Five arrangements and seven color stories give bouquets different silhouettes and moods, with a bow, twine, or paper wrap to finish. Species-aware shapes and colors should make the flowers recognizable, and the recipient can explore the live bouquet from any angle.
+Flowers for You grows a full-color 3D arrangement from the timestamp rather than asking the sender to compose one or pick a stock image. New bouquets use 7–10 stems from 3–4 flower types, drawn from 15 procedural varieties. Each new bouquet is composed around a single focal bloom. The height and breadth of its crown, lean, grouping, fullness, depth and stem attitudes vary continuously; seven color stories and a bow, twine, or paper wrap finish the arrangement. Species-aware shapes and colors should make the flowers recognizable, and the recipient can explore the live bouquet from any angle.
 
 ## Operating Context
 
@@ -27,7 +27,7 @@ The postcard runs in desktop and mobile browsers and requires WebGL 2 for the 3D
 - Fresh bouquets are always a surprise. Keep flower-type and color selectors out of the experience. The cover note is fixed, not a custom message from the sender.
 - Replay and sharing preserve the current arrangement. The recipient opens it from the front, regardless of the sender’s viewing angle. The PNG preserves the viewing angle but always frames the whole bouquet, even when saved from a close-up.
 - **Send flowers** opens the native share sheet when available, otherwise copies the link or offers it for manual copying. Feedback confirms that the link was copied or the postcard is ready; don’t imply that a gift was delivered.
-- Flower geometry is generated in code rather than loaded from model files or photographs. Bouquet state stays in the browser; the lowercase hexadecimal timestamp in the URL reproduces the same arrangement without a server lookup, including for existing links.
+- Flower geometry is generated in code rather than loaded from model files or photographs. Bouquet state stays in the browser; the share token reproduces the same arrangement without a server lookup. New tokens prefix the lowercase hexadecimal timestamp with `v3-`; bare timestamps retain the earlier five-arrangement recipe.
 - The React and TypeScript app uses the Next.js 16 App Router. The supported Docker deployment runs Node.js 26 LTS, the Next.js standalone server, and Playwright Chromium for social-preview images of the same seeded bouquet. The garden renders in the browser; the server supplies initial social metadata and preview images without a bouquet database. The [live app](https://flowers.joojoo-lab.xyz/) serves the domain root. Releases are manual; no GitHub Actions workflows are configured. The public source repository is [mesterM12/moment-garden](https://github.com/mesterM12/moment-garden).
 
 ## Home Screen App

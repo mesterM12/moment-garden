@@ -5,7 +5,7 @@ import { baseURL, browserProjects, createBrowserTest } from './browser.fixtures'
 describe.each(browserProjects)('$name', ({ options, isMobile }) => {
 const test = createBrowserTest(options, isMobile)
 
-const tokens = ['1970260fcfb', '1970260fcfc']
+const tokens = ['1970260fcfb', 'v3-1970260fcfb']
 
 for (const token of tokens) {
   test(`shared bouquet ${token} has dynamic metadata without JavaScript`, async ({ page, request }) => {
@@ -77,7 +77,7 @@ test('metadata is complete in initial HTML for arbitrary user agents with JavaSc
   }
 })
 
-test('different shared bouquets produce different PNGs', async ({ request }) => {
+test('the same timestamp in legacy and florist links produces distinct PNGs', async ({ request }) => {
   const digests: string[] = []
   for (const token of tokens) {
     const html = await (await request.get(`/?bouquet=${token}`)).text()

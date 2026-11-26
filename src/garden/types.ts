@@ -77,7 +77,9 @@ export interface BouquetPlan {
 }
 
 export interface ExpandedBouquetPlan extends BouquetPlan {
-  version: 2;
+  version: 2 | 3;
+  /** Foliage endpoints relative to the knot, in arrangement order. Legacy cuts use fixed sprays. */
+  sprays?: [x: number, height: number, z: number][];
   arrangement: { id: string; label: string };
   palette: { id: string; label: string };
   tie: { style: 'bow' | 'twine' | 'wrap'; color: string };
@@ -111,7 +113,7 @@ export interface GardenEngineOptions {
 
 export interface GardenEngine {
   /** Prepare the seeded bouquet at its opening pose, without starting the bloom. */
-  show(timestamp: number): BouquetInfo;
+  show(timestamp: number, version?: 2 | 3): BouquetInfo;
   bloom(options?: { instant?: boolean }): void;
   resetView(options?: { instant?: boolean }): void;
   setCloseView(close: boolean, options?: { instant?: boolean }): void;

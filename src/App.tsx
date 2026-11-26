@@ -12,7 +12,7 @@ import { Button } from './components/ui/button'
 import type { BouquetInfo, GardenEngine } from './garden/types'
 import { getReducedMotion, useReducedMotion } from './hooks/useReducedMotion'
 import { useOpeningSound } from './hooks/useOpeningSound'
-import { create, read, withoutBouquet } from './lib/bouquet-link'
+import { create, FRESH_VERSION, type Gift, read, withoutBouquet } from './lib/bouquet-link'
 import { publicPath } from './lib/site'
 
 const dates = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
@@ -33,7 +33,8 @@ function focusPreview(element: HTMLElement, pointer = false) {
 export default function App() {
   const [initial] = useState(() => {
     const incoming = read(window.location.search)
-    return { incoming, seed: incoming.status === 'valid' ? incoming.timestamp : Date.now() }
+    const gift: Gift = incoming.status === 'valid' ? incoming : { timestamp: Date.now(), version: FRESH_VERSION }
+    return { incoming, gift }
   })
   const [linkStatus, setLinkStatus] = useState(initial.incoming.status)
   const [bouquet, setBouquet] = useState<BouquetInfo | null>(null)
@@ -52,8 +53,8 @@ export default function App() {
   const canvas = useRef<HTMLCanvasElement>(null)
   const fallback = useRef<HTMLDivElement>(null)
   const engine = useRef<GardenEngine | null>(null)
-  const activeSeed = useRef(initial.seed)
-  const lastFreshSeed = useRef(initial.incoming.status === 'valid' ? 0 : initial.seed)
+  const activeSeed = useRef(initial.gift)
+  const lastFreshSeed = useRef(initial.incoming.status === 'valid' ? 0 : initial.gift.timestamp)
   const opened = useRef(false)
   const focusTarget = useRef<'preview' | 'pointer-preview' | 'fallback' | null>(null)
   const lastStatus = useRef('')
@@ -107,7 +108,7 @@ export default function App() {
         })
         engine.current = garden
         garden.setReducedMotion(getReducedMotion())
-        setBouquet(garden.show(activeSeed.current))
+        setBouquet(garden.show(activeSeed.current.timestamp, activeSeed.current.version))
       } catch {
         if (canceled) return
         engine.current = null
@@ -133,8 +134,8 @@ export default function App() {
   const sealed = cover === 'closed'
   const unavailable = Boolean(error) || contextLost
   const ready = Boolean(bouquet) && !unavailable
-  const shareSeed = bouquet?.timestamp ?? (initial.incoming.status === 'valid' ? initial.seed : null)
-  const shareUrl = shareSeed === null ? null : create(window.location.href, shareSeed)
+  const shareSeed = bouquet?.timestamp ?? (initial.incoming.status === 'valid' ? initial.gift.timestamp : null)
+  const shareUrl = shareSeed === null ? null : create(window.location.href, shareSeed, activeSeed.current.version)
 
   useLayoutEffect(() => {
     if (sealed) return
@@ -160,13 +161,13 @@ export default function App() {
     const garden = engine.current
     if (!garden || !ready) return
     let seed = Math.max(lastFreshSeed.current + 1, Date.now())
-    if (seed === activeSeed.current) seed += 1
+    if (seed === activeSeed.current.timestamp) seed += 1
     lastFreshSeed.current = seed
     stopSound()
     const address = withoutBouquet(window.location.href)
     try {
-      const next = garden.show(seed)
-      activeSeed.current = seed
+      const next = garden.show(seed, FRESH_VERSION)
+      activeSeed.current = { timestamp: seed, version: FRESH_VERSION }
       setBouquet(next)
       setCloseView(false)
       setSaveResult(null)
@@ -183,9 +184,9 @@ export default function App() {
 
   async function savePostcard() {
     const garden = engine.current
-    const seed = activeSeed.current
+    const seed = activeSeed.current.timestamp
     if (!garden || !ready) return
-    const isCurrent = () => engine.current === garden && activeSeed.current === seed
+    const isCurrent = () => engine.current === garden && activeSeed.current.timestamp === seed
     setSaveResult(null)
     try {
       const image = await garden.exportPng()
@@ -293,7 +294,7 @@ export default function App() {
         </section>
 
         <div className="flower-garden" data-sealed={sealed ? '' : undefined} data-pointer-opened={pointerOpened ? '' : undefined} inert={sealed}>
-          <ShareFlowers key={shareSeed} url={shareUrl} isCurrent={() => activeSeed.current === shareSeed && canvas.current !== null} />
+          <ShareFlowers key={shareSeed} url={shareUrl} isCurrent={() => activeSeed.current.timestamp === shareSeed && canvas.current !== null} />
           <div className="flower-secondary">
             <ActionButton
               disabled={!ready}

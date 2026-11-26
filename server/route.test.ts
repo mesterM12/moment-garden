@@ -29,7 +29,7 @@ describe('Next image route', () => {
     expect(runtime.get).toHaveBeenCalledExactlyOnceWith(VERSION, '1970260fcfb')
   })
 
-  it.each(['0', (8640000000000000).toString(16)])('accepts canonical boundary seed %s', async token => {
+  it.each(['0', 'v3-0', 'v3-1970260fcfb', (8640000000000000).toString(16)])('accepts canonical boundary seed %s', async token => {
     expect((await GET(request, context(`${token}.png`))).status).toBe(200)
     expect(runtime.get).toHaveBeenCalledExactlyOnceWith(VERSION, token)
   })
@@ -43,7 +43,7 @@ describe('Next image route', () => {
     expect(runtime.get).not.toHaveBeenCalled()
   })
 
-  it.each(['01.png', 'ABC.png', 'ffffffffffffff.png', `${(8640000000000001).toString(16)}.png`, 'xyz.png', '.png', '1.jpg', '../1.png', '1.png\n'])('rejects noncanonical or invalid image %s before rendering', async image => {
+  it.each(['v4-1.png', 'v3-01.png', '01.png', 'ABC.png', 'ffffffffffffff.png', `${(8640000000000001).toString(16)}.png`, 'xyz.png', '.png', '1.jpg', '../1.png', '1.png\n'])('rejects noncanonical or invalid image %s before rendering', async image => {
     const response = await GET(request, context(image))
     expect(response.status).toBe(404)
     expect(response.headers.get('cache-control')).toBe('no-store')

@@ -23,13 +23,14 @@ async function ready(page: Page, path = '/') {
   })
 }
 
-async function open(page: Page, seed: number) {
+async function open(page: Page, seed: number, version: 2 | 3 = 2) {
   const opener = page.getByRole('button', { name: 'Open your flowers', exact: true })
   await expect(opener).toBeEnabled()
   await opener.focus()
   await page.keyboard.press('Enter')
   await expect(page.locator('canvas')).toHaveAttribute('data-seed', String(seed))
-  await expect(page.getByRole('heading', { name: createBouquet(seed).name, exact: true })).toBeVisible()
+  await expect(page.locator('canvas')).toHaveAttribute('data-version', String(version))
+  await expect(page.getByRole('heading', { name: createBouquet(seed, version).name, exact: true })).toBeVisible()
 }
 
 test('manifest has stable app identity and real branded install icons', async ({ page, request }) => {
@@ -79,8 +80,10 @@ test('production worker caches Next assets, reloads offline and opens unseen que
   const unseenSeed = sharedSeed + 1234567
   await page.goto(`/?bouquet=${unseenSeed.toString(16)}`)
   await open(page, unseenSeed)
+  await page.goto(`/?bouquet=v3-${unseenSeed.toString(16)}`)
+  await open(page, unseenSeed, 3)
   await page.reload()
-  await open(page, unseenSeed)
+  await open(page, unseenSeed, 3)
 })
 
 test('installation remains browser-owned without an in-page install control or prompt interception', async ({ page }) => {

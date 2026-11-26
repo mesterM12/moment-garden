@@ -12,7 +12,7 @@ beforeEach(() => {
   browser.launch.mockResolvedValue({ newContext: browser.newContext, close: browser.close, on: browser.on })
   browser.newContext.mockResolvedValue({ route: browser.route, routeWebSocket: browser.routeWebSocket, close: browser.contextClose, newPage: browser.newPage })
   browser.newPage.mockResolvedValue({ goto: browser.goto, waitForFunction: browser.wait, evaluate: browser.evaluate, screenshot: browser.screenshot, setDefaultTimeout: browser.timeout })
-  browser.evaluate.mockResolvedValue({ status: 'ready', seed: String(Number.parseInt('1970260fcfb', 16)) })
+  browser.evaluate.mockResolvedValue({ status: 'ready', version: '2', seed: String(Number.parseInt('1970260fcfb', 16)) })
   browser.screenshot.mockResolvedValue(Buffer.from('png'))
 })
 afterEach(() => { vi.useRealTimers() })

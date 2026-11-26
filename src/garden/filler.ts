@@ -89,10 +89,11 @@ export function buildFiller(plan: ExpandedBouquetPlan) {
   const sprays: { weights: number[]; start: number }[] = [];
   // Two leafy cuts and two branching sprays sit in gaps behind the flower heads.
   // Use the plan's immutable measurements, never the specimen's live RNG.
-  for (const [index, [side, height, outside]] of [[-1, 3.84, 1.91], [1, 2.82, 2.24], [1, 4.35, 1.48], [-1, 2.87, 2.17]].entries()) {
-    const sign = side * mirror;
-    const tall = height + .25 * Math.sin(phase + index * 1.77);
-    const end = v(sign * (outside + .12 * Math.cos(phase - index)), tall, -.5 - .22 * index);
+  const tips = plan.sprays ?? [[-1, 3.84, 1.91], [1, 2.82, 2.24], [1, 4.35, 1.48], [-1, 2.87, 2.17]].map(([side, height, outside], i) =>
+    [side * mirror * (outside + .12 * Math.cos(phase - i)), height + .25 * Math.sin(phase + i * 1.77), -.5 - .22 * i]);
+  for (const [index, [x, tall, z]] of tips.entries()) {
+    const sign = Math.sign(x) || 1;
+    const end = v(x, tall, z);
     const origin = v(0, 0, 0);
     const curve = new THREE.QuadraticBezierCurve3(origin, v(end.x * .22, tall * .57, -.75), end);
     const parts: THREE.BufferGeometry[] = [paint(new THREE.TubeGeometry(curve, 18, .014, 5, false), stem)];
@@ -131,7 +132,7 @@ export function buildFiller(plan: ExpandedBouquetPlan) {
     const mesh = new THREE.Mesh(mergeGeometries(parts), material);
     for (const g of parts) g.dispose();
     mesh.position.set(.05 * sign, -1.9, -.06);
-    group.add(mesh); sprays.push({ weights: mesh.morphTargetInfluences!, start: [.10, .22, .17, .29][index] });
+    group.add(mesh); sprays.push({ weights: mesh.morphTargetInfluences!, start: (plan.version === 3 ? [.27, .31, .37, .33] : [.10, .22, .17, .29])[index] });
   }
   function pose(progress: number) {
     for (const { weights, start } of sprays) {

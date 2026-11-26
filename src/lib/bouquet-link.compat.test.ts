@@ -12,12 +12,12 @@ test('a share URL round-trips the bouquet plan and per-stem geometry streams', (
   const url = BouquetLink.create(site, timestamp);
   assert.equal(url, `${site}?bouquet=${hexTimestamp}`);
   const incoming = BouquetLink.read(new URL(url).search);
-  assert.deepEqual(incoming, { status: 'valid', timestamp });
+  assert.deepEqual(incoming, { status: 'valid', timestamp, version: 2 });
 
   const sender = createBouquet(timestamp);
   assert.equal(incoming.status, 'valid');
   if (incoming.status !== 'valid') assert.fail('Expected a valid bouquet link');
-  const recipient = createBouquet(incoming.timestamp);
+  const recipient = createBouquet(incoming.timestamp, incoming.version);
   assert.equal(JSON.stringify(sender), JSON.stringify(recipient));
   sender.flowers.forEach((entry, i) => {
     assert.deepEqual(Array.from({ length: 20 }, entry.specimen.random), Array.from({ length: 20 }, recipient.flowers[i].specimen.random));
@@ -46,7 +46,7 @@ test('the URL contract distinguishes a fresh visit from an invalid link', () => 
     assert.deepEqual(BouquetLink.read(`?bouquet=${value}`), { status: 'invalid' }, value);
   }
   assert.deepEqual(BouquetLink.read('?bouquet=63&bouquet=64'), { status: 'invalid' });
-  assert.deepEqual(BouquetLink.read('?bouquet=100'), { status: 'valid', timestamp: 256 });
+  assert.deepEqual(BouquetLink.read('?bouquet=100'), { status: 'valid', timestamp: 256, version: 2 });
 });
 
 test('seeds must be nonnegative whole timestamps within the Date range', () => {
@@ -54,7 +54,7 @@ test('seeds must be nonnegative whole timestamps within the Date range', () => {
   for (const value of [0, max]) {
     const address = BouquetLink.create(site, value);
     assert.ok(address);
-    assert.deepEqual(BouquetLink.read(new URL(address).search), { status: 'valid', timestamp: value });
+    assert.deepEqual(BouquetLink.read(new URL(address).search), { status: 'valid', timestamp: value, version: 2 });
     assert.doesNotThrow(() => new Date(value).toISOString());
   }
   for (const value of [-1, max + 1, NaN, Infinity, 1.5, '99', undefined]) {

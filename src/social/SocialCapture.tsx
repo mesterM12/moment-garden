@@ -34,6 +34,7 @@ type CaptureSession = {
 export default function SocialCapture({ search = window.location.search }: { search?: string }) {
   const link = read(search)
   const seed = link.status === 'valid' ? link.timestamp : null
+  const version = link.status === 'valid' ? link.version : null
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sessionRef = useRef<CaptureSession | null>(null)
   const [name, setName] = useState('')
@@ -60,7 +61,7 @@ export default function SocialCapture({ search = window.location.search }: { sea
 
     async function prepare() {
       try {
-        if (seed === null) throw new Error('A canonical bouquet token is required.')
+        if (seed === null || version === null) throw new Error('A canonical bouquet token is required.')
         const [module] = await Promise.all([import('../garden/engine'), loadFonts()])
         if (!active || session.failed) return
         const canvas = canvasRef.current
@@ -72,7 +73,7 @@ export default function SocialCapture({ search = window.location.search }: { sea
         })
         if (session.failed) return
         session.engine.setReducedMotion(true)
-        const bouquet = session.engine.show(seed)
+        const bouquet = session.engine.show(seed, version)
         session.engine.bloom({ instant: true })
         session.engine.resetView({ instant: true })
         if (!session.failed) setName(bouquet.name)
@@ -91,7 +92,7 @@ export default function SocialCapture({ search = window.location.search }: { sea
         delete root.dataset.ogStatus
       }
     }
-  }, [seed])
+  }, [seed, version])
 
   useEffect(() => {
     const session = sessionRef.current
@@ -105,7 +106,7 @@ export default function SocialCapture({ search = window.location.search }: { sea
           const canvas = canvasRef.current
           const rect = canvas?.getBoundingClientRect()
           if (!canvas || !rect?.width || !rect.height || !canvas.width || !canvas.height
-            || canvas.dataset.seed !== String(seed) || !canvas.dataset.version || !session.bloomed
+            || canvas.dataset.seed !== String(seed) || canvas.dataset.version !== String(version) || !session.bloomed
             || document.hidden) throw new Error('The bouquet has not rendered.')
           session.engine!.resetView({ instant: true })
           if (session.failed) return
@@ -120,7 +121,7 @@ export default function SocialCapture({ search = window.location.search }: { sea
       cancelAnimationFrame(firstFrame)
       cancelAnimationFrame(secondFrame)
     }
-  }, [name, error, seed])
+  }, [name, error, seed, version])
 
   return (
     <main className="social-capture" data-og-seed={seed ?? undefined}>

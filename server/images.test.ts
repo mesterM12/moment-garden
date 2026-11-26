@@ -88,8 +88,8 @@ describe('persistent image cache', () => {
     const store = track({ directory: root, maxEntries: 2, render: async token => Buffer.from(token) })
     await store.ready
     expect(await readdir(root)).toEqual([`${VERSION}-2.png`, `${VERSION}-3.png`, 'keep.txt'])
-    await store.get(VERSION, '4')
-    expect(await readdir(root)).toEqual([`${VERSION}-3.png`, `${VERSION}-4.png`, 'keep.txt'])
+    await store.get(VERSION, 'v3-3')
+    expect(await readdir(root)).toEqual([`${VERSION}-3.png`, `${VERSION}-v3-3.png`, 'keep.txt'])
   })
 
   it('cleans only owned orphan writes and rejects an unusable cache directory', async () => {

@@ -1,6 +1,7 @@
 import { chromium, type Browser } from 'playwright'
 import { mkdir, readFile, readdir, rename, stat, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { parseToken } from '../src/lib/bouquet-link'
 import { randomUUID } from 'node:crypto'
 
 export class RenderBusyError extends Error {
@@ -32,7 +33,7 @@ export function createImageStore({ directory, maxEntries = 256, render, maxPendi
   let starts: number[] = []
   let closed = false
   async function prune() {
-    const files = (await readdir(directory)).filter(name => /^[a-f0-9]{16}-[a-f0-9]{1,14}\.png$/.test(name))
+    const files = (await readdir(directory)).filter(name => /^[a-f0-9]{16}-(?:v3-)?[a-f0-9]{1,14}\.png$/.test(name))
     const entries = await Promise.all(files.map(async name => ({ name, modified: (await stat(path.join(directory, name))).mtimeMs })))
     entries.sort((a, b) => a.modified - b.modified || a.name.localeCompare(b.name))
     await Promise.all(entries.slice(0, Math.max(0, entries.length - maxEntries)).map(({ name }) => unlink(path.join(directory, name))))
@@ -40,13 +41,13 @@ export function createImageStore({ directory, maxEntries = 256, render, maxPendi
   const ready = mkdir(directory, { recursive: true }).then(async () => {
     // The cache directory has one process owner; remove only its interrupted writes.
     const files = await readdir(directory)
-    await Promise.all(files.filter(name => /^[a-f0-9]{16}-[a-f0-9]{1,14}\.png\.[0-9a-f-]{36}\.tmp$/.test(name)).map(name => unlink(path.join(directory, name))))
+    await Promise.all(files.filter(name => /^[a-f0-9]{16}-(?:v3-)?[a-f0-9]{1,14}\.png\.[0-9a-f-]{36}\.tmp$/.test(name)).map(name => unlink(path.join(directory, name))))
     await prune()
   })
   return {
     ready,
     async get(version: string, token: string): Promise<Buffer> {
-      if (!/^[a-f0-9]{16}$/.test(version) || !/^[a-f0-9]{1,14}$/.test(token)) throw new Error('Invalid image cache key')
+      if (!/^[a-f0-9]{16}$/.test(version) || !parseToken(token)) throw new Error('Invalid image cache key')
       await ready
       const key = `${version}-${token}`
       const filename = path.join(directory, `${key}.png`)
@@ -112,7 +113,8 @@ export function createScreenshotRenderer({ origin, basePath = '', executablePath
   }
   return {
     async render(token: string): Promise<Buffer> {
-      if (!/^[a-f0-9]{1,14}$/.test(token)) throw new Error('Invalid capture token')
+      const gift = parseToken(token)
+      if (!gift) throw new Error('Invalid capture token')
       const instance = await browser()
       const context = await instance.newContext({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1, reducedMotion: 'reduce', locale: 'en-US', timezoneId: 'UTC', serviceWorkers: 'block' })
       let timer: ReturnType<typeof setTimeout> | undefined
@@ -127,8 +129,11 @@ export function createScreenshotRenderer({ origin, basePath = '', executablePath
           page.setDefaultTimeout(timeout)
           await page.goto(`${internal.origin}${basePath}/__og?bouquet=${token}`, { waitUntil: 'load', timeout })
           await page.waitForFunction(() => ['ready', 'error'].includes(document.documentElement.dataset.ogStatus || ''))
-          const state = await page.evaluate(() => ({ status: document.documentElement.dataset.ogStatus, seed: document.querySelector('canvas')?.dataset.seed }))
-          if (state.status !== 'ready' || state.seed !== String(Number.parseInt(token, 16))) throw new Error('Bouquet capture failed readiness validation')
+          const state = await page.evaluate(() => {
+            const data = document.querySelector('canvas')?.dataset
+            return { status: document.documentElement.dataset.ogStatus, seed: data?.seed, version: data?.version }
+          })
+          if (state.status !== 'ready' || state.seed !== String(gift.timestamp) || state.version !== String(gift.version)) throw new Error('Bouquet capture failed readiness validation')
           return page.screenshot({ type: 'png', animations: 'disabled', timeout })
         }
         return await Promise.race([

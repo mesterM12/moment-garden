@@ -54,7 +54,7 @@ it('renders the canonical seed with the shared engine, instant front view and no
   expect(screen.queryAllByRole('button')).toHaveLength(0)
   expect(document.querySelector('canvas')?.getAttribute('tabindex')).toBeNull()
   const engine = mocks.engines[0]
-  expect(engine.show).toHaveBeenCalledWith(1748091600123)
+  expect(engine.show).toHaveBeenCalledWith(1748091600123, 2)
   expect(engine.setReducedMotion).toHaveBeenCalledWith(true)
   expect(engine.bloom).toHaveBeenCalledWith({ instant: true })
   expect(engine.resetView).toHaveBeenCalledWith({ instant: true })
@@ -74,7 +74,7 @@ it.each(['', '?bouquet=no', '?bouquet=01', '?bouquet=ABC', '?bouquet=1&bouquet=2
 it('supports zero as a canonical seed', async () => {
   render(<SocialCapture search="?bouquet=0" />)
   await waitFor(() => expect(document.documentElement.dataset.ogStatus).toBe('ready'))
-  expect(mocks.engines[0].show).toHaveBeenCalledWith(0)
+  expect(mocks.engines[0].show).toHaveBeenCalledWith(0, 2)
 })
 
 it('waits for explicit font loading and does not mistake fallback fonts for success', async () => {

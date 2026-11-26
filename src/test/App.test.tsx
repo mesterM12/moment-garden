@@ -30,7 +30,7 @@ it('opens the shared bouquet with keyboard, exposes named actions, and preserves
   render(<App />)
   const open = await screen.findByRole('button', { name: 'Open your flowers' })
   await waitFor(() => expect((open as HTMLButtonElement).disabled).toBe(false))
-  expect(mocks.engine.show).toHaveBeenCalledWith(1748091600123)
+  expect(mocks.engine.show).toHaveBeenCalledWith(1748091600123, 2)
   open.focus()
   await user.keyboard('{Enter}')
   expect(mocks.engine.bloom).toHaveBeenCalledWith({ instant: true })
@@ -59,6 +59,40 @@ it('opens the shared bouquet with keyboard, exposes named actions, and preserves
   expect(mocks.engine.show).toHaveBeenCalledTimes(2)
   expect(mocks.engine.show.mock.calls[1][0]).not.toBe(1748091600123)
   expect(new URL(window.location.href).searchParams.has('bouquet')).toBe(false)
+})
+
+it('replays and re-shares a restored florist gift without drawing another recipe', async () => {
+  const user = userEvent.setup()
+  history.replaceState(null, '', '/?bouquet=v3-1970260fcfb')
+  render(<App />)
+  const open = screen.getByRole('button', { name: 'Open your flowers' })
+  await waitFor(() => expect(mocks.engine.show).toHaveBeenCalledWith(1748091600123, 3))
+  open.focus()
+  await user.keyboard('{Enter}')
+  await user.click(screen.getByRole('button', { name: 'Replay bloom' }))
+  expect(mocks.engine.bloom).toHaveBeenLastCalledWith()
+  expect(mocks.engine.show).toHaveBeenCalledTimes(1)
+  await user.click(screen.getByRole('button', { name: 'Send flowers' }))
+  expect(await navigator.clipboard.readText()).toMatch(/\?bouquet=v3-1970260fcfb$/)
+})
+
+it('uses new-version seeds on a fresh visit and advances them even if the clock stalls', async () => {
+  const user = userEvent.setup()
+  const now = vi.spyOn(Date, 'now').mockReturnValue(1000)
+  history.replaceState(null, '', '/?utm=test#paper')
+  try {
+    render(<App />)
+    const opener = screen.getByRole('button', { name: 'Open your flowers' })
+    await waitFor(() => expect(mocks.engine.show).toHaveBeenCalledWith(1000, 3))
+    await user.click(opener)
+    for (let i = 1; i <= 2; i++) {
+      await user.click(screen.getByRole('button', { name: 'Grow another' }))
+      expect(mocks.engine.show).toHaveBeenLastCalledWith(1000 + i, 3)
+    }
+    await user.click(screen.getByRole('button', { name: 'Send flowers' }))
+    expect(await navigator.clipboard.readText()).toMatch(/\?bouquet=v3-3ea$/)
+    expect(location.search + location.hash).toBe('?utm=test#paper')
+  } finally { now.mockRestore() }
 })
 
 it('can inspect the petals with the keyboard without generating a different gift', async () => {

@@ -1,4 +1,4 @@
-import { read as readBouquet } from '../../../../lib/bouquet-link'
+import { parseToken } from '../../../../lib/bouquet-link'
 import { isRenderBusyError } from '../../../../../server/images'
 import { getRenderVersion, getSocialRuntime } from '../../../../../server/social'
 
@@ -12,9 +12,8 @@ interface RouteContext {
 async function respond(context: RouteContext, head: boolean): Promise<Response> {
   try {
     const { version, image } = await context.params
-    const match = /^([a-f0-9]{1,14})\.png$/.exec(image)
-    const token = match?.[0] === image ? match[1] : undefined
-    if (version.length !== 16 || !/^[a-f0-9]{16}$/.test(version) || !token || readBouquet(`bouquet=${token}`).status !== 'valid' || version !== await getRenderVersion()) {
+    const token = image.endsWith('.png') ? image.slice(0, -4) : ''
+    if (version.length !== 16 || !/^[a-f0-9]{16}$/.test(version) || !parseToken(token) || version !== await getRenderVersion()) {
       return new Response(head ? null : 'Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } })
     }
     const headers: Record<string, string> = {

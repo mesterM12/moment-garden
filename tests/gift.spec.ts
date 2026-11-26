@@ -8,14 +8,15 @@ const test = createBrowserTest(options, isMobile)
 const gift = '/?bouquet=1970260fcfb'
 const seed = '1748091600123'
 
-async function openGift(page: Page) {
-  await page.goto(gift)
+async function openGift(page: Page, version = 2) {
+  await page.goto(version === 2 ? gift : '/?bouquet=v3-1970260fcfb')
   const opener = page.getByRole('button', { name: 'Open your flowers', exact: true })
   await expect(opener).toBeEnabled()
   await opener.focus()
   await page.keyboard.press('Enter')
   await expect(opener).not.toBeVisible()
   await expect(page.locator('canvas')).toHaveAttribute('data-seed', seed)
+  await expect(page.locator('canvas')).toHaveAttribute('data-version', String(version))
   await expect(page.locator('.flower-garden')).not.toHaveAttribute('data-pointer-opened', '')
   expect(await page.locator('.flower-garden').evaluate(element => element.getAnimations().length)).toBe(0)
 }
@@ -112,7 +113,7 @@ test('opens the exact shared bouquet and preserves it through replay and saving'
 })
 
 test('reading the petals up close does not crop the saved gift or change the seed', async ({ page }) => {
-  await openGift(page)
+  await openGift(page, 3)
   const art = page.locator('canvas')
   const detail = page.getByRole('button', { name: 'Look closer', exact: true })
   async function keepsake() {
@@ -122,6 +123,9 @@ test('reading the petals up close does not crop the saved gift or change the see
     for await (const chunk of stream!) chunks.push(Buffer.from(chunk))
     return Buffer.concat(chunks)
   }
+  await art.focus()
+  await page.keyboard.press('ArrowRight')
+  await page.keyboard.press('ArrowDown')
   const whole = await keepsake()
   const wide = await art.screenshot()
   await detail.focus()
@@ -149,7 +153,7 @@ test('switching to reduced motion mid-opening goes straight to the final bouquet
 
 test('reduced motion opens a complete bouquet with accessible controls', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await openGift(page)
+  await openGift(page, 3)
   await expect(page.getByRole('button', { name: 'Replay bloom', exact: true })).not.toBeVisible()
   await expect(page.getByText(/animation is off/i)).toBeVisible()
   await expect(page.getByRole('button', { name: /Reset view/ })).toBeEnabled()

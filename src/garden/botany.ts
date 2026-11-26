@@ -1,4 +1,5 @@
 /* Seeded botanical recipes. No meshes, photographs, or fixed color palettes. */
+import { arrangeCut, floristGesture } from './florist';
 import * as varieties from './botany-varieties';
 import type { BouquetPlan, ExpandedBouquetPlan, FlowerRecipe, HeadEnvelope, OriginalSpeciesKey, PetalPalette, PetalPattern, Random, Range, SpeciesKey, Specimen, StemEntry } from './types';
 
@@ -364,12 +365,51 @@ function createExpandedBouquet(timestamp: number): ExpandedBouquetPlan {
   };
 }
 
-function createBouquet(timestamp: number, version?: 2): ExpandedBouquetPlan;
+function createFloristBouquet(timestamp: number): ExpandedBouquetPlan {
+  const seed = timestamp ^ Math.floor(timestamp / 4294967296) ^ 0x51ed2b79;
+  const random = seededRandom(seed), g = floristGesture(random);
+  const story = pick(random, colorStories), greens = 95 + random() * 28;
+  const used = new Set<SpeciesKey>();
+  const cultivars = (['f', 'c', 'a', 'e'] as const).map((role, index) => {
+    const cultivar = chooseCultivar(random, role, story.swatches[index], used, g.width < 1.48 ? 'spire' : 'posy');
+    used.add(cultivar.key);
+    return cultivar;
+  });
+  const companions = 2 + Math.floor(random() * 2);
+  const entries = Array.from({ length: g.count }, (_, i) => {
+    const which = !i ? 0 : i <= companions ? 1 : i === g.count - 1 && g.count > 8 ? 3 : 2;
+    const { key, palette, pattern } = cultivars[which];
+    const specimen = shapeSpecimen(timestamp + (i + 1) * 104729, seededRandom(seed ^ Math.imul(i + 1, 0x9e3779b1)), key, species[key], { ...palette }, pattern, story.id);
+    specimen.greenHue = greens + (random() - .5) * 15;
+    const radius = !i ? .92 + .20 * random() : which === 1 ? .48 + .18 * random() : .27 + .18 * random();
+    return { specimen, position: [0, 0, 0], scale: radius / headProfiles[key][0],
+      delay: random() * .08, turn: (random() - .5) * (i ? 1.20 : .5),
+      tiltOffset: (!i ? .12 : -.10) + (random() - .5) * (i ? .86 : .30),
+      leafCount: which > 1 ? 1 : 2 + Math.floor(random() * 2), leafScale: .44 + random() * .22 };
+  });
+  const flowers = arrangeCut(entries, companions, g, random, headEnvelope, fitsFrame, hasRoom);
+  // Trace the actual outside shoulders, with a low counterweight and a long
+  // back line. Greenery shouldn't give every design the same outer contour.
+  const sprays: NonNullable<ExpandedBouquetPlan['sprays']> = [];
+  for (let i = 0; i < 3 + Number(g.loose < .68); i++) {
+    const sign = (i % 2 ? -1 : 1) * Math.sign(g.slope);
+    const shoulder = flowers.slice(1).reduce((a, b) =>
+      b.position[0] * sign + .38 * b.position[1] > a.position[0] * sign + .38 * a.position[1] ? b : a);
+    const [x, y] = shoulder.position;
+    sprays.push([clampTo(x * (i < 2 ? 1.24 : .79) + sign * random() * .34, -2.22, 2.22),
+      clampTo(y + 1.9 + (i < 2 ? -.67 : .43) + random() * .63, 2.05, 4.77), -1.04 - random() * .57]);
+  }
+  return { timestamp, version: 3, name: pick(random, story.names), flowers, kinds: [...new Set(flowers.map(f => f.specimen.key))],
+    arrangement: { id: 'hand-tied', label: 'Hand-tied' }, palette: { id: story.id, label: story.label }, tie: { ...story.tie }, sprays };
+}
+
+function createBouquet(timestamp: number, version?: 2 | 3): ExpandedBouquetPlan;
 function createBouquet(timestamp: number, version: 1): BouquetPlan;
 function createBouquet(timestamp: number, version: number): BouquetPlan | ExpandedBouquetPlan;
 function createBouquet(timestamp: number, version = 2): BouquetPlan | ExpandedBouquetPlan {
   if (version === 1) return createOriginalBouquet(timestamp);
   if (version === 2) return createExpandedBouquet(timestamp);
+  if (version === 3) return createFloristBouquet(timestamp);
   throw new RangeError('Unsupported bouquet version.');
 }
 

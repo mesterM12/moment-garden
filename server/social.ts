@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { read as readBouquet } from '../src/lib/bouquet-link'
+import { formatToken, read as readBouquet } from '../src/lib/bouquet-link'
 import { BASE_PATH, getPublicSite } from '../src/lib/site'
 import { createImageStore, createScreenshotRenderer } from './images'
 
@@ -43,7 +43,7 @@ export async function getRenderVersion(): Promise<string> {
 
 export async function getSocialImageUrl(search: URLSearchParams): Promise<string> {
   const bouquet = readBouquet(search.toString())
-  const token = bouquet.status === 'valid' ? bouquet.timestamp.toString(16) : DEFAULT_BOUQUET
+  const token = bouquet.status === 'valid' ? formatToken(bouquet) : DEFAULT_BOUQUET
   return new URL(`og/${await getRenderVersion()}/${token}.png`, getPublicSite()).href
 }
 

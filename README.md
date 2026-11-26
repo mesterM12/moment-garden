@@ -39,7 +39,7 @@ The garden gathers **7–10 stems from at least three flower types**, brings the
 
 ### Made to be explored
 
-- **Always a surprise.** Five bouquet silhouettes, seven color families, and three ties: bow, twine, or wrap. The timestamp chooses the combination; there are no flower or color selectors.
+- **Always a surprise.** One flower leads; companions gather at a shoulder and finer stems follow the sweep. The cut can be tall and open, low and densely gathered, or lean well past its binding. Seven color stories and three ties (bow, twine, wrap) finish the gift. There are no selectors.
 - **15 botanical recipes.** Roses, tulips, dahlias, sunflowers, daisies, lilies, poppies, cosmos, ranunculus, calla lilies, orchids, irises, hydrangeas, anemones, and billy buttons.
 - **Different construction, not just recoloring.** Nested rose cups, rolled dahlia florets, trumpet-shaped calla lilies, ruffled irises, and hydrangea clusters.
 - **A 4.6-second bloom.** A leading stem opens first. Other flowers answer in overlapping waves: rose petals peel away, lily tips uncurl, and the rolled florets of a dahlia open from their edges. The arrangement settles to stillness. Use **Look closer** for a petal-level view.
@@ -51,11 +51,13 @@ The garden gathers **7–10 stems from at least three flower types**, brings the
 
 ### One garden, many bouquets
 
-Five silhouettes give the stems a different shape even before color and flower choice come into play.
+Compare these same-scale examples from the florist generator: a tall, open calla, a low hydrangea cut, and a dahlia with lilies climbing one shoulder. They are individual seeds, not three presets.
 
 <p align="center">
-  <img src="docs/images/arrangements.jpg" width="950" alt="Five actual bouquet renders: open fan, round posy, side sweep, loose meadow, and high spire" />
+  <img src="docs/images/florist-cuts.jpg" width="800" alt="Three hand-tied bouquets on cream paper, each with a different silhouette and focal flower" />
 </p>
+
+To open them locally, append `?bouquet=v3-1970260fcfc`, `?bouquet=v3-1970260fd17` or `?bouquet=v3-1970260fd29` to your app URL.
 
 These four studies show some of the original flowers, which are still in the mix.
 
@@ -162,15 +164,15 @@ flowchart TD
 
 ### A shared seed, independent details
 
-[`src/garden/botany.ts`](src/garden/botany.ts) turns a millisecond timestamp into a bouquet plan. Each stem gets a derived seed for its geometry, while repeated species share cultivar colors. Layout is chosen before tessellation. Flower-head envelopes keep the mature blooms apart in 3D. Stem paths make room around neighboring heads, and crowded leaves are shortened, redirected, or omitted.
+[`src/garden/botany.ts`](src/garden/botany.ts) chooses cultivars for a timestamp and recipe version. In v3 the [florist](src/garden/florist.ts) samples the crown’s width, rise, tilt, lean, depth and fullness. It reserves a forward-facing focal bloom, then tries sockets along two unequal arcs. Mature-head clearance, front visibility and bounds guide a bounded search; it can turn a stem, trim a companion, try a free position in the crown or use a compact safe cut. Foliage tips follow the resulting shoulders, rather than imposing a fixed outline. Each stem gets a derived seed for its geometry, while repeated species share cultivar colors. Layout is chosen before tessellation. Flower-head envelopes keep the mature blooms apart in 3D. Stem paths make room around neighboring heads, and crowded leaves are shortened, redirected, or omitted.
 
-Rose guards, tulip tepals, calla spathes and papery rays use [four vgpu-baked relief and pigment fields](tools/petal-bake/README.md). Each blade has its own seeded vein drift and blush. WebGPU is used only to author the fields; the live bouquet, saved postcard and social preview use the same WebGL2 materials.
+Rose guards, tulip tepals, calla spathes and papery rays use [four vgpu-baked relief and pigment fields](tools/petal-bake/README.md). Each blade has its own seeded vein drift and blush. Warm side light, a cream-paper fill and the baked relief distinguish folded petals from their illuminated lips. WebGPU is used only to author the fields; the live bouquet, saved postcard and social preview use the same WebGL2 materials.
 
 Replay, rotation, and PNG export keep the existing bouquet. **Grow another** starts from a new timestamp and clears any bouquet seed from the address, so refreshing afterward is a fresh visit. The link carries the arrangement, not the sender’s camera angle. The self-hosted server gives messaging crawlers a 1200 × 630 PNG of that same seeded bouquet, fully bloomed in its canonical front view on the current stationery. The landscape layout adapts to the image dimensions; browser/GPU rendering can vary, so this is not a pixel-identical copy of the sender’s screen. The garden itself is client-only, while Next.js generates crawler metadata on the server; no server-rendered garden or external image service is involved.
 
 #### Bouquet link contract
 
-**Send flowers** adds a token like `?bouquet=1970260fcfb` to the site path. The token is the bouquet’s timestamp in lowercase hexadecimal, with no leading zeros (except `0`). It represents a nonnegative Unix timestamp in milliseconds within the JavaScript `Date` range. Existing links use the same format and still restore the same bouquet. An invalid token still loads the app with HTTP 200 and default preview metadata, so the browser can show an invalid-link notice and grow a fresh bouquet. The image endpoint rejects invalid tokens with HTTP 404 before starting Chromium; the client-only internal capture view reports a capture-readiness error for invalid tokens. The seed is sufficient to regenerate the bouquet—there is no bouquet database or server-side gift lookup. Interactive generation stays in the browser; social previews reuse the same Three.js engine in server-managed Chromium.
+**Send flowers** adds one `bouquet` token to the site path. New gifts use `?bouquet=v3-1970260fcfb`; bare `?bouquet=1970260fcfb` still opens (and re-shares) the original v2 composition. The same hex can represent two different gifts: the recipe version is part of the identity and the OG filename. The hex is a nonnegative Unix timestamp in milliseconds within the JavaScript `Date` range, lowercase, with no leading zeros (except `0`). Duplicate tokens, unknown prefixes and noncanonical values are invalid. During one visit fresh seeds advance even if the clock hasn't ticked. An invalid token still loads the app with HTTP 200 and default preview metadata, so the browser can show an invalid-link notice and grow a fresh bouquet. The image endpoint rejects invalid tokens with HTTP 404 before starting Chromium; the client-only internal capture view reports a capture-readiness error for invalid tokens. The token is sufficient to regenerate the bouquet—there is no bouquet database or server-side gift lookup. Interactive generation stays in the browser; social previews reuse the same Three.js engine in server-managed Chromium.
 
 ### Geometry with botanical cues
 
@@ -227,6 +229,8 @@ pnpm exec playwright install --with-deps chromium
 pnpm test:e2e                    # Vitest browser config starts Next.js fixtures
 ```
 
+For a visual review, start the local build and run `node tools/florist-proof.mjs http://127.0.0.1:3000/ /tmp/florist-proof` (requires Playwright Chromium and ImageMagick). It opens **all 60 consecutive timestamps starting at 1748091600123**, in a 390 × 844 viewport, and writes the actual artwork stages in reading order to `contact60.jpg` and `contact60-gray.jpg`. For offsets 1, 28 and 46, it also writes close views and strips of the opening at 0.70, 1.25, 1.90, 2.70, 3.60 and 4.65 seconds. Inspect the focal before the shoulders open, the final gaps between heads, and the cut ends at phone scale. Pass `webkit` as the last argument with that Playwright browser installed to compare engines. These checks use local scratch output, not golden screenshot fixtures.
+
 The social-preview checks use the actual Next.js production server and Playwright Chromium. Tests run locally; this repository does not include GitHub Actions CI/CD workflows.
 
 ### Project map
@@ -251,7 +255,7 @@ The social-preview checks use the actual Next.js production server and Playwrigh
 
 ### Hosting
 
-The supported self-hosted deployment is the custom Docker image: Node.js 26 LTS runs the Next.js-generated standalone `server.js` from **`.next/standalone`**, with `.next/static` and `public` copied alongside it. App Router `generateMetadata` supplies social metadata before JavaScript runs; bundled Playwright Chromium renders exact-seed previews on demand at `/og/<16hex-build-ID-hash>/<seed>.png`. No database, API keys, or external rendering service are required. Production requires `PUBLIC_URL` and a user-managed HTTPS reverse proxy.
+The supported self-hosted deployment is the custom Docker image: Node.js 26 LTS runs the Next.js-generated standalone `server.js` from **`.next/standalone`**, with `.next/static` and `public` copied alongside it. App Router `generateMetadata` supplies social metadata before JavaScript runs; bundled Playwright Chromium renders exact-seed previews on demand at `/og/<16hex-build-ID-hash>/<bouquet-token>.png`. No database, API keys, or external rendering service are required. Production requires `PUBLIC_URL` and a user-managed HTTPS reverse proxy.
 
 The default build serves the domain root, as the [live demo](https://flowers.joojoo-lab.xyz/) does. To serve `/moment-garden/`, build with `NEXT_PUBLIC_BASE_PATH=/moment-garden` and set a matching runtime `PUBLIC_URL`. Path changes require rebuilding; hostname-only changes do not. Health checks follow the same prefix (`/moment-garden/healthz`). This is a Next.js server deployment, not a static export. Releases are manual: there are no GitHub Actions test or deployment workflows, and no registry publication is configured. Building locally does not publish anything.
 
