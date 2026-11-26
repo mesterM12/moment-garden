@@ -11,6 +11,8 @@ import { BLOOM_DURATION as DURATION, bloomStart, clamp, ease, flexAt, foldWeight
 import { finishPetals, tieBouquet } from './florist-finish';
 import { buildFiller } from './filler';
 import { bladeBatches } from './blade-batches';
+import { cutStemGeometry, cutStemMaterial } from './cut-stem';
+import { foliageMaterial, StemLeaf } from './foliage';
 import { petalFields, petalSurface } from './petal-surface';
 import { createPostcardPng, postcardCamera } from './postcard-png';
 const WEBGL_ERROR = 'These flowers need WebGL 2 to bloom. Try a current browser with hardware acceleration enabled.';
@@ -159,18 +161,19 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
   const specimen = entry.specimen;
   const { random, palette, recipe } = specimen;
   const petals: MorphPetal[] = [];
-  const leaves: THREE.Group[] = [];
+  const leaves: StemLeaf[] = [];
   const sepals: THREE.Mesh[] = [];
   const group = new THREE.Group();
   plant.add(group);
-  const green = new THREE.MeshStandardMaterial({ color: `hsl(${specimen.greenHue - 13}, 33%, 32%)`, roughness: .79 });
+  const green = cutStemMaterial();
   const petalMaterial = petalSurface(specimen, textures.petal);
-  const leafMaterial = new THREE.MeshPhysicalMaterial({
+  const leafMaterial = foliageMaterial();
+  const sepalMaterial = new THREE.MeshPhysicalMaterial({
     vertexColors: true, side: THREE.DoubleSide, roughness: 0.56,
     clearcoat: 0.3, clearcoatRoughness: 0.6, bumpMap: textures.leaf, bumpScale: 0.045,
   });
-  // The sepal or foliage material may not have any mesh in some recipes.
-  materials.add(green).add(petalMaterial).add(leafMaterial);
+  // Sepal geometry and shading remain part of the head, not the stem foliage.
+  materials.add(green).add(petalMaterial).add(leafMaterial).add(sepalMaterial);
   const top = new THREE.Vector3(...entry.position);
   const bottom = new THREE.Vector3(entry.turn * 0.6, -3.2 + random() * 0.25, -entry.turn * 0.3);
   const knot = new THREE.Vector3(entry.turn * 0.2, -1.9, 0);
@@ -187,7 +190,7 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
   middle.z = top.z * 0.6 + knot.z;
   const curve = routedStem(bottom, knot, middle, top, envelopes.filter((_, other) => other !== index), earlierStems);
   earlierStems.push(curve.getPoints(40).filter(point => point.y > -1.65));
-  const stem = new THREE.Mesh(new THREE.TubeGeometry(curve, 40, 0.024, 7, false), green);
+  const stem = new THREE.Mesh(cutStemGeometry(curve, specimen), green);
   group.add(stem);
   const bendX = -.37 * top.x + .10 * Math.sin(specimen.rotation);
   const bendZ = -.26 * top.z + .12;
@@ -203,24 +206,21 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
   };
   flexStem();
 
-  const leafColors = { base: `hsl(${specimen.greenHue - 5}, 32%, 31%)`, tip: `hsl(${specimen.greenHue - 18}, 34%, 51%)`, root: '#264435' };
-  const leafWidths = { slender: 0.12, broad: 0.47, serrated: 0.31, strap: 0.22 };
-  const leafWidth = leafWidths[recipe.leaf];
-  const leafLength = recipe.leaf === 'strap' ? 1.9 : 1.15;
-  const leafCount = entry.leafCount ?? (recipe.leaf === 'strap' ? 2 : 3);
+  const strap = recipe.leaf === 'strap';
+  const bend = new THREE.Vector3(bendX, drop, bendZ);
+  const leafCount = entry.leafCount ?? (strap ? 2 : 3);
   for (let i = 0; i < leafCount; i++) {
-    const pivot = new THREE.Group();
-    const stemPosition = (recipe.leaf === 'strap' ? 0.43 : 0.46) + i * 0.14;
-    pivot.position.copy(curve.getPoint(stemPosition));
-    pivot.userData.stemPosition = stemPosition;
-    pivot.rotation.y = i % 2 ? 1.45 : -1.45;
-    pivot.rotation.x = 0.8;
-    const leaf = new THREE.Mesh(botanicalGeometry(leafLength + random() * 0.3, leafWidth * (0.9 + random() * 0.2), leafColors, random, specimen, true), leafMaterial);
-    leaf.rotation.x = recipe.leaf === 'strap' ? -1.4 : -0.12 - random() * 0.15;
-    pivot.add(leaf);
-    pivot.scale.setScalar(0.55);
-    group.add(pivot);
-    leaves.push(pivot);
+    // Reserve exactly the old four shape draws and optional pitch draw before
+    // building the head. Leaflet counts do not advance the specimen RNG.
+    const variation = [random(), random(), random(), random()] as const;
+    const pitch = strap ? (specimen.key === 'iris' ? -.96 : -.62) : -.12 - random() * .15;
+    const leaf = new StemLeaf(specimen, variation, pitch, i % 2 ? 1.45 : -1.45, leafMaterial, bend);
+    leaf.userData.stemPosition = (strap ? .43 : .46) + i * .14;
+    leaf.socket(curve, leaf.userData.stemPosition);
+    leaf.orient(.8);
+    leaf.scale.setScalar(.55);
+    group.add(leaf);
+    leaves.push(leaf);
   }
 
   const head = new THREE.Group();
@@ -248,12 +248,13 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
     }
   }
   if (blades) petals.push(...blades.finish());
+  const leafColors = { base: `hsl(${specimen.greenHue - 5}, 32%, 31%)`, tip: `hsl(${specimen.greenHue - 18}, 34%, 51%)`, root: '#264435' };
   const sepalCount = recipe.sepalCount ?? (['tulip', 'lily', 'poppy'].includes(specimen.key) ? 0 : 5);
   for (let i = 0; i < sepalCount; i++) {
     const ring = new THREE.Group();
     ring.rotation.y = i * Math.PI * 2 / sepalCount;
     ring.position.y = -0.07;
-    const sepal = new THREE.Mesh(botanicalGeometry(0.40, 0.07, leafColors, random, specimen, true), leafMaterial);
+    const sepal = new THREE.Mesh(botanicalGeometry(0.40, 0.07, leafColors, random, specimen, true), sepalMaterial);
     ring.add(sepal);
     head.add(ring);
     sepals.push(sepal);
@@ -369,21 +370,23 @@ function settleFoliage(bouquet: BuiltBouquet) {
   const bounds = new THREE.Box3();
   blooms.forEach(({ leaves, curve, entry }, index) => {
     leaves.forEach(leaf => {
-      const initialYaw = leaf.rotation.y;
+      const initialYaw = leaf.yaw;
       const initialT = leaf.userData.stemPosition;
       const scale = entry.leafScale ?? 0.55;
       const sign = Math.sign(entry.position[0]) || Math.sign(initialYaw);
       for (const size of [1, 0.8, 0.63]) {
         leaf.scale.setScalar(scale * size);
         for (const t of [initialT, initialT - 0.08, initialT + 0.045, initialT - 0.15]) {
-          leaf.position.copy(curve.getPoint(t));
+          leaf.socket(curve, t);
           for (const angle of [initialYaw, sign * 1.29, sign * 2.12, sign * 0.54]) {
-            leaf.rotation.y = angle;
+            leaf.yaw = angle;
+            leaf.orient(.8);
             leaf.updateWorldMatrix(false, true);
             bounds.setFromObject(leaf).expandByScalar(0.009);
             if (bounds.min.y < -1.72 || headBounds.some(box => box.intersectsBox(bounds)) || placed.some(box => box.intersectsBox(bounds))) continue;
             if (stemPoints.some((points, other) => other !== index && points.some(point => bounds.containsPoint(point)))) continue;
             leaf.userData.clearanceScale = size;
+            leaf.userData.stemPosition = t;
             leaf.userData.rest = leaf.position.clone();
             leaf.userData.flex = flexAt(leaf.position.y, entry.position[1]);
             placed.push(bounds.clone());
@@ -428,7 +431,7 @@ export function pose({ blooms, filler }: BuiltBouquet, p: number) {
         const w = tension * leaf.userData.flex;
         leaf.position.set(rest.x + w * bendX, rest.y + w * drop, rest.z + w * bendZ);
       }
-      leaf.rotation.x = .8 - .58 * (1 - ease((local - i * .045) / .53));
+      leaf.orient(.8 - .58 * (1 - ease((local - i * .045) / .53)), tension);
       leaf.scale.setScalar((entry.leafScale ?? .55) * (leaf.userData.clearanceScale ?? 1) * (.73 + .27 * unfurl));
     });
     sepals.forEach((sepal, i) => { sepal.rotation.x = -1.3 + 1.5 * ease((local - i * .013) / .38); });
@@ -480,7 +483,7 @@ function clearOpeningStems(bouquet: BuiltBouquet, envelopes: HeadEnvelope[]) {
     const [bottom, knot, middle] = b.curve.points;
     b.curve = routedStem(bottom, knot, middle, b.top, envelopes.filter((_, j) => j !== i),
       blooms.filter(other => other !== b).map(other => other.curve.getPoints(40).filter(p => p.y > -1.65)), cost);
-    b.stem.geometry.dispose(); b.stem.geometry = new THREE.TubeGeometry(b.curve, 40, .024, 7, false);
+    b.stem.geometry.dispose(); b.stem.geometry = cutStemGeometry(b.curve, b.entry.specimen);
     b.flexStem();
   });
 }
