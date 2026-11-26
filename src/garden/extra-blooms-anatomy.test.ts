@@ -27,22 +27,35 @@ function withHead(key: 'orchid' | 'iris' | 'calla', cut: boolean, check: (entrie
 
 const totalVertices = (entries: MorphPetal[]) => entries.reduce((n, { mesh }) => n + mesh.geometry.attributes.position.count, 0);
 
+function withBouquet(seed: number, check: (bouquet: ReturnType<typeof buildBouquet>) => void) {
+  const textures = { petal: petalFields(1), leaf: new THREE.CanvasTexture() };
+  const bouquet = buildBouquet(createBouquet(seed, 3), textures);
+  try { check(bouquet); }
+  finally { disposeBouquet(bouquet); textures.petal.dispose(); textures.leaf.dispose(); }
+}
+
 test('orchid opens its two broad wings from a wrapped bud behind a three-lobed lip and raised column', () => {
-  withHead('orchid', true, (entries, R) => {
-    const [sepals, wings, lip] = entries;
-    expect(entries).toHaveLength(3);
-    expect(totalVertices(entries)).toBeLessThanOrEqual(2125);
+  withBouquet(0x1970260fd0e, bouquet => {
+    const { entry, petals } = bouquet.blooms[0], R = entry.specimen.length;
+    expect(entry.specimen.key).toBe('orchid');
+    const [sepals, wings, lip] = petals;
+    expect(petals).toHaveLength(3);
+    expect(totalVertices(petals)).toBeLessThanOrEqual(2125);
     expect(sepals.blades).toHaveLength(3);
     expect(wings.blades).toHaveLength(2);
     expect(lip.blades!.filter(b => !b.anchor)).toHaveLength(3);
     expect(lip.blades!.filter(b => b.anchor)).toHaveLength(2);
-    const g = wings.mesh.geometry, open = g.attributes.position, closed = g.morphAttributes.position![0];
-    for (const { first, end } of wings.blades!) {
-      expect(radius(open, end - 9)).toBeGreaterThan(.94 * R);
-      expect(radius(closed, end - 9)).toBeLessThan(.05 * R);
-      expect(closed.getY(end - 9)).toBeGreaterThan(.62 * R);
-      expect(point(open, first)).toEqual(point(closed, first));
-    }
+    const posed = (i: number) => wings.mesh.getVertexPosition(i, new THREE.Vector3());
+    pose(bouquet, 0);
+    const buds = wings.blades!.map(({ first, end }) => ({ root: posed(first), tip: posed(end - 9) }));
+    pose(bouquet, 1);
+    wings.blades!.forEach(({ first, end }, i) => {
+      const tip = posed(end - 9), bud = buds[i];
+      expect(Math.hypot(tip.x, tip.z)).toBeGreaterThan(.94 * R);
+      expect(Math.hypot(bud.tip.x, bud.tip.z)).toBeLessThan(.05 * R);
+      expect(bud.tip.y).toBeGreaterThan(.62 * R);
+      expect(posed(first)).toEqual(bud.root);
+    });
     const l = lip.mesh.geometry, pos = l.attributes.position;
     const apron = lip.blades![0];
     const endRow = apron.end - 15, notch = point(pos, endRow + 7);
@@ -120,28 +133,34 @@ test.each([false, true])('calla cut=%s rolls one sheet around a stationary, reli
 });
 
 test('the iris fall clears its own stem outside the attachment on v3-1970260fd06', () => {
-  const textures = { petal: petalFields(1), leaf: new THREE.CanvasTexture() };
-  const bouquet = buildBouquet(createBouquet(0x1970260fd06, 3), textures);
-  try {
+  withBouquet(0x1970260fd06, bouquet => {
     const iris = bouquet.blooms[0], stem = iris.stem, ray = new THREE.Raycaster();
     expect(iris.entry.specimen.key).toBe('iris');
-    for (const p of [0, .27, .43, .58, .73, 1]) {
-      pose(bouquet, p);
+    const [falls] = iris.petals, targets = iris.petals.map(({ mesh }) => mesh);
+    const socketEnd = falls.blades![0].first;
+    const prev = new THREE.Vector3(), next = new THREE.Vector3(), sample = new THREE.Vector3();
+    const segments = 40;
+    for (let frame = 0; frame <= 100; frame++) {
+      const progress = frame / 100;
+      pose(bouquet, progress);
       bouquet.plant.updateMatrixWorld(true);
-      const prev = new THREE.Vector3(), next = new THREE.Vector3(), sample = new THREE.Vector3();
-      for (let k = 0; k <= 40; k++) {
+      for (let ring = 0; ring <= segments; ring++) {
         next.set(0, 0, 0);
-        for (let r = 0; r < 7; r++) next.add(stem.getVertexPosition(k * 8 + r, sample));
+        for (let r = 0; r < 7; r++) next.add(stem.getVertexPosition(ring * 8 + r, sample));
         next.multiplyScalar(1 / 7).applyMatrix4(stem.matrixWorld);
-        if (k) {
+        if (ring) {
           ray.far = next.distanceTo(prev);
           ray.set(prev, sample.subVectors(next, prev).normalize());
-          const hits = ray.intersectObjects(iris.petals.map(({ mesh }) => mesh));
-          // The receptacle covers the stem socket, a deliberate final-ring overlap.
-          expect(hits.filter(hit => k !== 40 || hit.uv?.x !== -1)).toHaveLength(0);
+          const hit = ray.intersectObjects(targets, false).find(({ object, face }) => {
+            // Only the receptacle surface may overlap the final stem segment.
+            // Identify its triangles directly: raycast UVs are interpolated floats.
+            return ring !== segments || object !== falls.mesh || !face
+              || Math.max(face.a, face.b, face.c) >= socketEnd;
+          });
+          if (hit) expect.fail(`Stem crossed iris at progress ${progress}, ring ${ring}, UV ${hit.uv?.toArray()}`);
         }
         prev.copy(next);
       }
     }
-  } finally { disposeBouquet(bouquet); textures.petal.dispose(); textures.leaf.dispose(); }
+  });
 });
