@@ -8,7 +8,7 @@ import type { MorphPetal, Specimen } from './types';
 // Six spoon-shaped tepals: three outer guards open away from the three
 // longer inner sails. Rounded tips and a changing radius along the exposed
 // edge break the old continuous cup, especially from the presentation front.
-function tulipTepal(specimen: Specimen, j: number, mesh: MorphPetal['mesh']) {
+function tulipTepal(specimen: Specimen, j: number, mesh: MorphPetal['mesh'], cut: boolean) {
   const inner = j >= 3, R = specimen.length;
   const axis = specimen.rotation + j % 3 * Math.PI * 2 / 3 + (inner ? Math.PI / 3 : 0);
   const hand = petalHand(specimen.timestamp, j, 0);
@@ -32,7 +32,10 @@ function tulipTepal(specimen: Specimen, j: number, mesh: MorphPetal['mesh']) {
       + lip * (.056 * Math.sin(4.4 * s + variation) - .075 * (1 - s * s) * (inner ? 1 : -.5));
     const span = (.12 + .98 * Math.sin(Math.PI * t * .82) ** .78) * (inner ? .90 : 1);
     const theta = axis + s * span + (inner ? .19 : .12) * t + variation * .065 * lip;
-    const x = R * Math.sin(theta) * radial, z = R * Math.cos(theta) * radial;
+    // The reflexed guards previously flared outside the tulip socket's
+    // clearance profile. Keep the rim spooned in the dressed cut.
+    const girth = R * (cut ? .82 : 1);
+    const x = girth * Math.sin(theta) * radial, z = girth * Math.cos(theta) * radial;
     const y = R * (((inner ? 1.09 : .87) + .075 * variation) * (arch ** 1.09)
       + lip * (.037 * s - .044 * margin + .018 * Math.sin(5.2 * s + variation)));
     pos.setXYZ(i, x, y, z);
@@ -62,7 +65,7 @@ function tulipTepal(specimen: Specimen, j: number, mesh: MorphPetal['mesh']) {
 // The cultivar builders remain the source of truth for the seeded cut and its
 // closed form. This last modelling pass works on their owned render buffers;
 // it doesn't draw from the geometry RNG, add lights, or run during animation.
-export function finishPetals(specimen: Specimen, petals: MorphPetal[], head: THREE.Group): MorphPetal[] {
+export function finishPetals(specimen: Specimen, petals: MorphPetal[], head: THREE.Group, cut = false): MorphPetal[] {
   const { key, rotation, length } = specimen;
   const dense = key === 'dahlia' || key === 'ranunculus' || key === 'rose';
   const tulip = key === 'tulip';
@@ -70,7 +73,7 @@ export function finishPetals(specimen: Specimen, petals: MorphPetal[], head: THR
   const tint = new THREE.Color();
   for (let j = 0; j < petals.length; j++) {
     const { mesh, layer } = petals[j];
-    if (tulip) tulipTepal(specimen, j, mesh);
+    if (tulip) tulipTepal(specimen, j, mesh, cut);
     const g = mesh.geometry;
     const pos = g.getAttribute('position'), uv = g.getAttribute('uv'), color = g.getAttribute('color');
     const phase = rotation + j * 2.39996;
@@ -97,7 +100,7 @@ export function finishPetals(specimen: Specimen, petals: MorphPetal[], head: THR
         const fold = (.21 + .04 * turn) * cap * t * t + .075 * shoulder * s * s
           + .075 * s * t - lip * (.087 + .062 * Math.cos(4.1 * s + turn)) * cap;
         pos.setXYZ(i, r * Math.sin(a), y + length * fold / (1 + .34 * layer), r * Math.cos(a));
-      } else if (key === 'calla' && i < blades[0].end) {
+      } else if (key === 'calla' && !cut && i < blades[0].end) {
         // The folded spathe has one high tail and a lower, reflexed apron.
         // Their asymmetry reads even when the surface veins are subpixel.
         const a = Math.atan2(x, z), apex = Math.max(0, -Math.cos(a)) ** 3;
@@ -146,7 +149,7 @@ export function finishPetals(specimen: Specimen, petals: MorphPetal[], head: THR
       for (let i = next; i < uv.count; i++) uv.setXY(i, -1, -1);
     }
   }
-  // Dense dahlias used to submit 140 separate draws per head. Retain their
+  // Dense dahlias used to submit a separate draw for every floret. Retain their
   // layer order and split each ring into three overlapping opening cohorts.
   if (key !== 'dahlia') return petals;
   const rings = new Map<number, MorphPetal[]>();

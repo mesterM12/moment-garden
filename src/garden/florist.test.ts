@@ -1,5 +1,6 @@
 // @vitest-environment node
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { test } from 'vitest';
 import { createBouquet, headEnvelope, species } from './botany';
 import type { HeadEnvelope } from './types';
@@ -20,8 +21,20 @@ test('florist links repeat every placement and blade stream, independently of th
   }
 });
 
+test('redressing a sent v3 gift preserves its sockets, cultivars, turn, sprays, tie and name', () => {
+  // afaa5be plans, excluding only the dressed head scale and RNG function.
+  for (const [i, digest] of [[1, '290691f4a09761d7ec092448f81f95bcb35a6cb24907646d69cb4ae661f1d4a7'],
+    [28, '548a71eedc964a39361a858144285942e81bbf87c31be9eb2591b7c63b3b3dfe'],
+    [46, '1651f303fcc0612e342422b2d224b0a93bb027bf6925070f92a770f68fd19c8c']] as const) {
+    const plan = createBouquet(first + i, 3);
+    const skeleton = { ...plan, flowers: plan.flowers.map(({ scale, ...stem }) => stem) };
+    assert.equal(createHash('sha256').update(JSON.stringify(skeleton)).digest('hex'), digest);
+  }
+});
+
 test('v3 leaves the binding clear, fits the card, and separates mature heads including the safe cut', () => {
   const kinds = new Set<string>();
+  const density: number[] = [], share: number[] = [];
   for (let i = 0; i < 1000; i++) {
     const seed = i < 600 ? first + i : Math.floor((i - 600) / 399 * 8.64e15);
     const { flowers } = createBouquet(seed, 3), hulls = flowers.map(headEnvelope);
@@ -31,14 +44,28 @@ test('v3 leaves the binding clear, fits the card, and separates mature heads inc
       assert.ok(Math.abs(a.center[0]) + extent(a, [1, 0, 0]) <= 2.5);
       assert.ok(a.center[1] + extent(a, [0, 1, 0]) <= 3.35);
       assert.ok(a.center[1] - extent(a, [0, 1, 0]) >= -1.63);
-      if (j) assert.ok(hulls[0].radius > a.radius * 1.38, `focal hierarchy at ${seed}`);
       for (const b of hulls.slice(0, j)) {
         const d = a.center.map((v, k) => v - b.center[k]), length = Math.hypot(...d);
         const gap = Math.max(...[d.map(v => v / length), a.axis, b.axis].map(n => Math.abs(dot(d, n)) - extent(a, n) - extent(b, n)));
         assert.ok(gap > .05499, `separating plane at ${seed}`);
       }
     });
+    // Project a local tangent ellipse in the presentation camera. This is a
+    // crown-density proxy, not a pixel mask (heads may overlap in the image).
+    const right = [Math.cos(.1), 0, -Math.sin(.1)], up = [-.017, .986, -.17], eye = [.098, .17, .98];
+    const patches = hulls.map(h => {
+      const m = 12.45 / (12.45 - dot(h.center, eye));
+      return [dot(h.center, right), dot(h.center, up), extent(h, right), extent(h, up)].map(v => v * m);
+    });
+    const areas = patches.map(p => Math.PI * p[2] * p[3]), total = areas.reduce((a, b) => a + b);
+    const breadth = Math.sqrt(areas[0] / Math.max(...areas.slice(1)));
+    assert.ok(breadth > .82 && breadth < 1.65, `projected focal / best shoulder ${breadth} at ${seed}`);
+    const size = (axis: number) => Math.max(...patches.map(p => p[axis] + p[axis + 2])) - Math.min(...patches.map(p => p[axis] - p[axis + 2]));
+    share.push(areas[0] / total); density.push(total / (size(0) * size(1)));
   }
+  assert.ok(Math.max(...share) < .45 && Math.min(...share) > .16);
+  density.sort((a, b) => a - b);
+  assert.ok(density[50] > .30 && density[950] < .58, 'central 90% leaves both body and breathing space');
   assert.deepEqual(kinds, new Set(Object.keys(species)));
 });
 

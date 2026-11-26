@@ -9,10 +9,10 @@ const tissues: Record<SpeciesKey, Tissue> = {
   daisy: 'paper', cosmos: 'paper', anemone: 'paper', poppy: 'paper', sunflower: 'paper', dahlia: 'paper',
 };
 const fabrics = {
-  wax:    { roughness: .48, sheen: .10, bump: .32, wash: .57, rim: .28 },
-  satin:  { roughness: .61, sheen: .20, bump: .30, wash: .47, rim: .27 },
-  velvet: { roughness: .88, sheen: .26, bump: .37, wash: .62, rim: .15 },
-  paper:  { roughness: .77, sheen: .12, bump: .31, wash: .47, rim: .23 },
+  wax:    { roughness: .48, sheen: .10, bump: .085, wash: .48, rim: .28 },
+  satin:  { roughness: .61, sheen: .20, bump: .105, wash: .45, rim: .27 },
+  velvet: { roughness: .88, sheen: .26, bump: .11, wash: .54, rim: .15 },
+  paper:  { roughness: .77, sheen: .12, bump: .065, wash: .44, rim: .23 },
 };
 
 // Independent mip chains: never borrow another species' colour at distant
@@ -76,18 +76,23 @@ export function petalSurface({ key, palette }: Specimen, fields: ReturnType<type
       diffuseColor.rgb *= 1.0 - blade * (0.20 * socket + 0.12 * density);
       float edge = max(abs(2.0 * vBumpMapUv.x - 1.0), vBumpMapUv.y);
       float margin = smoothstep(0.78, 1.0, edge) * (1.0 - density) * (1.0 - socket) * blade;
-      diffuseColor.rgb = mix(diffuseColor.rgb, petalRim, margin * (0.10 + 0.13 * vPetalHand.x));`)
+      float reverse = gl_FrontFacing ? 0.0 : blade;
+      diffuseColor.rgb = mix(diffuseColor.rgb, petalRim, margin * (0.032 + 0.055 * vPetalHand.x));`)
+      // Pigment-rich folds and the dull underside break the broad wax highlight.
+      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+        roughnessFactor = clamp(roughnessFactor + blade * (0.14 * density - 0.065) + 0.10 * reverse, 0.23, 1.0);`)
       // Derive slopes from the same filtered RG lookup instead of doing
       // three more height fetches. Minified tissue softens with distance.
       .replace('#include <normal_fragment_maps>', `normal = perturbNormalArb(-vViewPosition, normal,
-        blade * bumpScale * vec2(dFdx(tissue.r), dFdy(tissue.r)), faceDirection);`)
+        blade * bumpScale * (1.0 - 0.4 * reverse) * vec2(dFdx(tissue.r), dFdy(tissue.r)), faceDirection);`)
       .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
         // Warm bounce through the thin, grazing margin; not a glow or a
         // transmission pass. The underside away from the key receives most.
         #if NUM_DIR_LIGHTS > 0
           float back = max(0.0, -dot(normal, directionalLights[0].direction));
-          float grazing = 1.0 - saturate(dot(normal, geometryViewDir));
-          reflectedLight.indirectDiffuse += petalRim * margin * (0.08 + 0.27 * back) * (0.4 + 0.6 * grazing);
+          float thin = blade * (1.0 - socket) * (1.0 - density);
+          vec3 scattered = mix(diffuseColor.rgb, petalRim, 0.10);
+          reflectedLight.indirectDiffuse += scattered * directionalLights[0].color * back * thin * (0.085 + 0.08 * margin);
         #endif`);
   };
   return mat;

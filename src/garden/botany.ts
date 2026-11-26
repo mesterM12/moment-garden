@@ -387,7 +387,25 @@ function createFloristBouquet(timestamp: number): ExpandedBouquetPlan {
       tiltOffset: (!i ? .12 : -.10) + (random() - .5) * (i ? .86 : .30),
       leafCount: which > 1 ? 1 : 2 + Math.floor(random() * 2), leafScale: .44 + random() * .22 };
   });
+  // The cut (including repair and its random draws) belongs to the gift.
+  // Dress those *same sockets* afterwards, rather than repacking old links.
   const flowers = arrangeCut(entries, companions, g, random, headEnvelope, fitsFrame, hasRoom);
+  const focus = flowers[0], key = focus.specimen.key;
+  const shoulder = Math.max(...flowers.slice(1, companions + 1).map(f => headEnvelope(f).radius));
+  const full = headEnvelope(focus).radius;
+  const breadth = key === 'hydrangea' || key === 'sunflower' ? 1.27 : key === 'calla' || key === 'tulip' ? 1.08 : 1.18;
+  focus.scale *= Math.min(full * .73, shoulder * breadth + .035 * (full - 1)) / full;
+  // Give the shoulder flowers a little body where there is already room.
+  // Never move a stem or consume random numbers to earn a larger head.
+  for (let i = 1; i <= companions; i++) {
+    const flower = flowers[i];
+    for (const factor of [1.12, 1.06]) {
+      const grown = headEnvelope({ ...flower, scale: flower.scale * factor });
+      if (fitsFrame(grown) && flowers.every((other, j) => j === i || hasRoom(grown, headEnvelope(other)))) {
+        flower.scale *= factor; break;
+      }
+    }
+  }
   // Trace the actual outside shoulders, with a low counterweight and a long
   // back line. Greenery shouldn't give every design the same outer contour.
   const sprays: NonNullable<ExpandedBouquetPlan['sprays']> = [];

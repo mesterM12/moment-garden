@@ -22,7 +22,7 @@ function profile(values: readonly number[], t: number) {
   return (2 * u ** 3 - 3 * u * u + 1) * values[i] + (u ** 3 - 2 * u * u + u) * width * tangent(i)
     + (-2 * u ** 3 + 3 * u * u) * values[i + 1] + (u ** 3 - u * u) * width * tangent(i + 1);
 }
-function surface(specimen: Specimen, sample: Sample) {
+function surface(specimen: Specimen, sample: Sample, sealed?: Sample) {
   const positions: number[] = [], bud: number[] = [], colors: number[] = [], uvs: number[] = [], indices: number[] = [];
   const across = 12, along = 22;
   const base = new THREE.Color(specimen.palette.base);
@@ -35,7 +35,8 @@ function surface(specimen: Specimen, sample: Sample) {
       const point = sample(t, s);
       positions.push(...point);
       // All panels close toward the bloom axis as one coherent bud.
-      bud.push(point[0] * (0.24 + 0.20 * (1 - t)), point[1] * 0.48 + t * specimen.length * 0.70, point[2] * (0.24 + 0.20 * (1 - t)));
+      if (sealed) bud.push(...sealed(t, s));
+      else bud.push(point[0] * (0.24 + 0.20 * (1 - t)), point[1] * 0.48 + t * specimen.length * 0.70, point[2] * (0.24 + 0.20 * (1 - t)));
       const color = dark.clone().lerp(base, smooth(t / 0.28));
       const rim = specimen.pattern === 'picotee' ? smooth((t - 0.85) / 0.15) : smooth((t - 0.4) / 0.6) * 0.48;
       color.lerp(tip, rim);
@@ -61,7 +62,53 @@ function surface(specimen: Specimen, sample: Sample) {
   closed.dispose();
   return geometry;
 }
-function build(specimen: Specimen, head: THREE.Group, material: THREE.Material): MorphPetal[] {
+// Decorative dahlia: tight quills at the eye grade into reflexed, overlapping
+// guard petals. All roots insert on one small receptacle (including in bud).
+function cutDahlia(specimen: Specimen, head: THREE.Group, material: THREE.Material) {
+  const R = specimen.length, entries: MorphPetal[] = [];
+  const backing = new THREE.Mesh(new THREE.SphereGeometry(R, 24, 14),
+    new THREE.MeshStandardMaterial({ color: '#637547', roughness: .84 }));
+  backing.position.y = .032 * R;
+  head.add(backing);
+  // Radius of each row at its lip, in head lengths. Pitch varies with girth:
+  // the outside has broad spoons, not another uniform ring of little tubes.
+  const rows = [[5, .075], [8, .18], [11, .31], [14, .46], [17, .62], [20, .79], [22, .96]];
+  rows.forEach(([count, reach], row) => {
+    const u = row / (rows.length - 1);
+    for (let i = 0; i < count; i++) {
+      const a = specimen.rotation + row * 2.39996 + i * Math.PI * 2 / count;
+      const hand = Math.sin(i * 7.13 + row * 4.79 + specimen.rotation);
+      const root = .005 + u * .218, rise = .73 - .48 * u ** 1.55;
+      const geometry = surface(specimen, (t, s) => {
+        const lip = smooth((t - .55) / .45), belly = Math.sin(Math.PI * t);
+        const midrib = t * (1 - .11 * s * s * lip);
+        const aim = a + (.17 + hand * .065) * t + .043 * hand * lip;
+        const width = (.055 + .144 * u) * (.085 + .915 * Math.sin(Math.PI * (.035 + .81 * t)) ** .8);
+        const roll = 2.38 - 1.55 * u - .29 * lip;
+        const side = width * Math.sin(s * roll) / Math.sin(Math.min(roll, Math.PI / 2));
+        const r = root + (reach * (1 + hand * .035) - root) * midrib ** 1.26
+          - (1 - u) ** 5 * .076 * lip;
+        const y = .044 + (rise + .027 * hand) * midrib + .22 * u * belly - .25 * u ** 2 * lip
+          + width * (1 - Math.cos(s * roll)) + .034 * s * t * (1 + hand * .5);
+        return [R * (Math.sin(aim) * r + Math.cos(aim) * side), R * y,
+          R * (Math.cos(aim) * r - Math.sin(aim) * side)];
+      }, (t, s) => {
+        // Imbricated sheaths around the same fixed receptacle. A compact
+        // outer row rises around the heart rather than threading through it.
+        const r = root + (.045 + .19 * u) * Math.sin(Math.PI * t) - .75 * root * t;
+        const width = (.10 + .51 * Math.sin(Math.PI * (.03 + .90 * t))) * 2 * Math.PI / count;
+        const aim = a + width * s + .15 * t;
+        return [R * r * Math.sin(aim), R * (.044 + (.85 - .17 * u) * t - .034 * s * s * t), R * r * Math.cos(aim)];
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      head.add(mesh); entries.push({ mesh, layer: Math.floor((1 - u) * 3), offset: 0 });
+    }
+  });
+  return entries;
+}
+
+function build(specimen: Specimen, head: THREE.Group, material: THREE.Material, cut = false): MorphPetal[] {
+  if (cut && specimen.key === 'dahlia') return cutDahlia(specimen, head, material);
   const meshes: MorphPetal[] = [];
   function add(geometry: THREE.BufferGeometry, layer: number) {
     const mesh = new THREE.Mesh(geometry, material);

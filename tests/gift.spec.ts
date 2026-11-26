@@ -140,6 +140,34 @@ test('reading the petals up close does not crop the saved gift or change the see
   await expect(art).toHaveAttribute('data-seed', seed)
 })
 
+test('a narrow back view of a legacy bouquet leaves paper around the whole artwork', async ({ page }) => {
+  await page.goto('/?bouquet=1970260fd29')
+  const opener = page.getByRole('button', { name: 'Open your flowers', exact: true })
+  await expect(opener).toBeEnabled()
+  await opener.press('Enter')
+  // A tall stage reproduced the clipping. Exercise the actual frustum at
+  // this aspect, independently of how much space the postcard chrome gets.
+  await page.addStyleTag({ content: '.flower-stage { width: 276px !important; height: 440px !important; min-block-size: 0 !important; }' })
+  const art = page.locator('canvas')
+  await expect.poll(async () => Math.round((await art.boundingBox())!.height)).toBe(440)
+  const result = await art.evaluate((node) => {
+    const canvas = node as HTMLCanvasElement
+    for (let i = 0; i < 21; i++) canvas.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+    // Read in the draw's task: WebGL need not preserve the drawing buffer.
+    const copy = document.createElement('canvas'); copy.width = canvas.width; copy.height = canvas.height
+    const ctx = copy.getContext('2d')!; ctx.drawImage(canvas, 0, 0)
+    const { data } = ctx.getImageData(0, 0, copy.width, copy.height)
+    let nearest = Infinity, painted = 0
+    for (let y = 0; y < copy.height; y++) for (let x = 0; x < copy.width; x++) {
+      if (data[(y * copy.width + x) * 4 + 3] < 64) continue
+      nearest = Math.min(nearest, x, y, copy.width - 1 - x, copy.height - 1 - y); painted++
+    }
+    return { nearest, painted }
+  })
+  expect(result.painted).toBeGreaterThan(500)
+  expect(result.nearest).toBeGreaterThan(2)
+})
+
 test('switching to reduced motion mid-opening goes straight to the final bouquet', async ({ page }) => {
   await page.goto(gift)
   await page.getByRole('button', { name: 'Open your flowers', exact: true }).click()

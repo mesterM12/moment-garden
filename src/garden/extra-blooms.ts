@@ -190,6 +190,37 @@ function calla(specimen: Specimen, batch: Batches, { color, petal, tint, tip }: 
   }, (t, s) => tint.copy(gold).lerp(cream, 0.26 * t + 0.14 * (Math.cos(s * 36 + t * 35) * Math.cos(t * 47)) ** 2), fold, false);
 }
 
+// One continuous spathe, not a cone capped with a second lip. The seam
+// overlaps down the neck and parts above it. Its hood bends back over a
+// short fleshy spadix; both start at the stem instead of leaving a pinhole.
+function cutCalla(specimen: Specimen, batch: Batches, { petal, tint, color }: Palette) {
+  const R = specimen.length, yaw = .32 * Math.sin(specimen.rotation);
+  const green = color('#829657'), gold = color('#dca642'), cream = color('#fff0c4');
+  const spathe = batch(0);
+  const fold: Fold = p => [p[0] * .34, p[1] * .99, p[2] * .34];
+  spathe.surface(32, 64, (t, s) => {
+    const u = (1 + s) / 2, lip = smooth((t - .78) / .22);
+    const a = yaw + .26 + (u - .5) * TAU * (1.17 - .10 * smooth(t)) + .36 * t + Math.PI;
+    const hood = (.5 - .5 * Math.cos(a - yaw)) ** 5;
+    const flank = Math.sin(a - yaw);
+    const seam = (u - .5) * (.012 + .065 * t);
+    const r = .025 + .095 * t + (.36 + .065 * flank) * t ** 1.72 + seam
+      + lip * (.12 + .12 * hood) - .025 * smooth((t - .93) / .07);
+    const y = -.018 + .71 * t + (.43 * hood + .13 * flank + .13 * (u - .5)) * t ** 2
+      - .072 * smooth((t - .90) / .1) * (1 - hood);
+    return scale([Math.sin(a) * r + .092 * t ** 2, y, Math.cos(a) * r - .105 * hood * lip], R);
+  }, (t, s) => petal(t, s).lerp(cream, .10 * t).lerp(green, .86 * (1 - smooth(t / .41))), fold);
+  // Ovary seals the passage between stem and spadix at the base of the wrap.
+  spathe.ellipsoid(scale([0, .073, 0], R), scale([.038, .09, .038], R),
+    t => tint.copy(green).lerp(gold, 1 - t), fold, 8, 12);
+  spathe.surface(24, 20, (t, s) => {
+    const r = .009 + .055 * Math.sin(Math.PI * t) ** .49 * (1 - .19 * t);
+    const a = s * Math.PI;
+    return scale([r * Math.sin(a) + .036 * t ** 2, .131 + .63 * t,
+      r * Math.cos(a) - .036 * t ** 2], R);
+  }, (t, s) => tint.copy(gold).lerp(cream, .18 + .19 * t + .13 * (Math.cos(42 * s + t * 51) * Math.cos(30 * t)) ** 2), fold, false);
+}
+
 // A moth orchid's two broad wings frame three sepals and a projecting, forked lip.
 function orchid(specimen: Specimen, batch: Batches, { color, petal, base, shade, tip, fleck, tint }: Palette) {
   const R = specimen.length;
@@ -270,7 +301,7 @@ function iris(specimen: Specimen, batch: Batches, { color, petal, tint, fleck, t
 }
 
 // A mophead cluster: four rounded showy sepals per floret on a branching dome.
-function hydrangea(specimen: Specimen, batch: Batches, { color, petal, tint, tip, base, shade }: Palette) {
+function hydrangea(specimen: Specimen, batch: Batches, { color, petal, tint, tip, base, shade }: Palette, cut = false) {
   const R = specimen.length;
   const ivory = color('#eee9ca'), spring = color('#a2b36b'), stalk = color('#56703d');
   const branches = batch(0);
@@ -295,8 +326,10 @@ function hydrangea(specimen: Specimen, batch: Batches, { color, petal, tint, tip
       for (let j = 0; j < 4; j++) {
         const aim = phase * 0.23 + j * TAU / 4;
         panels.surface(9, 8, (t, s) => {
-          const w = 0.61 * profile([0.06, 0.40, 0.78, 1, 0.68], t);
-          const delta = scale(polar(aim, t + 0.05 - 0.20 * s * s * t ** 3, 0.16 * Math.sin(t * Math.PI) + 0.12 * s * s * t, s * w), size);
+          const w = cut ? .64 * profile([.065, .65, 1, .85, .16], t) : .61 * profile([.06, .40, .78, 1, .68], t);
+          const arch = cut ? .14 * s * s * Math.sin(Math.PI * t) + .10 * t * t * Math.sin(aim + phase) : .12 * s * s * t;
+          const delta = scale(polar(aim, t + .05 - (cut ? .065 : .20) * s * s * t ** 3,
+            .16 * Math.sin(t * Math.PI) + arch, s * w), size);
           const out = delta[0] * Math.sin(angle) + delta[2] * Math.cos(angle);
           return sum(center, sum(delta, polar(angle, slope * delta[1], -slope * out)));
         }, (t, s) => petal(t, s).lerp(tip, 0.12 + 0.18 * Math.sin(phase)).lerp(ivory, 0.08 + 0.40 * (1 - smooth(t / 0.56))), fold);
@@ -373,7 +406,7 @@ function billyButton(specimen: Specimen, batch: Batches, { color, tint, base, ti
 
 const forms = { ranunculus, calla, orchid, iris, hydrangea, anemone, billyButton };
 const has = (key: string): key is ExtraSpeciesKey => Object.hasOwn(forms, key);
-function build(specimen: Specimen, head: THREE.Group, material: THREE.Material): MorphPetal[] {
+function build(specimen: Specimen, head: THREE.Group, material: THREE.Material, cut = false): MorphPetal[] {
   if (!has(specimen.key)) return [];
   const batches: Batch[] = [];
   const batch: Batches = (layer, offset = 0) => {
@@ -381,7 +414,8 @@ function build(specimen: Specimen, head: THREE.Group, material: THREE.Material):
     batches.push(builder);
     return builder;
   };
-  forms[specimen.key](specimen, batch, palette(specimen));
+  const form = cut && specimen.key === 'calla' ? cutCalla : forms[specimen.key];
+  form(specimen, batch, palette(specimen), cut);
   return batches.map(builder => builder.mesh());
 }
 

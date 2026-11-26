@@ -120,7 +120,8 @@ function botanicalGeometry(length: number, width: number, palette: PetalPalette,
   return geometry;
 }
 
-function routedStem(bottom: THREE.Vector3, knot: THREE.Vector3, middle: THREE.Vector3, top: THREE.Vector3, obstacles: HeadEnvelope[], earlierStems: THREE.Vector3[][]) {
+type RouteScore = (points: THREE.Vector3[]) => number;
+function routedStem(bottom: THREE.Vector3, knot: THREE.Vector3, middle: THREE.Vector3, top: THREE.Vector3, obstacles: HeadEnvelope[], earlierStems: THREE.Vector3[][], poseCost?: RouteScore) {
   const offsets = [0, 0.25, -0.25, 0.50, -0.50, 0.82, -0.82];
   let best: THREE.CatmullRomCurve3 | undefined;
   let bestScore = Infinity;
@@ -133,7 +134,7 @@ function routedStem(bottom: THREE.Vector3, knot: THREE.Vector3, middle: THREE.Ve
       shoulder.z += depth * 0.45;
       const curve = new THREE.CatmullRomCurve3([bottom, knot, bend, shoulder, top]);
       const samples = curve.getPoints(40).filter(point => point.y > -1.65);
-      let score = Math.abs(depth) * 0.3 + Math.abs(side) * 0.45;
+      let score = Math.abs(depth) * 0.3 + Math.abs(side) * 0.45 + (poseCost?.(samples) ?? 0);
       for (const point of samples) {
         for (const head of obstacles) {
           const offset = point.clone().sub(head.center);
@@ -192,14 +193,16 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
   const bendX = -.37 * top.x + .10 * Math.sin(specimen.rotation);
   const bendZ = -.26 * top.z + .12;
   const drop = -.36 - .13 * Math.abs(top.x);
-  const stemRest = stem.geometry.getAttribute('position');
-  const folded = stemRest.clone();
-  for (let i = 0; i < folded.count; i++) {
-    const y = stemRest.getY(i), weight = flexAt(y, top.y);
-    folded.setXYZ(i, stemRest.getX(i) + bendX * weight, y + drop * weight, stemRest.getZ(i) + bendZ * weight);
-  }
-  stem.geometry.morphAttributes.position = [folded];
-  stem.updateMorphTargets();
+  const flexStem = () => {
+    const rest = stem.geometry.getAttribute('position'), folded = rest.clone();
+    for (let i = 0; i < folded.count; i++) {
+      const y = rest.getY(i), weight = flexAt(y, top.y);
+      folded.setXYZ(i, rest.getX(i) + bendX * weight, y + drop * weight, rest.getZ(i) + bendZ * weight);
+    }
+    stem.geometry.morphAttributes.position = [folded];
+    stem.updateMorphTargets();
+  };
+  flexStem();
 
   const leafColors = { base: `hsl(${specimen.greenHue - 5}, 32%, 31%)`, tip: `hsl(${specimen.greenHue - 18}, 34%, 51%)`, root: '#264435' };
   const leafWidths = { slender: 0.12, broad: 0.47, serrated: 0.31, strap: 0.22 };
@@ -228,8 +231,9 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
   const custom = ExtraBlooms.has(specimen.key);
   const dedicated = custom || ['rose', 'tulip', 'dahlia'].includes(specimen.key);
   if (dedicated) {
-    const panels = (custom ? ExtraBlooms.build : PetalMeshes.build)(specimen, head, petalMaterial);
-    petals.push(...finishPetals(specimen, panels, head));
+    const cut = bouquet.version === 3;
+    const panels = (custom ? ExtraBlooms.build : PetalMeshes.build)(specimen, head, petalMaterial, cut);
+    petals.push(...finishPetals(specimen, panels, head, cut));
   }
   const blades = dedicated ? null : bladeBatches(specimen.key, head, petalMaterial, specimen.timestamp);
   for (let layer = 0; blades && layer < specimen.layers; layer++) {
@@ -340,6 +344,7 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
       : p.offset + petalWave(specimen.key, p.layer, i, specimen.rotation);
   });
   const backing = specimen.key === 'dahlia' ? head.children[0] : undefined;
+  const cutDahlia = !!backing && bouquet.version === 3;
   const nod = bouquet.version === 2 && specimen.key === 'ranunculus' ? .29 * Math.sin(specimen.rotation * 1.6) : 0;
   const peak = hingePeak(specimen.key);
   const diskHead = specimen.key === 'sunflower' || specimen.key === 'daisy';
@@ -349,7 +354,7 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
   const startBeat = bouquet.version === 2 ? bloomStart(index, entry.delay) : index === 0 ? .075
     : .22 + Math.min(.20, distance * .055) + (index > 3 ? .091 : 0) + entry.delay * .42;
   const endBeat = bouquet.version === 2 ? 1 : index === 0 ? .69 : index > 3 ? 1 : .88 + entry.delay;
-  return { head, center, petals, leaves, sepals, backing, nod, peak, neck, diskHead, entry, curve, stem, top, bendX, bendZ, drop, startBeat, endBeat };
+  return { head, center, petals, leaves, sepals, backing, cutDahlia, nod, peak, neck, diskHead, entry, curve, stem, flexStem, top, bendX, bendZ, drop, startBeat, endBeat };
 }
 
 // Lay out foliage once at full bloom, not every frame. The thin leaf surfaces
@@ -391,9 +396,9 @@ function settleFoliage(bouquet: BuiltBouquet) {
   });
 }
 
-function pose({ blooms, filler }: BuiltBouquet, p: number) {
+export function pose({ blooms, filler }: BuiltBouquet, p: number) {
   filler?.pose(p);
-  blooms.forEach(({ head, center, petals, leaves, sepals, backing, nod, peak, neck, diskHead, entry, stem, top, bendX, bendZ, drop, startBeat, endBeat }) => {
+  blooms.forEach(({ head, center, petals, leaves, sepals, backing, cutDahlia, nod, peak, neck, diskHead, entry, stem, top, bendX, bendZ, drop, startBeat, endBeat }) => {
     const local = clamp((p - startBeat) / (endBeat - startBeat));
     const tension = stemTension(local);
     stem.morphTargetInfluences![0] = tension;
@@ -406,7 +411,10 @@ function pose({ blooms, filler }: BuiltBouquet, p: number) {
     head.rotation.z = -.5 * entry.turn - .13 * bendX * tension + neck * .72 * lift;
     const unfurl = ease((local - .03) / .9);
     head.scale.setScalar(entry.scale); // the petal surface opens, not the silhouette's scale
-    if (backing) backing.scale.set(.88 * (.20 + .80 * unfurl), .39, .88 * (.20 + .80 * unfurl));
+    if (backing) {
+      const girth = cutDahlia ? .09 + .15 * unfurl : .88 * (.20 + .80 * unfurl);
+      backing.scale.set(girth, cutDahlia ? .082 : .39, girth);
+    }
     petals.forEach(petal => {
       const opening = clamp(petalOpening(local, petal.offset) * (petal.pace ?? 1));
       const weights = petal.mesh.morphTargetInfluences!;
@@ -432,7 +440,52 @@ function pose({ blooms, filler }: BuiltBouquet, p: number) {
   // The binding and cut ends stay still throughout.
 }
 
-function disposeBouquet({ plant, materials }: BuiltBouquet): void {
+// A mature ray head is a disk; its bud is a much taller volume, on a bent
+// neck. Check the dressed curves against other *moving* heads once at setup.
+// Sample at most 96 vertices per petal batch, at four beats, in head space.
+// The padded ellipses are routing guides, not per-frame triangle collisions.
+function clearOpeningStems(bouquet: BuiltBouquet, envelopes: HeadEnvelope[]) {
+  const { blooms } = bouquet, point = new THREE.Vector3(), probe = new THREE.Vector3();
+  const phases = [0, .42, .58, .74].map(p => {
+    pose(bouquet, p);
+    return blooms.map(b => {
+      const bounds = new THREE.Box3();
+      for (const { mesh } of b.petals) {
+        const count = mesh.geometry.attributes.position.count, step = Math.max(1, Math.ceil(count / 96));
+        for (let i = 0; i < count; i += step) bounds.expandByPoint(mesh.getVertexPosition(i, point));
+      }
+      const center = bounds.getCenter(new THREE.Vector3());
+      const size = bounds.getSize(new THREE.Vector3()).multiplyScalar(.5 * b.entry.scale);
+      const q = b.head.quaternion;
+      return { center: center.multiplyScalar(b.entry.scale).applyQuaternion(q).add(b.head.position),
+        axis: new THREE.Vector3(0, 1, 0).applyQuaternion(q), radial: (Math.max(size.x, size.z) + .055) ** 2,
+        axial: (size.y + .065) ** 2, tension: b.stem.morphTargetInfluences![0] };
+    });
+  });
+  blooms.forEach((b, i) => {
+    const cost = (points: THREE.Vector3[]) => {
+      let score = 0;
+      for (const frame of phases) for (const point of points) {
+        const w = frame[i].tension * flexAt(point.y, b.top.y);
+        const x = point.x + w * b.bendX, y = point.y + w * b.drop, z = point.z + w * b.bendZ;
+        for (let j = 0; j < frame.length; j++) if (i !== j) {
+          const h = frame[j]; probe.set(x - h.center.x, y - h.center.y, z - h.center.z);
+          const a = probe.dot(h.axis) ** 2, d = (probe.lengthSq() - a) / h.radial + a / h.axial;
+          if (d < 1) score += 2 + 14 * (1 - d);
+        }
+      }
+      return score;
+    };
+    if (!cost(b.curve.getPoints(40))) return;
+    const [bottom, knot, middle] = b.curve.points;
+    b.curve = routedStem(bottom, knot, middle, b.top, envelopes.filter((_, j) => j !== i),
+      blooms.filter(other => other !== b).map(other => other.curve.getPoints(40).filter(p => p.y > -1.65)), cost);
+    b.stem.geometry.dispose(); b.stem.geometry = new THREE.TubeGeometry(b.curve, 40, .024, 7, false);
+    b.flexStem();
+  });
+}
+
+export function disposeBouquet({ plant, materials }: BuiltBouquet): void {
   const geometries = new Set<THREE.BufferGeometry>();
   plant.traverse(object => {
     if (object instanceof THREE.InstancedMesh) object.dispose();
@@ -446,7 +499,7 @@ function disposeBouquet({ plant, materials }: BuiltBouquet): void {
   materials.forEach(material => material.dispose());
 }
 
-function buildBouquet(plan: BouquetPlan, textures: Textures): BuiltBouquet {
+export function buildBouquet(plan: BouquetPlan, textures: Textures): BuiltBouquet {
   const plant = new THREE.Group();
   const ribbon = new THREE.Group();
   const materials = new Set<THREE.Material>();
@@ -464,17 +517,23 @@ function buildBouquet(plan: BouquetPlan, textures: Textures): BuiltBouquet {
     tieBouquet(ribbon, plan.tie.style, plan.tie.color);
     bouquet.filler = buildFiller(plan);
     plant.add(bouquet.filler.group);
+    if (plan.version === 3) clearOpeningStems(bouquet, envelopes);
     settleFoliage(bouquet);
-    if (plan.version === 3) {
-      bouquet.focus.copy(envelopes[0].center).multiplyScalar(.82);
-      // Cache local-space bounds once, at rest. Individual head/leaf/stem
-      // boxes are much tighter after a turn than one box for the whole plant.
-      for (const piece of [ribbon, ...bouquet.filler.group.children,
-        ...bouquet.blooms.flatMap(b => [b.head, b.stem, ...b.leaves.filter(l => l.visible)])]) {
-        const { min, max } = new THREE.Box3().setFromObject(piece);
-        for (const x of [min.x, max.x]) for (const y of [min.y, max.y]) for (const z of [min.z, max.z])
-          bouquet.framePoints.push(new THREE.Vector3(x, y, z));
-      }
+    if (plan.version === 3) bouquet.focus.copy(envelopes[0].center).multiplyScalar(.82);
+    // The tips travel with a flexing neck: morph bounds in a rest-world
+    // transform alone miss that travel. Cache swept boxes for camera/PNG
+    // once, not a scan of animated vertices while the recipient turns it.
+    const pieces = [ribbon, ...bouquet.filler.group.children,
+      ...bouquet.blooms.flatMap(b => [b.head, b.stem, ...b.leaves.filter(l => l.visible)])];
+    const swept = pieces.map(() => new THREE.Box3());
+    const sample = new THREE.Box3();
+    for (const beat of [0, .40, .62, 1]) {
+      pose(bouquet, beat); plant.updateMatrixWorld(true);
+      pieces.forEach((piece, i) => swept[i].union(sample.setFromObject(piece)));
+    }
+    for (const { min, max } of swept) {
+      for (const x of [min.x, max.x]) for (const y of [min.y, max.y]) for (const z of [min.z, max.z])
+        bouquet.framePoints.push(new THREE.Vector3(x, y, z));
     }
     return bouquet;
   } catch (error) {
