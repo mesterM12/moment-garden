@@ -83,9 +83,11 @@ export interface ExpandedBouquetPlan extends BouquetPlan {
   tie: { style: 'bow' | 'twine' | 'wrap'; color: string };
 }
 
-/** A batch whose closed geometry is driven by one bloom morph target. */
+/** One render batch; optional blade domains distinguish petals from attached details. */
 export interface MorphPetal {
   mesh: import('three').Mesh<import('three').BufferGeometry, import('three').Material>;
+  blades?: import('./petal-fold').BladeSpan[];
+  pace?: number;
   layer: number;
   offset: number;
 }
@@ -104,6 +106,7 @@ export interface GardenEngineOptions {
   onContextChange?: (lost: boolean) => void;
   onBloomProgress?: (progress: number) => void;
   onBloomPause?: () => void;
+  onCloseViewChange?: (close: boolean) => void;
 }
 
 export interface GardenEngine {
@@ -111,6 +114,7 @@ export interface GardenEngine {
   show(timestamp: number): BouquetInfo;
   bloom(options?: { instant?: boolean }): void;
   resetView(options?: { instant?: boolean }): void;
+  setCloseView(close: boolean, options?: { instant?: boolean }): void;
   setReducedMotion(reduced: boolean): void;
   exportPng(): Promise<Blob>;
   dispose(): void;

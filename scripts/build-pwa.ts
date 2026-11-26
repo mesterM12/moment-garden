@@ -14,7 +14,7 @@ const staticFiles = await files('.next/static')
 const publicFiles = (await Promise.all(['audio', 'fonts', 'icons'].map(folder => files(`public/${folder}`)))).flat()
 const urls = [
   `${base}/`, `${base}/flowers.svg`, `${base}/manifest.webmanifest`,
-  ...staticFiles.filter(file => /\.(?:js|css|woff2)$/.test(file)).map(file => `${base}/_next/${file.slice('.next/'.length)}`),
+  ...staticFiles.filter(file => /\.(?:js|css|woff2|svg)$/.test(file)).map(file => `${base}/_next/${file.slice('.next/'.length)}`),
   ...publicFiles.filter(file => /\.(?:wav|woff2|png)$/.test(file)).map(file => `${base}/${file.slice('public/'.length)}`),
 ]
 await build({

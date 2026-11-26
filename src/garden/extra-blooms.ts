@@ -1,5 +1,6 @@
 /* Procedural cut-flower heads. Batches share the renderer's petal material and bloom pose. */
 import * as THREE from 'three';
+import type { BladeSpan } from './petal-fold';
 import type { ExtraSpeciesKey, MorphPetal, Specimen } from './types';
 
 type Point = number[];
@@ -39,8 +40,10 @@ const compact = (point: Point): Point => [point[0] * 0.38, point[1] * 0.72 + 0.0
 
 function createBatch(head: THREE.Group, material: THREE.Material, layer: number, offset: number) {
   const positions: number[] = [], closed: number[] = [], colors: number[] = [], uvs: number[] = [], indices: number[] = [];
-  function surface(along: number, across: number, sample: Sample, paint: Paint, fold: Fold = bud) {
+  const blades: BladeSpan[] = [];
+  function surface(along: number, across: number, sample: Sample, paint: Paint, fold: Fold = bud, blade: boolean | BladeSpan['anchor'] = true) {
     const first = positions.length / 3;
+    if (blade) blades.push({ first, end: first + (along + 1) * (across + 1), voice: blades.length, anchor: blade === true ? undefined : blade });
     for (let j = 0; j <= along; j++) {
       const t = j / along;
       for (let i = 0; i <= across; i++) {
@@ -57,8 +60,9 @@ function createBatch(head: THREE.Group, material: THREE.Material, layer: number,
         }
       }
     }
+    return blades.length - 1;
   }
-  function ellipsoid(center: Point, dimensions: Point, paint: Paint, fold: Fold = compact, along = 8, across = 16) {
+  function ellipsoid(center: Point, dimensions: Point, paint: Paint, fold: Fold = compact, along = 8, across = 16, host?: { uv: [number, number]; voice: number }) {
     surface(along, across, (t, s) => {
       const theta = t * Math.PI, phi = s * Math.PI;
       return sum(center, [
@@ -66,7 +70,8 @@ function createBatch(head: THREE.Group, material: THREE.Material, layer: number,
         dimensions[1] * Math.cos(theta),
         dimensions[2] * Math.sin(theta) * Math.cos(phi),
       ]);
-    }, paint, fold);
+    }, paint, fold, host?.uv ?? false);
+    if (host) blades[blades.length - 1].voice = host.voice;
   }
   function twig(from: Point, to: Point, width: number, paint: Paint) {
     const axis = new THREE.Vector3(...to).sub(new THREE.Vector3(...from)).normalize();
@@ -76,7 +81,7 @@ function createBatch(head: THREE.Group, material: THREE.Material, layer: number,
       const center = from.map((n, i) => lerp(n, to[i], t));
       const r = width * lerp(1, 0.53, t);
       return sum(center, sum(scale(u, Math.cos(s * Math.PI) * r), scale(v, Math.sin(s * Math.PI) * r)));
-    }, paint, compact);
+    }, paint, compact, false);
   }
   function mesh() {
     const geometry = new THREE.BufferGeometry();
@@ -97,7 +102,7 @@ function createBatch(head: THREE.Group, material: THREE.Material, layer: number,
     geometry.setAttribute('normal', openNormal);
     const panel = new THREE.Mesh(geometry, material);
     head.add(panel);
-    return { mesh: panel, layer, offset };
+    return { mesh: panel, layer, offset, blades };
   }
   return { surface, ellipsoid, twig, mesh };
 }
@@ -182,7 +187,7 @@ function calla(specimen: Specimen, batch: Batches, { color, petal, tint, tip }: 
   spathe.surface(20, 14, (t, s) => {
     const r = (0.006 + 0.066 * Math.sin(Math.PI * t) ** 0.45) * (1 - 0.29 * t);
     return scale(polar(s * Math.PI, r, 0.1 + 0.73 * t, 0.032 * t * t), R);
-  }, (t, s) => tint.copy(gold).lerp(cream, 0.26 * t + 0.14 * (Math.cos(s * 36 + t * 35) * Math.cos(t * 47)) ** 2), fold);
+  }, (t, s) => tint.copy(gold).lerp(cream, 0.26 * t + 0.14 * (Math.cos(s * 36 + t * 35) * Math.cos(t * 47)) ** 2), fold, false);
 }
 
 // A moth orchid's two broad wings frame three sepals and a projecting, forked lip.
@@ -242,17 +247,18 @@ function iris(specimen: Specimen, batch: Batches, { color, petal, tint, fleck, t
       const y = 0.082 + 0.24 * Math.sin(t * Math.PI) - 0.36 * t ** 2 + 0.14 * s * s * Math.sin(Math.PI * t) + wave;
       return polar(angle + 0.09 * t, R * (0.035 + t - 0.13 * s * s * t ** 2), y * R, s * width);
     };
-    falls.surface(24, 20, fall, (t, s) => {
+    const voice = falls.surface(24, 20, fall, (t, s) => {
       const blaze = bell((t - 0.36) / 0.31) * bell(s * (2.5 + 1.8 * t));
       const streaks = Math.cos(s * 26 / (0.8 + t) + 2 * t) ** 10;
       return petal(t, s).lerp(cream, 0.93 * blaze).lerp(fleck, 0.32 * streaks * blaze);
     });
+    // Each fall has one blade plus fifteen attached beard grains.
     for (let j = 0; j < 15; j++) {
       const t = 0.13 + j * 0.026;
       const s = 0.12 * Math.sin(j * GOLDEN_ANGLE);
       const point = fall(t, s);
       point[1] += 0.021 + 0.018 * Math.sin(j / 15 * Math.PI);
-      falls.ellipsoid(point, [0.026, 0.035, 0.026], a => tint.copy(gold).lerp(cream, 0.58 * (1 - a)), p => bud(p, t), 4, 7);
+      falls.ellipsoid(point, [0.026, 0.035, 0.026], a => tint.copy(gold).lerp(cream, 0.58 * (1 - a)), p => bud(p, t), 4, 7, { uv: [t, s], voice });
     }
     standards.surface(20, 16, (t, s) => {
       const width = specimen.width * 0.91 * profile([0.05, 0.40, 0.83, 1, 0.57], t);

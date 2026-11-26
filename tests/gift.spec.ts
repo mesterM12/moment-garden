@@ -63,6 +63,30 @@ for (const reduced of [false, true]) {
   })
 }
 
+test('a ribbon can be tugged, eased back and pulled again without opening the wrong gift', async ({ page }) => {
+  await page.goto(gift)
+  const bow = page.getByRole('button', { name: 'Pull the ribbon', exact: true })
+  await expect(bow).toBeEnabled()
+  const box = (await bow.boundingBox())!
+  const x = box.x + box.width / 2, y = box.y + box.height / 2
+  const distance = Math.min(110, box.width * .48)
+  const initial = await bow.screenshot()
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x + distance, y, { steps: 10 })
+  expect((await bow.screenshot()).equals(initial)).toBe(false)
+  await page.mouse.move(x + 1, y, { steps: 10 })
+  await page.mouse.up()
+  await expect(page.getByRole('button', { name: 'Open your flowers' })).toBeEnabled()
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x - distance, y, { steps: 10 })
+  await page.mouse.up()
+  await expect(bow).not.toBeVisible()
+  await expect(page.locator('canvas')).toBeFocused()
+  await expect(page.locator('canvas')).toHaveAttribute('data-seed', seed)
+})
+
 test('opens the exact shared bouquet and preserves it through replay and saving', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
@@ -83,6 +107,42 @@ test('opens the exact shared bouquet and preserves it through replay and saving'
   expect(new URL(page.url()).searchParams.has('bouquet')).toBe(false)
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
   expect(errors).toEqual([])
+})
+
+test('reading the petals up close does not crop the saved gift or change the seed', async ({ page }) => {
+  await openGift(page)
+  const art = page.locator('canvas')
+  const detail = page.getByRole('button', { name: 'Look closer', exact: true })
+  async function keepsake() {
+    const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /Save postcard/ }).click()])
+    const chunks: Buffer[] = []
+    const stream = await download.createReadStream()
+    for await (const chunk of stream!) chunks.push(Buffer.from(chunk))
+    return Buffer.concat(chunks)
+  }
+  const whole = await keepsake()
+  const wide = await art.screenshot()
+  await detail.focus()
+  await page.keyboard.press('Enter')
+  await expect(detail).toHaveAttribute('aria-pressed', 'true')
+  expect((await art.screenshot()).equals(wide)).toBe(false)
+  expect((await keepsake()).equals(whole)).toBe(true)
+  await expect(detail).toHaveAttribute('aria-pressed', 'true')
+  await art.focus()
+  await page.keyboard.press('Home')
+  await expect(detail).toHaveAttribute('aria-pressed', 'false')
+  await expect(art).toHaveAttribute('data-seed', seed)
+})
+
+test('switching to reduced motion mid-opening goes straight to the final bouquet', async ({ page }) => {
+  await page.goto(gift)
+  await page.getByRole('button', { name: 'Open your flowers', exact: true }).click()
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await expect(page.locator('.flower-postcard-details [role="status"]').first()).toHaveText('In full bloom')
+  await expect(page.locator('.flower-cover')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Replay bloom', exact: true })).toHaveCount(0)
+  await expect(page.locator('canvas')).toHaveAttribute('data-seed', seed)
+  await expect(page.getByRole('button', { name: /Save postcard/ })).toBeEnabled()
 })
 
 test('reduced motion opens a complete bouquet with accessible controls', async ({ page }) => {

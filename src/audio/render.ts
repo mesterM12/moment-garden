@@ -29,8 +29,58 @@ function smoothStep(value: number): number {
   return bounded * bounded * (3 - 2 * bounded)
 }
 
-function bump(time: number, center: number, width: number): number {
-  return Math.exp(-0.5 * ((time - center) / width) ** 2)
+// Mix only the span of a gesture. Between touches there is no noise bed.
+function addGesture(mix: Float64Array, start: number, duration: number, sample: (age: number) => number) {
+  const first = Math.round(start * SAMPLE_RATE)
+  const count = Math.min(Math.round(duration * SAMPLE_RATE), mix.length - first)
+  for (let i = 0; i < count; i++) {
+    mix[first + i]! += sample(i / SAMPLE_RATE) * smoothStep((count - 1 - i) / (0.009 * SAMPLE_RATE))
+  }
+}
+
+// A local contact excites a damped flexural mode of a fold / wooden soundboard.
+function resonator(hz: number, decay: number) {
+  const angle = TAU * hz / SAMPLE_RATE
+  const radius = Math.exp(-1 / (SAMPLE_RATE * decay))
+  const feedback = 2 * Math.cos(angle) * radius
+  const feed = Math.sin(angle)
+  let last = 0, previous = 0
+  return (drive: number) => {
+    const next = feed * drive + feedback * last - radius * radius * previous
+    previous = last
+    last = next
+    return next
+  }
+}
+
+/** A ribbon pulled through a pinch: accelerating weave contacts ride a soft friction stroke. */
+function ribbonSlip(mix: Float64Array, start: number, length: number, level: number, noise: () => number) {
+  const fibre = lowPass(2_650), soft = lowPass(2_150), bass = lowPass(380), pressure = lowPass(58)
+  let phase = 0, tooth = 0
+  addGesture(mix, start, length, (t) => {
+    const x = t / length
+    phase += (230 + 380 * Math.sin(Math.PI * x) + 110 * noise()) / SAMPLE_RATE
+    if (phase >= 1) { phase--; tooth = 0.5 + 0.5 * noise() }
+    tooth *= 0.90
+    const friction = soft(fibre((0.45 + tooth) * noise() + 0.25 * tooth))
+    const contact = Math.sin(Math.PI * x) ** 1.4 * (1 + 1.6 * pressure(noise()))
+    return level * contact * (friction - bass(friction))
+  })
+}
+
+/** Tiny irregular buckles in a tensioned sheet; neither white-noise hiss nor pitched chimes. */
+function folds(mix: Float64Array, start: number, span: number, count: number, level: number, noise: () => number) {
+  for (let i = 0; i < count; i++) {
+    const at = start + span * (i + 0.42 + 0.4 * noise()) / count
+    const weight = level * (0.64 + 0.36 * noise())
+    const broad = resonator(760 + 240 * noise(), 0.0028)
+    const fine = resonator(2_680 + 640 * noise(), 0.0016)
+    const drive = lowPass(3_800)
+    addGesture(mix, at, 0.026, (t) => {
+      const pinch = drive(noise()) * smoothStep(t / 0.0008) * Math.exp(-t / 0.0021)
+      return weight * (0.70 * broad(pinch) + 0.30 * fine(pinch))
+    })
+  }
 }
 
 /** Remove DC, then taper both ends; no limiter, compression, or normalization. */
@@ -48,71 +98,71 @@ function finish(samples: Float64Array, attack: number, release: number): Float64
   return samples
 }
 
-/** Short, irregular paper slip with a tiny muted contact, not a tear or whoosh. */
+/** A silk draw, then two lighter releases as the tissue loses tension. */
 export function renderGiftOpen(): Float64Array {
   const samples = new Float64Array(Math.round(SOUND_DURATIONS['gift-open'] * SAMPLE_RATE))
-  const noise = noiseSource(0x70617072)
-  const paperLow = lowPass(1_450)
-  const paperSoft = lowPass(1_900)
-  const paperBody = lowPass(240)
-  const irregularity = lowPass(43)
-  const feltLow = lowPass(740)
-  const feltBody = lowPass(190)
-  for (let index = 0; index < samples.length; index++) {
-    const time = index / SAMPLE_RATE
-    const random = noise()
-    const paper = paperSoft(paperLow(random))
-    const texture = paper - paperBody(paper)
-    const uneven = 0.78 + 0.22 * Math.tanh(irregularity(noise()) * 5)
-    // Overlapping, unequal contacts rather than a continuous noise sweep.
-    const contact = 0.78 * bump(time, 0.047, 0.016)
-      + bump(time, 0.103, 0.026)
-      + 0.48 * bump(time, 0.164, 0.019)
-      + 0.18 * bump(time, 0.211, 0.018)
-    const felt = feltLow(random)
-    const feltTexture = felt - feltBody(felt)
-    const age = Math.max(0, time - 0.019)
-    const touchEnvelope = time < 0.019 ? 0 : smoothStep(age / 0.008) * Math.exp(-age / 0.024)
-    const touch = (0.025 * Math.sin(TAU * 330 * age) + 0.055 * feltTexture) * touchEnvelope
-    samples[index] = 0.34 * texture * contact * uneven + touch
-  }
-  return finish(samples, 0.012, 0.044)
+  const noise = noiseSource(0x73696c6b)
+  ribbonSlip(samples, 0.005, 0.097, 0.31, noise)
+  folds(samples, 0.093, 0.048, 7, 0.017, noise)
+  ribbonSlip(samples, 0.132, 0.076, 0.14, noise)
+  folds(samples, 0.183, 0.049, 4, 0.010, noise)
+  // The last fold rests against the lid rather than ending on a bright click.
+  addGesture(samples, 0.204, 0.072, t => 0.023 * smoothStep(t / 0.004) * Math.exp(-t / 0.015)
+    * (Math.sin(TAU * 172 * t) + 0.42 * Math.sin(TAU * 357 * t)))
+  return finish(samples, 0.006, 0.016)
 }
 
-/** Breath and three soft resonances, leaving the last 0.8s of geometry silent. */
+/** Fractional-delay plucked string. The finger position sets the initial
+ * displacement (and harmonic notches); felt loss damps the highs on every trip. */
+function pluck(mix: Float64Array, start: number, midi: number, gain: number, position: number, decay: number) {
+  const hz = 440 * 2 ** ((midi - 69) / 12)
+  const period = SAMPLE_RATE / hz
+  const damping = 0.39
+  const length = Math.floor(period - damping)
+  const fraction = period - damping - length
+  const line = new Float64Array(length + 1)
+  for (let i = 0; i < line.length; i++) {
+    // Two travelling halves of a displaced string form a triangular first period.
+    const x = i / line.length
+    line[i] = 2 * (x < position ? x / position : (1 - x) / (1 - position)) - 1
+  }
+  const loss = Math.exp(-1 / (hz * decay))
+  const wood = resonator(271, 0.008), bridge = resonator(511, 0.005)
+  let cursor = 0, last = 0
+  addGesture(mix, start, decay * 7, (t) => {
+    const ahead = (cursor + 1) % line.length
+    const wave = fraction * line[cursor]! + (1 - fraction) * line[ahead]!
+    const velocity = wave - last
+    line[cursor] = loss * (wave - damping * velocity)
+    cursor = ahead
+    last = wave
+    const body = 0.14 * wood(velocity) + 0.08 * bridge(velocity)
+    return gain * smoothStep(t / 0.009) * (wave + body)
+  })
+}
+
+/** One close, rubato gesture. Nothing sustains underneath it: the perceived
+ * space comes from overlapping string decays, not an ambient pad or reverb. */
 export function renderBloom(): Float64Array {
   const samples = new Float64Array(Math.round(SOUND_DURATIONS.bloom * SAMPLE_RATE))
-  const noise = noiseSource(0x626c6f6d)
-  const airLow = lowPass(1_180)
-  const airSoft = lowPass(1_550)
-  const airBody = lowPass(280)
-  const movement = lowPass(6)
-  const touches = [
-    { start: 0.65, frequency: 349.23, gain: 0.027 },
-    { start: 1.55, frequency: 440, gain: 0.024 },
-    { start: 2.5, frequency: 523.25, gain: 0.018 },
-  ] as const
-  for (let index = 0; index < samples.length; index++) {
-    const time = index / SAMPLE_RATE
-    const air = airSoft(airLow(noise()))
-    const breath = air - airBody(air)
-    const uneven = 0.88 + 0.12 * Math.tanh(movement(noise()) * 9)
-    const swell = smoothStep(time / 0.62) * (0.73 + 0.27 * bump(time, 1.28, 0.62))
-    let value = 0.115 * breath * swell * uneven
-    for (const touch of touches) {
-      const age = time - touch.start
-      if (age < 0) continue
-      // A round felt attack; quiet, slightly inharmonic upper modes suggest glass
-      // without the bright impact or long high ringing of a bell.
-      const envelope = smoothStep(age / 0.115) * Math.exp(-age / 0.39)
-      const fundamental = Math.sin(TAU * touch.frequency * age)
-      const second = 0.14 * Math.sin(TAU * touch.frequency * 2.006 * age) * Math.exp(-age / 0.21)
-      const third = 0.035 * Math.sin(TAU * touch.frequency * 2.983 * age) * Math.exp(-age / 0.13)
-      value += touch.gain * envelope * (fundamental + second + third)
-    }
-    samples[index] = value
+  const noise = noiseSource(0x7065746c)
+  // Low open fifth, rolled rather than struck together. Let the impatient upper
+  // neighbour lean down onto D; the last, softer F# answers in the lower voice.
+  pluck(samples, 0.334, 50, 0.071, 0.31, 0.39) // D3
+  pluck(samples, 0.403, 57, 0.041, 0.37, 0.34) // A3
+  pluck(samples, 1.118, 64, 0.073, 0.27, 0.36) // E4
+  pluck(samples, 1.718, 62, 0.056, 0.38, 0.45) // D4
+  pluck(samples, 2.612, 54, 0.042, 0.34, 0.33) // F#3
+  // Paired leaf/petal movements in the spaces between fingers. A little dry
+  // brush followed by the delicate buckles of a loosening crease.
+  for (const [at, span, level, creases] of [
+    [0.84, 0.086, 0.074, 3], [1.47, 0.101, 0.064, 4],
+    [2.24, 0.130, 0.087, 4], [2.98, 0.094, 0.050, 3], [3.29, 0.082, 0.034, 2],
+  ] as const) {
+    ribbonSlip(samples, at, span, level, noise)
+    folds(samples, at + span * 0.64, span * 0.68, creases, level * 0.041, noise)
   }
-  return finish(samples, 0.045, 1.2)
+  return finish(samples, 0.008, 0.45)
 }
 
 export function renderSound(name: SoundName): Float64Array {

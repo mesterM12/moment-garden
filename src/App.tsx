@@ -1,7 +1,8 @@
 'use client'
 
 import { Button as ActionButton } from '@ui-sdk/react/button'
-import { ArrowDownToLine, RotateCcw, RotateCw, Sprout } from 'lucide-react'
+import { Toggle } from '@ui-sdk/react/toggle'
+import { ArrowDownToLine, Move, RotateCcw, RotateCw, Sprout, ZoomIn, ZoomOut } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ActionFeedback, ActionIcon } from './components/ActionFeedback'
 import { GiftCover } from './components/GiftCover'
@@ -15,10 +16,12 @@ import { create, read, withoutBouquet } from './lib/bouquet-link'
 import { publicPath } from './lib/site'
 
 const dates = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+const times = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' })
 const flowerNames = new Intl.ListFormat('en')
 const previewError = 'These flowers couldn’t open. Try reloading the postcard.'
 
-function focusPreview(element: HTMLElement) {
+function focusPreview(element: HTMLElement, pointer = false) {
+  if (pointer) element.dataset.pointerFocus = '';
   element.focus({ preventScroll: true })
   const { top, bottom, height } = element.getBoundingClientRect()
   const visible = Math.min(bottom, window.innerHeight) - Math.max(top, 0)
@@ -36,6 +39,7 @@ export default function App() {
   const [bouquet, setBouquet] = useState<BouquetInfo | null>(null)
   const [cover, setCover] = useState<'closed' | 'exiting' | 'gone'>('closed')
   const [pointerOpened, setPointerOpened] = useState(false)
+  const [closeView, setCloseView] = useState(false)
   const [status, setStatus] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [contextLost, setContextLost] = useState(false)
@@ -51,7 +55,7 @@ export default function App() {
   const activeSeed = useRef(initial.seed)
   const lastFreshSeed = useRef(initial.incoming.status === 'valid' ? 0 : initial.seed)
   const opened = useRef(false)
-  const focusTarget = useRef<'preview' | 'fallback' | null>(null)
+  const focusTarget = useRef<'preview' | 'pointer-preview' | 'fallback' | null>(null)
   const lastStatus = useRef('')
   const dismissCover = useCallback(() => setCover('gone'), [])
 
@@ -82,6 +86,7 @@ export default function App() {
           },
           onBloomProgress: syncSound,
           onBloomPause: stopSound,
+          onCloseViewChange: setCloseView,
           onError(message) {
             if (canceled) return
             if (message) {
@@ -134,7 +139,7 @@ export default function App() {
   useLayoutEffect(() => {
     if (sealed) return
     const target = focusTarget.current
-    if (target === 'preview' && ready && canvas.current) focusPreview(canvas.current)
+    if ((target === 'preview' || target === 'pointer-preview') && ready && canvas.current) focusPreview(canvas.current, target === 'pointer-preview')
     else if (target === 'fallback' && unavailable && fallback.current) focusPreview(fallback.current)
     else return
     focusTarget.current = null
@@ -145,7 +150,7 @@ export default function App() {
     const instant = nonPointer || reducedMotion
     opened.current = true
     openingSound.play(instant ? 'opening' : 'opening-and-bloom')
-    focusTarget.current = 'preview'
+    focusTarget.current = nonPointer ? 'preview' : 'pointer-preview'
     setPointerOpened(!nonPointer)
     setCover(instant ? 'gone' : 'exiting')
     engine.current.bloom({ instant })
@@ -163,6 +168,7 @@ export default function App() {
       const next = garden.show(seed)
       activeSeed.current = seed
       setBouquet(next)
+      setCloseView(false)
       setSaveResult(null)
       setLinkStatus('absent')
       if (address !== window.location.href) history.replaceState(history.state, '', address)
@@ -222,6 +228,8 @@ export default function App() {
             <canvas
               id="flower"
               ref={canvas}
+              onBlur={event => { delete event.currentTarget.dataset.pointerFocus }}
+              onKeyDown={event => { delete event.currentTarget.dataset.pointerFocus }}
               className="flower-canvas"
               data-concealed={sealed || unavailable ? '' : undefined}
               inert={sealed || unavailable}
@@ -242,18 +250,29 @@ export default function App() {
           <div className="flower-postcard-details" data-sealed={sealed ? '' : undefined} inert={sealed}>
             <p className="sr-only" role="status">{unavailable ? null : status}</p>
             <div className="flower-stage-controls" data-unavailable={unavailable ? '' : undefined}>
-              <p id="flower-turn-instructions" className="sr-only">Drag in any direction or use the arrow keys to turn the bouquet. To scroll, swipe outside the artwork. Press Home or Reset view to return to the front.</p>
-              <span aria-hidden="true" className="flower-turn-hint"><span className="flower-pointer-hint">Drag or use arrow keys to turn</span><span className="flower-touch-hint">Drag to turn</span></span>
+              <p id="flower-turn-instructions" className="sr-only">Drag in any direction or use the arrow keys to turn the bouquet. Choose Look closer to see the petals in detail. To scroll, swipe outside the artwork. Press Home or Reset view to see the whole bouquet from the front.</p>
+              <span aria-hidden="true" className="flower-turn-hint"><Move size={13} />Drag to turn</span>
+              <Toggle
+                pressed={closeView}
+                disabled={!ready}
+                onPressedChange={(close, details) => {
+                  engine.current?.setCloseView(close, { instant: details.source !== 'mouse' && details.source !== 'touch' && details.source !== 'pen' })
+                }}
+                render={<Button variant="ghost" size="sm" className="flower-control flower-render-control flower-close-view" />}
+              >{closeView ? <ZoomOut aria-hidden="true" /> : <ZoomIn aria-hidden="true" />}Look closer</Toggle>
               <ActionButton
                 disabled={!ready}
-                onClick={(event) => engine.current?.resetView({ instant: event.detail === 0 || reducedMotion })}
+                onClick={(event) => {
+                  engine.current?.resetView({ instant: event.detail === 0 || reducedMotion })
+                  setCloseView(false)
+                }}
                 render={<Button variant="ghost" size="sm" className="flower-control flower-render-control flower-reset" />}
               ><RotateCcw aria-hidden="true" />Reset view</ActionButton>
             </div>
             <div className="flower-card-footer">
               <div className="flower-identity">
                 <h2>{bouquet?.name ?? 'Your bouquet'}</h2>
-                {date ? <p>Grown on <time dateTime={date.toISOString()}>{dates.format(date)}</time></p> : null}
+                {date ? <p>Grown on <time dateTime={date.toISOString()}>{dates.format(date)} <span className="flower-time">at {times.format(date)}</span></time></p> : null}
               </div>
               <ActionButton
                 disabled={!ready}
@@ -284,6 +303,7 @@ export default function App() {
                 disabled={!ready}
                 onClick={() => {
                   openingSound.play('bloom')
+                  setCloseView(false)
                   engine.current?.bloom()
                 }}
                 render={<Button variant="ghost" className="flower-control flower-render-control" />}

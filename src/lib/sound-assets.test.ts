@@ -98,6 +98,25 @@ describe('sound timing and encoder guards', () => {
     expect(rms(samples, 0, 0.1)).toBeLessThan(rms(samples, 0.8, 1.0) * 0.1)
   })
 
+  it('leaves room for the release, breathes between fingers, and answers more quietly than the melody', () => {
+    const samples = renderSound('bloom')
+    const bass = rms(samples, 0.34, 0.49)
+    const melody = rms(samples, 1.14, 1.30)
+    const answer = rms(samples, 2.65, 2.76)
+    expect(rms(samples, 0, SOUND_DURATIONS['gift-open'])).toBeLessThan(bass / 50)
+    expect(rms(samples, 0.92, 1.1)).toBeLessThan(melody / 3)
+    expect(answer).toBeLessThan(melody * 0.7)
+    expect(answer).toBeGreaterThan(melody * 0.3)
+  })
+
+  it('keeps the final petal distinct from the fading string without a new loud note', () => {
+    const samples = renderSound('bloom')
+    // First-difference energy favors the little high-frequency edges of the brush.
+    const edge = samples.map((sample, i) => sample - (samples[i - 1] ?? sample))
+    expect(rms(edge, 3.303, 3.37)).toBeGreaterThan(rms(edge, 3.12, 3.23) * 2)
+    expect(rms(samples, 3.303, 3.37)).toBeLessThan(rms(samples, 3.12, 3.23))
+  })
+
   it.each([NaN, Infinity, -Infinity, 1.01, -1.01])('rejects unsafe sample %s instead of silently clipping', (value) => {
     expect(() => encodeWav(new Float64Array([0, value, 0]))).toThrow(RangeError)
   })

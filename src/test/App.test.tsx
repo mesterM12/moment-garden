@@ -9,7 +9,7 @@ import type { GardenEngineOptions } from '../garden/types'
 const mocks = vi.hoisted(() => {
   const engine = {
     show: vi.fn((timestamp: number) => ({ timestamp, name: 'Here With You', kinds: ['rose', 'daisy', 'tulip'], flowerCount: 8 })),
-    bloom: vi.fn(), resetView: vi.fn(), setReducedMotion: vi.fn(),
+    bloom: vi.fn(), resetView: vi.fn(), setCloseView: vi.fn(), setReducedMotion: vi.fn(),
     exportPng: vi.fn(async () => new Blob(['postcard'], { type: 'image/png' })), dispose: vi.fn(),
   }
   const sound = { prepare: vi.fn(), play: vi.fn(), sync: vi.fn(), stop: vi.fn(), dispose: vi.fn() }
@@ -59,6 +59,25 @@ it('opens the shared bouquet with keyboard, exposes named actions, and preserves
   expect(mocks.engine.show).toHaveBeenCalledTimes(2)
   expect(mocks.engine.show.mock.calls[1][0]).not.toBe(1748091600123)
   expect(new URL(window.location.href).searchParams.has('bouquet')).toBe(false)
+})
+
+it('can inspect the petals with the keyboard without generating a different gift', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  const open = await screen.findByRole('button', { name: 'Open your flowers' })
+  await waitFor(() => expect((open as HTMLButtonElement).disabled).toBe(false))
+  open.focus()
+  await user.keyboard('{Enter}')
+  const detail = screen.getByRole('button', { name: 'Look closer' })
+  detail.focus()
+  await user.keyboard(' ')
+  expect(mocks.engine.setCloseView).toHaveBeenCalledWith(true, { instant: true })
+  const callbacks = mocks.createGarden.mock.calls.at(-1)![1]
+  act(() => callbacks.onCloseViewChange?.(true))
+  expect(detail.getAttribute('aria-pressed')).toBe('true')
+  act(() => callbacks.onCloseViewChange?.(false))
+  expect(detail.getAttribute('aria-pressed')).toBe('false')
+  expect(mocks.engine.show).toHaveBeenCalledTimes(1)
 })
 
 it('marks only pointer opening for the action reveal and keeps the group interactive', async () => {
