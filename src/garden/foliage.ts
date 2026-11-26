@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ease } from './bloom-score';
+import { shadeFoliage, type LeafSkin } from './foliage-shader';
 import type { SpeciesKey, Specimen } from './types';
 
 const up = new THREE.Vector3(0, 1, 0);
@@ -8,8 +9,30 @@ const mix = THREE.MathUtils.lerp;
 const body = (t: number) => Math.max(0, Math.sin(Math.PI * t));
 const bell = (x: number) => Math.exp(-x * x);
 
-export function foliageMaterial() {
-  return new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: .74 });
+const netted = 0, basal = 1, parallel = 2, thread = 3, collecting = 4;
+const skins = {
+  rose: [netted, .49, .16, .25],
+  dahlia: [netted, .66, .20, .31],
+  sunflower: [basal, .82, .20, .38],
+  hydrangea: [netted, .62, .19, .30],
+  anemone: [basal, .67, .23, .31],
+  ranunculus: [basal, .51, .25, .28],
+  poppy: [netted, .79, .19, .32],
+  daisy: [netted, .67, .23, .26],
+  tulip: [parallel, .57, .17, .24],
+  iris: [parallel, .62, .15, .22],
+  lily: [parallel, .49, .21, .23],
+  billyButton: [parallel, .77, .18, .26],
+  orchid: [parallel, .35, .09, .20],
+  calla: [collecting, .43, .21, .25],
+  cosmos: [thread, .73, .17, .24],
+} satisfies Record<SpeciesKey, LeafSkin>;
+
+export function foliageMaterial(key: SpeciesKey) {
+  const material = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: .76 });
+  material.onBeforeCompile = shader => shadeFoliage(shader, skins[key]);
+  material.customProgramCacheKey = () => 'foliage/skin-1';
+  return material;
 }
 
 // One indexed mesh per socket, including the petiole and all its divisions.
@@ -17,22 +40,27 @@ export function foliageMaterial() {
 class LeafMesh {
   private positions: number[] = [];
   private pigments: number[] = [];
+  private tissue: number[] = [];
   private indices: number[] = [];
 
-  private vertex(p: THREE.Vector3, c: THREE.Color) {
+  private vertex(p: THREE.Vector3, c: THREE.Color, s: number, t: number, hand: number) {
     const i = this.positions.length / 3;
     this.positions.push(p.x, p.y, p.z);
     this.pigments.push(c.r, c.g, c.b);
+    this.tissue.push(s, t, hand);
     return i;
   }
 
-  patch(rows: number, across: number, sample: (t: number, s: number) => [THREE.Vector3, THREE.Color], collapseBase = false) {
+  patch(rows: number, across: number, hand: number, sample: (t: number, s: number) => [THREE.Vector3, THREE.Color], collapseBase = false) {
     const rings: number[][] = [];
     for (let i = 0; i <= rows; i++) {
       const t = i / rows;
       const steps = i === rows || (!i && collapseBase) ? 0 : across;
       const ring: number[] = [];
-      for (let j = 0; j <= steps; j++) ring.push(this.vertex(...sample(t, steps ? 2 * j / steps - 1 : 0)));
+      for (let j = 0; j <= steps; j++) {
+        const s = steps ? 2 * j / steps - 1 : 0;
+        ring.push(this.vertex(...sample(t, s), s, t, hand));
+      }
       rings.push(ring);
     }
     for (let i = 0; i < rows; i++) {
@@ -47,12 +75,14 @@ class LeafMesh {
   stalk(curve: THREE.Curve<THREE.Vector3>, sections: number, start: number, end: number, color: THREE.Color) {
     const sides = 5, offset = this.positions.length / 3;
     const frames = curve.computeFrenetFrames(sections, false);
+    const tint = new THREE.Color();
     for (let i = 0; i <= sections; i++) {
       const t = i / sections, radius = mix(start, end, t), p = curve.getPointAt(t);
       for (let j = 0; j < sides; j++) {
         const a = j * 2 * Math.PI / sides;
         this.vertex(p.clone().addScaledVector(frames.normals[i], -radius * Math.cos(a))
-          .addScaledVector(frames.binormals[i], radius * Math.sin(a)), color);
+          .addScaledVector(frames.binormals[i], radius * Math.sin(a)),
+        tint.copy(color).multiplyScalar(.90 + .14 * t + .11 * Math.cos(2 * a)), 0, 0, -1);
         if (i < sections) {
           const u = offset + i * sides + j, next = offset + i * sides + (j + 1) % sides;
           this.indices.push(u, u + sides, next, next, u + sides, next + sides);
@@ -65,6 +95,7 @@ class LeafMesh {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(this.positions, 3));
     g.setAttribute('color', new THREE.Float32BufferAttribute(this.pigments, 3));
+    g.setAttribute('leafTissue', new THREE.Float32BufferAttribute(this.tissue, 3));
     g.setIndex(this.indices);
     g.computeVertexNormals();
     return g;
@@ -81,26 +112,27 @@ class Foliage {
   readonly mesh = new LeafMesh();
   private root: THREE.Color;
   private flesh: THREE.Color;
-  private vein: THREE.Color;
   readonly stalk: THREE.Color;
   private tint = new THREE.Color();
+  private divisions = 0;
 
   constructor(hue: number, key: SpeciesKey, private phase: number, private skew: number) {
     const glaucous = key === 'tulip' || key === 'iris' || key === 'poppy';
-    const h = hue + (glaucous ? 10 : -5), sat = glaucous ? 23 : 34;
-    this.root = new THREE.Color(`hsl(${h + 4}, ${sat}%, 24%)`);
-    this.flesh = new THREE.Color(`hsl(${h}, ${sat}%, ${glaucous ? 34 : 33}%)`);
-    this.vein = new THREE.Color(`hsl(${h - 16}, 29%, 53%)`);
-    this.stalk = new THREE.Color(`hsl(${h - 12}, ${sat}%, 36%)`);
+    const deep = key === 'rose' || key === 'orchid' || key === 'calla';
+    const h = glaucous ? 130 + (hue - 110) * .39 : hue + (deep ? 3 : -4);
+    const sat = glaucous ? 20 : deep ? 39 : 34;
+    this.root = new THREE.Color(`hsl(${h + 4}, ${sat}%, ${deep ? 20 : 23}%)`);
+    this.flesh = new THREE.Color(`hsl(${h}, ${sat}%, ${glaucous ? 34 : deep ? 28 : 32}%)`);
+    this.stalk = new THREE.Color(`hsl(${h - 13}, ${sat}%, ${deep ? 32 : 36}%)`);
   }
 
-  // A narrow raised midrib; secondary veins fade before reaching the rim.
-  private color(t: number, s: number, fine: boolean, parallel = false) {
-    const flank = Math.abs(s), rib = bell(s * (fine ? 5 : 9)) * body(t) ** .55;
-    const veins = parallel ? Math.cos(s * 19) ** 8 : Math.cos(Math.PI * (5 * t - flank * .87)) ** 8;
-    return this.tint.copy(this.root).lerp(this.flesh, .35 + .65 * ease(t / .34))
-      .lerp(this.vein, (fine ? .07 : .24) * rib + (fine ? 0 : .16 * veins * body(t) * flank * (1 - flank)))
-      .multiplyScalar(1 - .12 * flank ** 3 + .045 * s * Math.sin(this.phase + 3 * t));
+  private hand() {
+    return (this.phase / (2 * Math.PI) + this.divisions++ * .61803398875) % 1;
+  }
+
+  private color(t: number, s: number) {
+    return this.tint.copy(this.root).lerp(this.flesh, .32 + .68 * ease(t / .42))
+      .multiplyScalar(1 - .10 * Math.abs(s) ** 3 + .09 * s * Math.sin(this.phase + 3 * t));
   }
 
   blade({ form, root, tip, width, rows, across, arch, fold, twist = 0 }: Blade) {
@@ -109,7 +141,7 @@ class Foliage {
     const side = up.clone().cross(along).normalize(), normal = along.clone().cross(side).normalize();
     const p = new THREE.Vector3(), cross = new THREE.Vector3(), dorsal = new THREE.Vector3();
     const broadBase = form === 'heart' || form === 'arrow';
-    this.mesh.patch(rows, across, (t, s) => {
+    this.mesh.patch(rows, across, this.hand(), (t, s) => {
       const span = body(t ** (broadBase ? .69 : form === 'lance' ? .80 : .87));
       const envelope = span ** (form === 'lance' || form === 'thread' ? .84 : .70);
       const tooth = (phase: number, count: number) => 1 - Math.abs(2 * ((t * count + phase) % 1) - 1);
@@ -127,7 +159,7 @@ class Foliage {
       dorsal.copy(normal).applyAxisAngle(along, t * twist);
       p.copy(root).addScaledVector(axis, t - sinus).addScaledVector(cross, w * (s + skew))
         .addScaledVector(dorsal, arch * body(t) + foldY + midrib + wave);
-      return [p, this.color(t, s, form === 'thread', form === 'lance')];
+      return [p, this.color(t, s)];
     }, !broadBase);
   }
 
@@ -135,7 +167,7 @@ class Foliage {
     // The leaf starts as a gutter around the stem. Both upturned margins
     // open into a wide, folded lamina. Its root is part of the same surface.
     const p = new THREE.Vector3();
-    this.mesh.patch(22, 8, (t, s) => {
+    this.mesh.patch(22, 8, this.hand(), (t, s) => {
       const collar = 1 - ease(t / .25), bay = body(t ** .72);
       const arc = s * mix(.83, 2.12, collar);
       const w = mix(width * bay ** .76, .051, collar);
@@ -145,7 +177,7 @@ class Foliage {
       const x = w * Math.sin(arc), z = -w * (1 - Math.cos(arc)) * .88;
       p.set(x * Math.cos(roll) + z * Math.sin(roll) + this.skew * .12 * t * t, y,
         reach + z * Math.cos(roll) - x * Math.sin(roll));
-      return [p, this.color(t, s, false, true)];
+      return [p, this.color(t, s)];
     });
   }
 }

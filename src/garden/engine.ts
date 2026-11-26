@@ -11,7 +11,7 @@ import { BLOOM_DURATION as DURATION, bloomPetalScore, bloomStart, clamp, ease, f
 import { finishPetals, tieBouquet } from './florist-finish';
 import { buildFiller } from './filler';
 import { bladeBatches } from './blade-batches';
-import { cutStemGeometry, cutStemMaterial } from './cut-stem';
+import { cutStemGeometry, cutStemMaterial, flexCutStem } from './cut-stem';
 import { foliageMaterial, StemLeaf } from './foliage';
 import { freePetal } from './free-petals';
 import { buildCenter } from './floral-centers';
@@ -149,7 +149,7 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
   plant.add(group);
   const green = cutStemMaterial();
   const petalMaterial = petalSurface(specimen, textures.petal);
-  const leafMaterial = foliageMaterial();
+  const leafMaterial = foliageMaterial(specimen.key);
   const sepalMaterial = new THREE.MeshPhysicalMaterial({
     vertexColors: true, side: THREE.DoubleSide, roughness: 0.56,
     clearcoat: 0.3, clearcoatRoughness: 0.6, bumpMap: textures.leaf, bumpScale: 0.045,
@@ -177,19 +177,14 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
   const bendX = -.37 * top.x + .10 * Math.sin(specimen.rotation);
   const bendZ = -.26 * top.z + .12;
   const drop = -.36 - .13 * Math.abs(top.x);
+  const bend = new THREE.Vector3(bendX, drop, bendZ);
   const flexStem = () => {
-    const rest = stem.geometry.getAttribute('position'), folded = rest.clone();
-    for (let i = 0; i < folded.count; i++) {
-      const y = rest.getY(i), weight = flexAt(y, top.y);
-      folded.setXYZ(i, rest.getX(i) + bendX * weight, y + drop * weight, rest.getZ(i) + bendZ * weight);
-    }
-    stem.geometry.morphAttributes.position = [folded];
+    flexCutStem(stem.geometry, bend, top.y);
     stem.updateMorphTargets();
   };
   flexStem();
 
   const strap = recipe.leaf === 'strap';
-  const bend = new THREE.Vector3(bendX, drop, bendZ);
   const leafCount = entry.leafCount ?? (strap ? 2 : 3);
   for (let i = 0; i < leafCount; i++) {
     // Reserve exactly the old four shape draws and optional pitch draw before
