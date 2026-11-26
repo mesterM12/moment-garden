@@ -12,10 +12,9 @@ import type { BouquetPlan, MorphPetal, Specimen } from './types';
 import envelopes from './parity-envelopes.json';
 import { assertEnvelopesEqual } from './parity-compare';
 
-// Frozen from the pre-migration root implementation with Three.js r160.
-// Three sphere hashes were updated from that same baseline by canonicalizing
-// axis round-off; see attributeSnapshot. Only the rose mesh hash is newer,
-// recording the intentional garden-rose sculpt. Tests never regenerate these fixtures.
+// Recipe, plan and RNG hashes come from the pre-migration root implementation.
+// Mesh hashes separately pin the intentionally revised flower sculpts; sphere
+// axes are canonicalized below. Tests never regenerate either set of fixtures.
 const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
 function planWithGeometry({ flowers, ...plan }: BouquetPlan) {
