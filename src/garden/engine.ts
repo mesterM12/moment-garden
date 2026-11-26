@@ -24,7 +24,7 @@ type Bloom = ReturnType<typeof buildBloom>;
 type Textures = { petal: ReturnType<typeof petalFields>; leaf: THREE.CanvasTexture };
 type BuiltBouquet = { framePoints: THREE.Vector3[]; focalPoints: THREE.Vector3[]; focus: THREE.Vector3; plant: THREE.Group; blooms: Bloom[]; ribbon: THREE.Group; filler?: ReturnType<typeof buildFiller>; plan: BouquetPlan; materials: Set<THREE.Material> };
 
-function leafVeins(document: Document, anisotropy: number) {
+export function leafVeins(document: Document, anisotropy: number) {
   const surface = document.createElement('canvas');
   surface.width = 256;
   surface.height = 512;
@@ -553,7 +553,7 @@ export function buildBouquet(plan: BouquetPlan, textures: Textures): BuiltBouque
   }
 }
 
-function createRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer {
+export function createRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer {
   // Check WebGL 2 support before Three attaches any canvas listeners.
   const attributes: WebGLContextAttributes = { alpha: true, antialias: true, depth: true, stencil: true };
   const context = canvas.getContext('webgl2', attributes);
@@ -565,7 +565,7 @@ function createRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer {
   return renderer;
 }
 
-function createScene(): THREE.Scene {
+export function createScene(): THREE.Scene {
   const scene = new THREE.Scene();
   scene.add(new THREE.HemisphereLight(0xfff2dc, 0xcfb6a0, 1.02));
   // A broad feeling of side light, with cream paper bounce in the folds. No

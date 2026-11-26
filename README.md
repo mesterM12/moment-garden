@@ -139,6 +139,7 @@ The service worker is deliberately disabled in `pnpm dev`. Test offline behavior
 | Replay the same bouquet | **Replay bloom** |
 | Send the current bouquet | **Send flowers** |
 | Save a PNG postcard | **Save postcard** (or **Save** on narrow screens) at the bottom of the card |
+| [Save an animated GIF](docs/BLOOM-GIF.md) | **Save bloom GIF** below the postcard, also available with reduced motion |
 
 **Send flowers** uses the system share sheet when available. Otherwise it tries to copy the link to the clipboard and offers the link for manual copying if needed. Use a public HTTPS deployment to send links others can open. Feedback confirms a copied link or a PNG ready to save, not that a gift was delivered.
 
