@@ -165,6 +165,18 @@ export function foldShell(g: THREE.BufferGeometry, specimen: Specimen, layer: nu
         const wrap = .117 * s * hook * (1 - .46 * lip);
         shut.setXYZ(i, sx - .155 * eyeX * hook + eyeZ * wrap, sy - .038 * hook, sz - .155 * eyeZ * hook - eyeX * wrap);
       } else shut.setXYZ(i, sx, sy, sz);
+      if (key === 'ranunculus') {
+        // Broad paper-thin cups stay lapped as they spread. Let the whole
+        // shoulder open before lifting its hem, with a shallow bank toward
+        // the uncovered side. Leave the tight eye gathered over the centre.
+        const r = Math.hypot(x, z), sealedR = Math.hypot(sx, sz);
+        const eye = 1 - ease((r / R - .10) / .33);
+        const spread = (.79 - .34 * lip + variation * (.094 * lip + .046 * s)) * (1 - .49 * eye);
+        const rm = sealedR + (r - sealedR) * spread + R * .038 * belly * (1 - eye);
+        const a = Math.atan2(x, z) + .061 * lip * (1 + s * variation);
+        bent.setXYZ(i, rm * Math.sin(a), sy + (y - sy) * spread + R * (.094 * belly + .039 * lip * (1 - eye)), rm * Math.cos(a));
+        continue;
+      }
       if (cup) {
         // The tulip's shoulder bows OUT while its lip is still folded back
         // over the centre. One corner peels off the next tepal before its

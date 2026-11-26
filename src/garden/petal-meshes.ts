@@ -67,19 +67,19 @@ function tulip(specimen: Specimen, head: THREE.Group, material: THREE.Material, 
     const hand = (word >>> 16) / 32767.5 - 1, turn = (word & 255) / 127.5 - 1;
     const top = (inner ? 1.065 : .935) + hand * .027;
     function tepal(t: number, s: number, closed: boolean) {
-      const lip = smooth((t - .62) / .38), edge = Math.abs(s) ** 2.4;
-      // Round, slightly hooded sails inside three lower, reflexed guards.
-      // Vary the lip height, but evaluate the cup radius at actual height:
-      // shortening a corner cannot turn it into a spike through its neighbor.
+      const lip = smooth((t - .55) / .45), edge = s * s;
+      // An oval tepal has its widest point below its lip. Keep two lapping
+      // edges in the belly, then let one corner turn away before the other.
+      // The radius follows actual height, so a low corner doesn't spike out.
+      const skew = turn * .035 * s * lip * edge;
       const y = .013 + (closed ? (inner ? 1.038 : 1.008) + hand * .015 : top) * t
-        - (closed ? .129 : inner ? .127 : .180) * lip * edge
-        + (closed ? .013 : .036) * s * lip * turn + .005 * Math.sin(s * 6 + hand) * lip;
-      const shoulder = Math.sin(Math.PI * Math.min(1, y / 1.105) * .91) ** .89;
+        - (closed ? .133 : inner ? .157 : .213) * lip * edge + (closed ? .38 : 1) * skew;
+      const shoulder = Math.sin(Math.PI * Math.min(1, y / 1.12) * .87) ** .93;
       const lap = smooth(t / .18) * s;
       const span = closed
         ? .105 + .60 * Math.sin(Math.PI * t * .71) ** .74
-        : .105 + (inner ? .63 : .62) * Math.sin(Math.PI * t * .84) ** .84 + .034 * lip;
-      const aim = angle + span * s + (inner ? .09 : .053) * t + turn * .04 * t * t;
+        : .105 + (inner ? .65 : .64) * Math.sin(Math.PI * t * .83) ** .82 - .078 * lip;
+      const aim = angle + span * s + (inner ? .09 : .053) * t + turn * .056 * t * t;
       let radius: number;
       if (closed) {
         // Imbricated bud, with a broad belly and the seam continuing to its neck.
@@ -87,11 +87,14 @@ function tulip(specimen: Specimen, head: THREE.Group, material: THREE.Material, 
         radius = .049 * (1 - t) + (.207 + .012 * (1 - layer)) * hull ** .77 - .046 * smooth((y - .83) / .23)
           + .007 * lap * t;
       } else {
-        const dome = .047 + (.484 - layer * .073) * shoulder;
-        const opening = smooth((y - .66) / .34);
-        const flare = opening * (inner ? -.037 + .024 * hand : .112 + .058 * hand);
-        const channel = Math.sin(Math.PI * t) * (.024 * (1 - s * s) - .020 * edge);
-        radius = (dome + flare + channel + .028 * lap * t + .024 * turn * lip * edge) * (cut ? .96 : 1);
+        const dome = .047 + (.448 - layer * .051) * shoulder;
+        const opening = smooth((y - .70) / .30);
+        const flare = opening * (inner ? -.074 + .017 * hand : .043 + .041 * hand);
+        // A broad channel gives the back a keel. At the free edge only,
+        // the stronger side of the rim turns back out of the cup.
+        const channel = Math.sin(Math.PI * t) * (.037 * (1 - edge) - .028 * edge);
+        const hem = .036 * lip * (1 - edge) * (1 + .7 * turn * s);
+        radius = (dome + flare + channel + .028 * lap * t + hem) * (cut ? .96 : 1);
       }
       // Both forms share the stem socket; only the free tepal can peel.
       radius = lerp(.049 + (1 - layer) * .006, Math.max(.022, radius), smooth(t / .15));
