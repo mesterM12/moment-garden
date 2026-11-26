@@ -1,4 +1,5 @@
-import { ShaderChunk, type Color, type WebGLProgramParametersWithUniforms } from 'three';
+import type { Color, WebGLProgramParametersWithUniforms } from 'three';
+import { withTissueTransmission } from './tissue-light';
 
 type PetalOptics = {
   absorption: Color;
@@ -8,20 +9,7 @@ type PetalOptics = {
   packingRoughness: number;
 };
 
-// Insert just after Three has applied directional shadow visibility. Sharing
-// directLight.color gives reflection and transmission the *same* PCF result,
-// also when shadows are disabled or a receiver opts out. Keep Three's loop,
-// guard, and shadow type handling verbatim; a browser probe exercises both
-// the no-shadow and PCF variants against the installed Three.
-const directionalAnchor = '\t\tgetDirectionalLightInfo( directionalLight, directLight );';
-const directAnchor = '\t\tRE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );';
-const directionalIndex = ShaderChunk.lights_fragment_begin.indexOf(directionalAnchor);
-const directIndex = ShaderChunk.lights_fragment_begin.indexOf(directAnchor, directionalIndex);
-if (directionalIndex < 0 || directIndex < 0) throw new Error('Three directional light chunk changed; check petal transmission');
-const tissueLights = ShaderChunk.lights_fragment_begin.slice(0, directIndex) + `
-    reflectedLight.directDiffuse += directLight.color * throughPigment
-      * pow2(max(0.0, -dot(nonPerturbedNormal, directLight.direction)));
-` + ShaderChunk.lights_fragment_begin.slice(directIndex);
+const tissueLights = withTissueTransmission('throughPigment');
 
 export function shadePetal(shader: WebGLProgramParametersWithUniforms, optics: PetalOptics) {
   shader.uniforms.petalAbsorption = { value: optics.absorption };

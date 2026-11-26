@@ -1,4 +1,7 @@
 import type { WebGLProgramParametersWithUniforms } from 'three';
+import { withTissueTransmission } from './tissue-light';
+
+const leafLights = withTissueTransmission('throughPigment');
 
 // Mode, upper cuticle roughness, lamina permeability, spatial pigment variance.
 export type LeafSkin = readonly [mode: number, roughness: number, permeability: number, mottling: number];
@@ -96,20 +99,15 @@ export function shadeFoliage(shader: WebGLProgramParametersWithUniforms, skin: L
       float bundles = 0.00063 * midrib + 0.00032 * ribs + 0.00009 * fineRibs;
       float height = blade * (bundles * mix(0.54, 1.0, reverse) + (0.00017 + 0.00035 * leafSkin.y) * grain);
       normal = greenRelief(-vViewPosition, normal, height);`)
-    .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+    .replace('#include <lights_fragment_begin>', `
       #if NUM_DIR_LIGHTS > 0
         // Only real light on the far side reaches the viewer. More light
         // passes through thin distal/marginal tissue than vascular bundles.
         float thin = smoothstep(0.20, 0.92, t) + 0.48 * edge;
         float throughLeaf = blade * leafSkin.z * (0.18 + 0.65 * thin) * (1.0 - 0.73 * vein);
-        vec3 through = vec3(0.0);
-        #pragma unroll_loop_start
-        for ( int i = 0; i < NUM_DIR_LIGHTS; i ++ ) {
-          through += directionalLights[ i ].color * pow2(max(0.0, -dot(nonPerturbedNormal, directionalLights[ i ].direction)));
-        }
-        #pragma unroll_loop_end
-        reflectedLight.directDiffuse += through * (RECIPROCAL_PI * throughLeaf) * diffuseColor.rgb * vec3(0.72, 0.92, 0.36);
-      #endif`);
+        vec3 throughPigment = (RECIPROCAL_PI * throughLeaf) * diffuseColor.rgb * vec3(0.72, 0.92, 0.36);
+      #endif
+      ${leafLights}`);
 }
 
 export function shadeCutStem(shader: WebGLProgramParametersWithUniforms) {

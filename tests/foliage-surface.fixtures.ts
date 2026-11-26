@@ -54,7 +54,18 @@ export function probeLeaf() {
       mesh.material = material
       swatches.push([draw(32, 24), draw(39, 39), draw(55, 29), draw(23, 55)])
     }
-    return { backlit, backlitStalk, unlit, upper, reverse, swatches, programs: renderer.info.programs?.length }
+    const programs = renderer.info.programs?.length
+    // A backlit leaf behind an opaque blocker must not glow in its shadow.
+    const blocker = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }))
+    try {
+      scene.add(blocker); blocker.position.z = -.5; blocker.castShadow = true
+      light.position.set(0, 0, -2); light.castShadow = mesh.receiveShadow = true
+      renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap
+      const blocked = draw(43, 56)
+      blocker.castShadow = false
+      const exposed = draw(43, 56)
+      return { backlit, backlitStalk, unlit, upper, reverse, swatches, programs, blocked, exposed }
+    } finally { blocker.geometry.dispose(); blocker.material.dispose(); light.shadow.dispose() }
   } finally {
     patch.dispose(); rose.dispose(); sunflower.dispose(); tulip.dispose()
     renderer.dispose(); renderer.forceContextLoss()
