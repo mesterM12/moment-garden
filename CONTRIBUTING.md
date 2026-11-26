@@ -10,11 +10,11 @@ For larger features or changes to bouquet generation, open an issue before imple
 
 ## Set up a local checkout
 
-Use Node.js 24 or newer, npm, and a browser with WebGL. From your checkout:
+Use Node.js 24 or newer, [pnpm](https://pnpm.io/installation) (the version in `package.json`), and a browser with WebGL 2. From your checkout:
 
 ```sh
-npm ci
-npm run dev
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
 Open the localhost URL printed by Next.js. See the [README](README.md#run-it-locally) for controls, architecture, Docker, and offline behavior. No API keys or database are required. If you need deployment-specific settings, copy `.env.example` to `.env` and keep the copy private.
@@ -37,16 +37,16 @@ For geometry changes, include before/after renders with a fixed token. Inspect t
 Run these checks from the repository root:
 
 ```sh
-npm run typecheck
-npm test
-npm run build
-npx playwright install --with-deps chromium
-npm run test:e2e
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm exec playwright install --with-deps chromium
+pnpm test:e2e
 ```
 
-`npm test` includes unit, React, and server projects. Browser checks use Vitest with the Playwright library against the production build. Chromium's Linux system dependencies may require elevated installation permissions. There is no lint script or GitHub Actions workflow; report the commands you actually ran and any skipped checks in your pull request.
+`pnpm test` includes unit, React, and server projects. Browser checks use Vitest with the Playwright library against the production build. Chromium's Linux system dependencies may require elevated installation permissions. There is no lint script or GitHub Actions workflow; report the commands you actually ran and any skipped checks in your pull request.
 
-Test offline/install behavior against a production build, not `npm run dev`. Automated desktop/mobile browser checks do not establish physical-device installation, native sharing, or messaging-crawler behavior. See [deployment verification](docs/DEPLOYMENT.md#verify-a-release) for those checks.
+Test offline/install behavior against a production build, not `pnpm dev`. Automated desktop/mobile browser checks do not establish physical-device installation, native sharing, or messaging-crawler behavior. See [deployment verification](docs/DEPLOYMENT.md#verify-a-release) for those checks.
 
 ## Open a pull request
 

@@ -57,8 +57,9 @@ for (const key of keys) {
         assert.ok(offset >= 0 && offset <= 0.04);
         assert.deepEqual(mesh.morphTargetInfluences, [0]);
         const { position, normal, color, uv } = mesh.geometry.attributes;
-        const closedPosition = mesh.geometry.morphAttributes.position[0];
-        const closedNormal = mesh.geometry.morphAttributes.normal[0];
+        const closedPosition = mesh.geometry.morphAttributes.position?.[0];
+        const closedNormal = mesh.geometry.morphAttributes.normal?.[0];
+        assert.ok(closedPosition && closedNormal);
         vertices += position.count;
         for (const attribute of [position, normal, color, uv, closedPosition, closedNormal]) {
           assert.equal(attribute.count, position.count);
@@ -102,6 +103,7 @@ test('building the same specimen again produces identical surfaces and colors', 
       const a = first[i], b = second[i];
       assert.deepEqual(a.attributes.position.array, b.attributes.position.array);
       assert.deepEqual(a.attributes.color.array, b.attributes.color.array);
+      assert.ok(a.morphAttributes.position && b.morphAttributes.position);
       assert.deepEqual(a.morphAttributes.position[0].array, b.morphAttributes.position[0].array);
       a.dispose();
       b.dispose();

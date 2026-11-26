@@ -6,13 +6,14 @@ import { BouquetRotation } from './rotation';
 import { CloseView } from './close-view';
 import type { ExpandedBouquetPlan as BouquetPlan, GardenEngine, GardenEngineOptions, MorphPetal, Specimen, StemEntry } from './types';
 
-import { BLOOM_DURATION as DURATION, bloomStart, clamp, ease, flexAt, foldWeights, hingePeak, leadingGuard, petalOpening, petalWave, stemTension } from './bloom-score';
+import { BLOOM_DURATION as DURATION, bloomStart, clamp, ease, flexAt, foldWeights, hingePeak, leadingGuard, petalOpening, petalPace, petalWave, stemTension } from './bloom-score';
 import { finishPetals, tieBouquet } from './florist-finish';
 import { buildFiller } from './filler';
 import { bladeBatches } from './blade-batches';
+import { petalFields, petalSurface } from './petal-surface';
 const BRAND = 'Flowers for You';
 const GIFT_NOTE = 'I picked these flowers for you.';
-const WEBGL_ERROR = 'These flowers need WebGL to bloom. Try reloading with hardware acceleration enabled.';
+const WEBGL_ERROR = 'These flowers need WebGL 2 to bloom. Try a current browser with hardware acceleration enabled.';
 const RENDER_ERROR = 'These flowers couldn’t open. Try reloading the page.';
 const CONTEXT_ERROR = 'The 3D preview paused. You can still send this bouquet, or reload it if the preview doesn’t return.';
 const formatDate = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -21,37 +22,28 @@ type PetalPalette = { base: string; tip: string; root: string; fleck?: string };
 type Random = () => number;
 type HeadEnvelope = { center: THREE.Vector3; axis: THREE.Vector3; radius: number; halfHeight: number };
 type Bloom = ReturnType<typeof buildBloom>;
-type Textures = { petal: THREE.CanvasTexture; leaf: THREE.CanvasTexture };
+type Textures = { petal: ReturnType<typeof petalFields>; leaf: THREE.CanvasTexture };
 type BuiltBouquet = { plant: THREE.Group; blooms: Bloom[]; ribbon: THREE.Group; filler?: ReturnType<typeof buildFiller>; plan: BouquetPlan; materials: Set<THREE.Material> };
 
-// Fine, branching veins and longitudinal striations become a real bump map.
-function veinTexture(document: Document, isLeaf: boolean, anisotropy: number) {
+function leafVeins(document: Document, anisotropy: number) {
   const surface = document.createElement('canvas');
   surface.width = 256;
   surface.height = 512;
   const ctx = surface.getContext('2d');
-  if (!ctx) throw new Error('Could not draw the petal and leaf textures.');
+  if (!ctx) throw new Error('Could not draw the leaf texture.');
   ctx.fillStyle = '#999';
   ctx.fillRect(0, 0, 256, 512);
-  ctx.lineWidth = isLeaf ? 1.6 : 0.65;
-  ctx.strokeStyle = isLeaf ? '#d6d6d6' : '#b8b8b8';
-  for (let i = 0; i < (isLeaf ? 16 : 64); i++) {
+  ctx.lineWidth = 1.6;
+  ctx.strokeStyle = '#d6d6d6';
+  for (let i = 0; i < 16; i++) {
+    const y = i * 31;
     ctx.beginPath();
-    if (isLeaf) {
-      const y = i * 31;
-      ctx.moveTo(128, y);
-      ctx.quadraticCurveTo(i % 2 ? 190 : 65, y + 28, i % 2 ? 253 : 3, y + 105);
-    } else {
-      const x = i * 4;
-      ctx.moveTo(128 + (x - 128) * 0.13, 512);
-      ctx.bezierCurveTo(x, 338, x + Math.sin(i) * 8, 135, x, 0);
-    }
+    ctx.moveTo(128, y);
+    ctx.quadraticCurveTo(i % 2 ? 190 : 65, y + 28, i % 2 ? 253 : 3, y + 105);
     ctx.stroke();
   }
-  if (isLeaf) {
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(128, 0); ctx.lineTo(128, 512); ctx.stroke();
-  }
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(128, 0); ctx.lineTo(128, 512); ctx.stroke();
   const texture = new THREE.CanvasTexture(surface);
   texture.anisotropy = anisotropy;
   return texture;
@@ -172,17 +164,7 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
   const group = new THREE.Group();
   plant.add(group);
   const green = new THREE.MeshStandardMaterial({ color: `hsl(${specimen.greenHue - 13}, 33%, 32%)`, roughness: .79 });
-  const petalMaterial = new THREE.MeshPhysicalMaterial({
-    vertexColors: true, side: THREE.DoubleSide, roughness: 0.78,
-    metalness: 0, clearcoat: 0.025, clearcoatRoughness: 0.8,
-    sheen: 0.18, sheenColor: new THREE.Color(palette.tip), sheenRoughness: 0.8,
-    bumpMap: textures.petal, bumpScale: 0.006,
-  });
-  if (specimen.key === 'tulip') {
-    petalMaterial.emissive.set(palette.tip);
-    petalMaterial.emissiveIntensity = .14; // bounced colour on the reverse of thin tepals
-    petalMaterial.bumpScale = .003;
-  }
+  const petalMaterial = petalSurface(specimen, textures.petal);
   const leafMaterial = new THREE.MeshPhysicalMaterial({
     vertexColors: true, side: THREE.DoubleSide, roughness: 0.56,
     clearcoat: 0.3, clearcoatRoughness: 0.6, bumpMap: textures.leaf, bumpScale: 0.045,
@@ -249,7 +231,7 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
     const panels = (custom ? ExtraBlooms.build : PetalMeshes.build)(specimen, head, petalMaterial);
     petals.push(...finishPetals(specimen, panels, head));
   }
-  const blades = dedicated ? null : bladeBatches(specimen.key, head, petalMaterial);
+  const blades = dedicated ? null : bladeBatches(specimen.key, head, petalMaterial, specimen.timestamp);
   for (let layer = 0; blades && layer < specimen.layers; layer++) {
     const count = Math.max(3, specimen.count);
     const size = 1 - layer * recipe.shrink;
@@ -351,7 +333,8 @@ function buildBloom(entry: StemEntry, index: number, bouquet: BouquetPlan, envel
   // Keep insertion rhythms and the exact rest sockets out of the frame loop.
   const guard = leadingGuard(specimen.key, specimen.rotation, specimen.count);
   petals.forEach((p, i) => {
-    if (i === guard) { p.offset = 0; p.pace = 1.72; return; }
+    if (i === guard) { p.offset = 0; p.pace = 1.88; return; }
+    p.pace = petalPace(specimen.key, p.layer, i, specimen.rotation);
     // Cluster branches and the florets at their tips share the initial lift.
     p.offset = specimen.key === 'hydrangea' || specimen.key === 'billyButton' ? .035
       : p.offset + petalWave(specimen.key, p.layer, i, specimen.rotation);
@@ -485,10 +468,9 @@ function buildBouquet(plan: BouquetPlan, textures: Textures): BuiltBouquet {
 }
 
 function createRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer {
-  // Acquire GL before constructing Three. On an unsupported browser the r160
-  // constructor throws after attaching listeners, leaving no renderer to dispose.
+  // Check WebGL 2 support before Three attaches any canvas listeners.
   const attributes: WebGLContextAttributes = { alpha: true, antialias: true, depth: true, stencil: true };
-  const context = canvas.getContext('webgl2', attributes) ?? canvas.getContext('webgl', attributes);
+  const context = canvas.getContext('webgl2', attributes);
   if (!context) throw new Error(WEBGL_ERROR);
   const renderer = new THREE.WebGLRenderer({ canvas, context });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -538,7 +520,7 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
   const canopy = new THREE.Vector3();
   const gl = renderer.getContext();
   const cleanups: (() => void)[] = [];
-  let petalTexture: THREE.CanvasTexture | undefined;
+  let petalTexture: Textures['petal'] | undefined;
   let leafTexture: THREE.CanvasTexture | undefined;
   let current: BuiltBouquet | null = null;
   let frame: number | null = null;
@@ -808,7 +790,8 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
     current = null;
     petalTexture?.dispose();
     leafTexture?.dispose();
-    petalTexture = leafTexture = undefined;
+    petalTexture = undefined;
+    leafTexture = undefined;
     scene.clear();
     // Do not force context loss: StrictMode/HMR can reuse the same canvas before
     // the loss event arrives, and the next renderer needs that context.
@@ -818,8 +801,8 @@ export function createGarden(canvas: HTMLCanvasElement, options: GardenEngineOpt
 
   try {
     const anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
-    petalTexture = veinTexture(document, false, anisotropy);
-    leafTexture = veinTexture(document, true, anisotropy);
+    petalTexture = petalFields(anisotropy);
+    leafTexture = leafVeins(document, anisotropy);
     const observer = new ResizeObserver(() => resize());
     cleanups.push(() => observer.disconnect());
     observer.observe(stage);

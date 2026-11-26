@@ -8,7 +8,7 @@ const cache = resolve('.cache/og-e2e')
 
 export default async function setup() {
   await access(resolve('.next/BUILD_ID')).catch(() => {
-    throw new Error('Browser tests require a production Next build. Run npm run build first.')
+    throw new Error('Browser tests require a production Next build. Run pnpm build first.')
   })
   try {
     await fetch(`${origin}/healthz`, { signal: AbortSignal.timeout(1_000) })

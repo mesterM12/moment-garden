@@ -1,0 +1,8 @@
+# Standalone authoring tool, deliberately not a package in the app workspace.
+packages:
+  - '.'
+# The stock Dawn binary works without either optional postinstall here. Do not
+# download native fallbacks or run dependency scripts on a maintainer's behalf.
+allowBuilds:
+  '@vgpu/adapter-node@0.6.0': false
+  webgpu@0.4.0: false

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { bloomStart, flexAt, petalOpening, petalWave, stemTension } from './bloom-score';
+import { bloomStart, flexAt, petalOpening, petalPace, petalWave, stemTension } from './bloom-score';
 import { CloseView } from './close-view';
 
 test('stem releases from the binding, passes rest once, and arrives exactly', () => {
@@ -23,6 +23,16 @@ test('each cultivar starts on a bud, overlaps its petals, and finishes by the en
       expect(petalOpening(.5, start)).toBeLessThan(petalOpening(.75, start));
     }
   }
+});
+
+test('overlapping whorls have different arrivals, while cluster scaffolds stay synchronized', () => {
+  const opening = (time: number, layer: number) => Math.min(1,
+    petalOpening(time, petalWave('tulip', layer, layer + 1, 2.4)) * petalPace('tulip', layer, layer + 1, 2.4));
+  expect(opening(.85, 0)).toBe(1);
+  expect(opening(.85, 1)).toBeLessThan(.9);
+  expect(opening(.85, 1)).toBeGreaterThan(.5);
+  expect(opening(1, 1)).toBe(1);
+  expect(petalPace('hydrangea', 0, 0, 2)).toBe(petalPace('hydrangea', 3, 3, 2));
 });
 
 test('reversing the close view preserves its live position and stops at its endpoint', () => {

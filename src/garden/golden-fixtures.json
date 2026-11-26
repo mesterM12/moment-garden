@@ -151,7 +151,7 @@
       "timestamp": 0,
       "key": "dahlia",
       "pattern": "gradient",
-      "digest": "cb55a81203b527ad3ea305c78f578210ad115d6caf6e57db5d7b77fe87f4f4f0"
+      "digest": "a49c0a9223689fa98e7bb2ee407eb05df3f4779c1e5a97d71ba6e4220a3e1921"
     },
     {
       "timestamp": 0,
@@ -199,13 +199,13 @@
       "timestamp": 1748091600126,
       "key": "dahlia",
       "pattern": "picotee",
-      "digest": "0078ce6f288fb3a639895c1e2076a810c567e21f7a4c1a8500159aaf032b66b6"
+      "digest": "77de40637801ce6a663c4a403d8eed37a593a5de109ea9c617133cab9972d473"
     },
     {
       "timestamp": 1748091600127,
       "key": "rose",
       "pattern": "gradient",
-      "digest": "2043449fa2e511a3f59eff115bf6378a27f2786341dcb0b8822ee4154a4e2cbf"
+      "digest": "f5e5d50c996bb19e1ae2d6680470b35d27b6c9b4c510cbae03768fcf7d3b6233"
     },
     {
       "timestamp": 1748091600130,

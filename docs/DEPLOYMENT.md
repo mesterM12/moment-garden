@@ -1,6 +1,6 @@
 # Deploy Flowers for You
 
-The supported self-hosted deployment is a custom Docker image containing **Node.js 24**, the **Next.js 16 App Router standalone build**, and **Playwright Chromium**. Next.js serves the app on port **3000** and generates bouquet-specific social-preview PNGs using the real Three.js garden engine. Application code, server helpers, build scripts, and tests use TypeScript. There is no bouquet database, external rendering service, or API key requirement.
+The supported self-hosted deployment is a custom Docker image containing **Node.js 26 LTS**, the **Next.js 16 App Router standalone build**, and **Playwright Chromium**. Next.js serves the app on port **3000** and generates bouquet-specific social-preview PNGs using the real Three.js garden engine. Application code, server helpers, build scripts, and tests use TypeScript. There is no bouquet database, external rendering service, or API key requirement.
 
 The [live demo](https://flowers.joojoo-lab.xyz/) serves the domain root. The repository has no GitHub Actions test or deployment workflows. Releases are manual: run checks and deploy explicitly; a push does not publish a release. These instructions do not provision infrastructure or configure TLS for you. For an existing Docker host with a shared reverse-proxy network, see the optional [host deployment template](../deploy/shipyard/README.md).
 
@@ -45,11 +45,11 @@ Do not put an authentication challenge in front of shared pages or preview image
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `NEXT_PUBLIC_BASE_PATH` | Empty (domain root) | Build-time app prefix, e.g. `/moment-garden`, without a trailing slash. Set before `npm run build` or through Compose's build argument. Path changes require rebuilding. |
+| `NEXT_PUBLIC_BASE_PATH` | Empty (domain root) | Build-time app prefix, e.g. `/moment-garden`, without a trailing slash. Set before `pnpm build` or through Compose's build argument. Path changes require rebuilding. |
 | `PUBLIC_URL` | `http://localhost:3000/` in Compose; localhost with the built prefix for direct startup | Runtime absolute externally reachable app URL. Its pathname must match `NEXT_PUBLIC_BASE_PATH`. Required configuration for production. |
 | `FLOWERS_PORT` | `3000` in root Compose | Host loopback port mapped to container port 3000. If you change it for local use, also update `PUBLIC_URL` to match the URL you open. |
 | `PORT` | `3000` | HTTP listener port inside the container. Keep 3000 with the supplied Compose port mapping and health check. |
-| `HOSTNAME` | `0.0.0.0` in Docker | Next.js standalone server bind address; keep this for container access. `npm start` supplies the equivalent Next.js CLI hostname option. |
+| `HOSTNAME` | `0.0.0.0` in Docker | Next.js standalone server bind address; keep this for container access. `pnpm start` supplies the equivalent Next.js CLI hostname option. |
 | `OG_CACHE_DIR` | `/app/.cache/og` in Docker; `.cache/og` for direct startup | Writable persistent PNG cache directory. The Compose volume mounts the Docker path. |
 | `OG_CACHE_ENTRIES` | `256` | Maximum persistent PNG entries, pruned across content versions. This bounds entry count, not disk bytes. |
 | `CHROMIUM_EXECUTABLE_PATH` | Playwright's bundled browser | Optional compatible Chromium executable override. Normally leave unset. |
@@ -58,22 +58,22 @@ Do not put an authentication challenge in front of shared pages or preview image
 
 ## Run without Docker
 
-Use Node.js 24 or newer and install Chromium plus its operating-system dependencies on a supported host:
+Use Node.js 24 or newer and the pnpm version in `package.json`. Install Chromium plus its operating-system dependencies on a supported host:
 
 ```sh
-npm ci
-npx playwright install --with-deps chromium
-npm run build
-PUBLIC_URL=http://localhost:3000/ npm start
+pnpm install --frozen-lockfile
+pnpm exec playwright install --with-deps chromium
+pnpm build
+PUBLIC_URL=http://localhost:3000/ pnpm start
 ```
 
-`npm start` runs `next start` from the repository root. Keep `.next/`, `public/` (including the generated PWA files), package metadata, and installed dependencies together. The cache directory must be writable by the service account. Browser dependency installation can require elevated privileges on Linux. For production use a process supervisor and a TLS reverse proxy, and replace `PUBLIC_URL` with your public HTTPS URL.
+`pnpm start` runs `next start` from the repository root. Keep `.next/`, `public/` (including the generated PWA files), package metadata, and installed dependencies together. The cache directory must be writable by the service account. Browser dependency installation can require elevated privileges on Linux. For production use a process supervisor and a TLS reverse proxy, and replace `PUBLIC_URL` with your public HTTPS URL.
 
-For a subpath, set `NEXT_PUBLIC_BASE_PATH=/moment-garden` before `npm run build`, then start with `PUBLIC_URL=https://flowers.example/moment-garden/`. Rebuild to change the path; a runtime environment change alone cannot relocate Next.js assets or routes.
+For a subpath, set `NEXT_PUBLIC_BASE_PATH=/moment-garden` before `pnpm build`, then start with `PUBLIC_URL=https://flowers.example/moment-garden/`. Rebuild to change the path; a runtime environment change alone cannot relocate Next.js assets or routes.
 
 The Docker image instead copies `.next/standalone`, `.next/static`, and `public`, then runs **`node server.js`**. That `server.js` is generated by Next.js, not a hand-written server. For a manual standalone deployment, copy `.next/static` into `.next/standalone/.next/static` and `public` into `.next/standalone/public`, provide compatible Playwright/Chromium runtime dependencies, and run from `.next/standalone`.
 
-`npm run dev` runs `next dev`; production startup is `npm run build` followed by `npm start`. There is no separate preview command, static-export deployment, or root `index.html` entry. Vite remains a development dependency only to underpin Vitest.
+`pnpm dev` runs `next dev`; production startup is `pnpm build` followed by `pnpm start`. There is no separate preview command, static-export deployment, or root `index.html` entry. Vite remains a development dependency only to underpin Vitest.
 
 ## Social link previews
 
@@ -108,16 +108,16 @@ When changing domains or app paths, existing shared URLs need redirects at their
 ## Test before publishing
 
 ```sh
-npm ci
-npx playwright install --with-deps chromium
-npm run typecheck
-npm test
-npm run build
-npm run test:server
-npm run test:e2e
+pnpm install --frozen-lockfile
+pnpm exec playwright install --with-deps chromium
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm test:server
+pnpm test:e2e
 ```
 
-All test runners are **Vitest**. `npm test` runs the unit, React, and server projects; `npm run test:server` selects the server project (`vitest run --project server`) for backend and image-cache checks. `npm run test:e2e` uses `vitest.browser.config.ts`, Node test fixtures, and the **Playwright library** for desktop/mobile automation against the built Next.js app—not the `@playwright/test` runner. Run the build first. Tests do not deploy anything.
+All test runners are **Vitest**. `pnpm test` runs the unit, React, and server projects; `pnpm test:server` selects the server project (`vitest run --project server`) for backend and image-cache checks. `pnpm test:e2e` uses `vitest.browser.config.ts`, Node test fixtures, and the **Playwright library** for desktop/mobile automation against the built Next.js app—not the `@playwright/test` runner. Run the build first. Tests do not deploy anything.
 
 ### Verify a release
 
@@ -161,9 +161,9 @@ Browser storage is best-effort and may be evicted. Offline availability starts o
 
 ### Automated PWA checks
 
-`tests/pwa.spec.ts` runs through Vitest with `npm run test:e2e` after a build. It covers PNG dimensions and manifest identity, production registration, precached Next.js/engine assets, offline reloads and unseen bouquet queries, and waiting-worker updates without re-sealing the current gift or deleting an unrelated cache. A subpath is a separate build configuration, not a runtime relocation of the same build; also build and smoke-test with `NEXT_PUBLIC_BASE_PATH=/moment-garden` when deploying that prefix. Verify Safari home-screen install, standalone safe areas, Android install, and offline launches on physical devices before calling them device-tested.
+`tests/pwa.spec.ts` runs through Vitest with `pnpm test:e2e` after a build. It covers PNG dimensions and manifest identity, production registration, precached Next.js/engine assets, offline reloads and unseen bouquet queries, and waiting-worker updates without re-sealing the current gift or deleting an unrelated cache. A subpath is a separate build configuration, not a runtime relocation of the same build; also build and smoke-test with `NEXT_PUBLIC_BASE_PATH=/moment-garden` when deploying that prefix. Verify Safari home-screen install, standalone safe areas, Android install, and offline launches on physical devices before calling them device-tested.
 
-App icons are committed build inputs. With Node.js 24 and ImageMagick installed, `npm run pwa:icons` regenerates them. [`src/pwa/generate-icons.ts`](../src/pwa/generate-icons.ts) renders [`public/flowers.svg`](../public/flowers.svg) on cream, with a smaller safe-zone mark for the 512px maskable icon. Outputs are deterministic for the installed ImageMagick renderer; normal builds require no image tooling.
+App icons are committed build inputs. With Node.js 24 and ImageMagick installed, `pnpm pwa:icons` regenerates them. [`src/pwa/generate-icons.ts`](../src/pwa/generate-icons.ts) renders [`public/flowers.svg`](../public/flowers.svg) on cream, with a smaller safe-zone mark for the 512px maskable icon. Outputs are deterministic for the installed ImageMagick renderer; normal builds require no image tooling.
 
 ## Updates, troubleshooting, and rollback
 

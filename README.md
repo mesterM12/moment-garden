@@ -82,13 +82,13 @@ The postcard design, shown with the same reproducible bouquet (`?bouquet=1970260
 
 ## Run it locally
 
-Use **Node.js 24 or newer**, npm, and a modern browser with WebGL enabled. The app uses the Next.js 16 App Router; Vite is a development dependency for Vitest, not the application server or bundler.
+Use **Node.js 24 or newer**, [pnpm](https://pnpm.io/installation) (the version in `package.json`), and a modern browser with WebGL 2 enabled. The app uses the Next.js 16 App Router; Vite is a development dependency for Vitest, not the application server or bundler.
 
 ```sh
 git clone https://github.com/mesterM12/moment-garden.git
 cd moment-garden
-npm ci
-npm run dev
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
 Open the URL Next.js prints, usually **http://127.0.0.1:3000**. Stop the server with `Ctrl+C`. The app needs the Next.js server; opening files directly from disk is not supported.
@@ -103,7 +103,7 @@ With Docker Engine and the Compose plugin installed, run from the repository roo
 docker compose up --build -d
 ```
 
-Open **http://localhost:3000/**. The custom image includes Node.js 24, the Next.js standalone build, and Playwright Chromium for bouquet-specific social previews. The `og-cache` volume persists generated PNGs. Use `docker compose logs -f` to inspect logs and `docker compose down` to stop the app without deleting its cache.
+Open **http://localhost:3000/**. The custom image includes Node.js 26 LTS, the Next.js standalone build, and Playwright Chromium for bouquet-specific social previews. The `og-cache` volume persists generated PNGs. Use `docker compose logs -f` to inspect logs and `docker compose down` to stop the app without deleting its cache.
 
 For production, set `PUBLIC_URL` to the externally reachable HTTPS app URL. For a subpath, also set `NEXT_PUBLIC_BASE_PATH` at build time, without a trailing slash:
 
@@ -123,7 +123,7 @@ Let the first online load finish before going offline. The production service wo
 
 Opening the home-screen app grows a fresh surprise. To keep a particular bouquet, save its shared URL or PNG; the installed app’s identity and launch URL never include a bouquet seed. Updates wait until all existing app windows/tabs are closed, so a release does not reload the gift someone is viewing.
 
-The service worker is deliberately disabled in `npm run dev`. Test offline behavior using `npm run build` followed by `npm start`. A first-ever offline visit, an insecure HTTP deployment, and opening files directly from disk are not supported offline entry paths. Physical iOS/Android installation still needs real-device verification.
+The service worker is deliberately disabled in `pnpm dev`. Test offline behavior using `pnpm build` followed by `pnpm start`. A first-ever offline visit, an insecure HTTP deployment, and opening files directly from disk are not supported offline entry paths. Physical iOS/Android installation still needs real-device verification.
 
 ### Controls
 
@@ -164,6 +164,8 @@ flowchart TD
 
 [`src/garden/botany.ts`](src/garden/botany.ts) turns a millisecond timestamp into a bouquet plan. Each stem gets a derived seed for its geometry, while repeated species share cultivar colors. Layout is chosen before tessellation. Flower-head envelopes keep the mature blooms apart in 3D. Stem paths make room around neighboring heads, and crowded leaves are shortened, redirected, or omitted.
 
+Rose guards, tulip tepals, calla spathes and papery rays use [four vgpu-baked relief and pigment fields](tools/petal-bake/README.md). Each blade has its own seeded vein drift and blush. WebGPU is used only to author the fields; the live bouquet, saved postcard and social preview use the same WebGL2 materials.
+
 Replay, rotation, and PNG export keep the existing bouquet. **Grow another** starts from a new timestamp and clears any bouquet seed from the address, so refreshing afterward is a fresh visit. The link carries the arrangement, not the sender’s camera angle. The self-hosted server gives messaging crawlers a 1200 × 630 PNG of that same seeded bouquet, fully bloomed in its canonical front view on the current stationery. The landscape layout adapts to the image dimensions; browser/GPU rendering can vary, so this is not a pixel-identical copy of the sender’s screen. The garden itself is client-only, while Next.js generates crawler metadata on the server; no server-rendered garden or external image service is involved.
 
 #### Bouquet link contract
@@ -196,24 +198,24 @@ These are stylized procedural interpretations, not botanical simulations or phot
 
 **Sound** controls the little slip of ribbon and rustle of tissue when the gift opens, followed by a soft plucked-string phrase and quiet petal brushes as the flowers unfold. Keyboard and reduced-motion opening play only the short cue; Replay bloom and animated Grow another play the bloom layer. The preference is remembered locally, and audio never blocks opening. Muting, leaving the page, or replacing the bouquet stops playback.
 
-Both original mono WAVs are generated by the TypeScript DSP renderer in `src/audio/`, with no third-party recordings or runtime synthesis dependency. Regenerate the committed `public/audio/` assets with `npm run sound:render` using Node.js 24+. Normal builds only copy them. The production service worker precaches both for offline playback. Their timing and waveforms are covered by tests; perceived texture and comfortable volume should still be auditioned on phone speakers.
+Both original mono WAVs are generated by the TypeScript DSP renderer in `src/audio/`, with no third-party recordings or runtime synthesis dependency. Regenerate the committed `public/audio/` assets with `pnpm sound:render` using Node.js 24+. Normal builds only copy them. The production service worker precaches both for offline playback. Their timing and waveforms are covered by tests; perceived texture and comfortable volume should still be auditioned on phone speakers.
 
 ## Development
 
-The app uses the Next.js 16 App Router, React 19.3, TypeScript, and Tailwind CSS 4. The ui-sdk React 0.1 beta handles interaction behavior, including pending states for async actions; local shadcn buttons provide presentation, with Lucide icons. Three.js 0.160.1 renders the procedural geometry in WebGL.
+The app uses the Next.js 16 App Router, React 19.3, TypeScript, and Tailwind CSS 4. The ui-sdk React 0.1 beta handles interaction behavior, including pending states for async actions; local shadcn buttons provide presentation, with Lucide icons. Three.js 0.187 renders the procedural geometry in WebGL 2.
 
-Application code, server helpers, tests, and build/test configuration use TypeScript. `npm run typecheck` checks strict types. All suites run through Vitest: `npm test` includes unit, React, and server projects; `npm run test:unit`, `npm run test:react`, and `npm run test:server` select individual projects. Browser tests also use Vitest, with the Playwright library providing automation and Node fixtures—not the `@playwright/test` runner. Rendering and geometry tests use the pinned npm Three.js dependency.
+Application code, server helpers, tests, and build/test configuration use TypeScript. `pnpm typecheck` checks strict types. All suites run through Vitest: `pnpm test` includes unit, React, and server projects; `pnpm test:unit`, `pnpm test:react`, and `pnpm test:server` select individual projects. Browser tests also use Vitest, with the Playwright library providing automation and Node fixtures—not the `@playwright/test` runner. Rendering and geometry tests use the locked Three.js dependency.
 
 React owns the renderer lifecycle, including disposal of the renderer, textures, listeners, and observers on unmount and during development Strict Mode remounts. Per-frame geometry and rotation stay outside React state. Dragging updates rotation 1:1 at the configured sensitivity. Release projects the drag velocity into a spring target (0.4 s response, 0.8 damping ratio); pointer reset springs to the nearest equivalent front angle (0.4 s response, 1.0 damping ratio). Keyboard and reduced-motion controls do not add momentum.
 
-After `npm ci`:
+After `pnpm install --frozen-lockfile`:
 
 ```sh
-npm run typecheck                # Strict TypeScript checks
-npm test                         # Vitest unit, React, and server projects
-npm run build                    # next build, then the TypeScript PWA build
-npm run test:server               # Vitest server project (also included above)
-npm start                        # Next.js production server on port 3000
+pnpm typecheck                   # Strict TypeScript checks
+pnpm test                        # Vitest unit, React, and server projects
+pnpm build                       # next build, then the TypeScript PWA build
+pnpm test:server                 # Vitest server project (also included above)
+pnpm start                       # Next.js production server on port 3000
 ```
 
 Open **http://localhost:3000/**. Open a shared URL such as `/?bouquet=1970260fcfb` in a private window and verify it restores the same bouquet. Try **Grow another** and refresh: the old seed should not return.
@@ -221,8 +223,8 @@ Open **http://localhost:3000/**. Open a shared URL such as `/?bouquet=1970260fcf
 To run the desktop and mobile browser checks against the built site, build first, then run:
 
 ```sh
-npx playwright install --with-deps chromium
-npm run test:e2e                 # Vitest browser config starts Next.js fixtures
+pnpm exec playwright install --with-deps chromium
+pnpm test:e2e                    # Vitest browser config starts Next.js fixtures
 ```
 
 The social-preview checks use the actual Next.js production server and Playwright Chromium. Tests run locally; this repository does not include GitHub Actions CI/CD workflows.
@@ -237,7 +239,7 @@ The social-preview checks use the actual Next.js production server and Playwrigh
 - [`src/components/ui/`](src/components/ui/) and [`src/styles/`](src/styles/): local UI primitives and stationery styling.
 - [`src/garden/`](src/garden/): strictly typed botanical recipes, mesh builders, and deterministic unit tests. [`golden-fixtures.json`](src/garden/golden-fixtures.json) freezes pre-TypeScript v1/v2 plans, per-stem geometry streams, head envelopes, and custom mesh buffers; it is deliberately not regenerated by the test suite.
 - [`src/lib/bouquet-link.compat.test.ts`](src/lib/bouquet-link.compat.test.ts): the original shared-URL compatibility and seeded round-trip checks against the single TypeScript implementation.
-- [`src/pwa/`](src/pwa/) and [`scripts/build-pwa.ts`](scripts/build-pwa.ts): production registration, the native TypeScript service worker, and its esbuild bundling after `next build`. The build generates ignored `public/sw.js` and `public/manifest.webmanifest`. `npm run pwa:icons` regenerates committed PNGs from `public/flowers.svg` using ImageMagick; it is not required for a normal build.
+- [`src/pwa/`](src/pwa/) and [`scripts/build-pwa.ts`](scripts/build-pwa.ts): production registration, the native TypeScript service worker, and its esbuild bundling after `next build`. The build generates ignored `public/sw.js` and `public/manifest.webmanifest`. `pnpm pwa:icons` regenerates committed PNGs from `public/flowers.svg` using ImageMagick; it is not required for a normal build.
 - [`public/icons/`](public/icons/): cream-and-rose flower-brand PNGs, including separate maskable and Apple home-screen assets. Manifest identity, scope, and launch path are relative and seed-independent.
 - [`server/`](server/): TypeScript social-preview helpers and bounded persistent Chromium-rendered image cache. Next.js supplies the HTTP server and generates the standalone `server.js`; there is no hand-written JavaScript server.
 - [`src/social/`](src/social/): the internal landscape capture view using the real garden engine and stationery styles.
@@ -249,7 +251,7 @@ The social-preview checks use the actual Next.js production server and Playwrigh
 
 ### Hosting
 
-The supported self-hosted deployment is the custom Docker image: Node.js 24 runs the Next.js-generated standalone `server.js` from **`.next/standalone`**, with `.next/static` and `public` copied alongside it. App Router `generateMetadata` supplies social metadata before JavaScript runs; bundled Playwright Chromium renders exact-seed previews on demand at `/og/<16hex-build-ID-hash>/<seed>.png`. No database, API keys, or external rendering service are required. Production requires `PUBLIC_URL` and a user-managed HTTPS reverse proxy.
+The supported self-hosted deployment is the custom Docker image: Node.js 26 LTS runs the Next.js-generated standalone `server.js` from **`.next/standalone`**, with `.next/static` and `public` copied alongside it. App Router `generateMetadata` supplies social metadata before JavaScript runs; bundled Playwright Chromium renders exact-seed previews on demand at `/og/<16hex-build-ID-hash>/<seed>.png`. No database, API keys, or external rendering service are required. Production requires `PUBLIC_URL` and a user-managed HTTPS reverse proxy.
 
 The default build serves the domain root, as the [live demo](https://flowers.joojoo-lab.xyz/) does. To serve `/moment-garden/`, build with `NEXT_PUBLIC_BASE_PATH=/moment-garden` and set a matching runtime `PUBLIC_URL`. Path changes require rebuilding; hostname-only changes do not. Health checks follow the same prefix (`/moment-garden/healthz`). This is a Next.js server deployment, not a static export. Releases are manual: there are no GitHub Actions test or deployment workflows, and no registry publication is configured. Building locally does not publish anything.
 

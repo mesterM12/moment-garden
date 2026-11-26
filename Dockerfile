@@ -1,26 +1,31 @@
-FROM node:24-bookworm-slim AS build
+FROM node:26.13.1-bookworm-slim AS base
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
+
+FROM base AS pnpm
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN npm install --global "$(node -p 'require("./package.json").packageManager')"
+
+FROM pnpm AS build
 ARG NEXT_PUBLIC_BASE_PATH=""
 ENV NEXT_PUBLIC_BASE_PATH=$NEXT_PUBLIC_BASE_PATH
-COPY package.json package-lock.json ./
-RUN npm ci
+RUN pnpm install --frozen-lockfile
 COPY . .
-RUN npm run build
+RUN pnpm build
 
-FROM node:24-bookworm-slim AS runtime
+FROM pnpm AS production-deps
+RUN pnpm install --prod --frozen-lockfile
+
+FROM base AS runtime
 ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
     OG_CACHE_DIR=/app/.cache/og
 ARG NEXT_PUBLIC_BASE_PATH=""
 ENV NEXT_PUBLIC_BASE_PATH=$NEXT_PUBLIC_BASE_PATH
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev \
-    && node node_modules/playwright/cli.js install --with-deps chromium \
+COPY --from=production-deps --chown=node:node /app/node_modules ./node_modules
+RUN node node_modules/playwright/cli.js install --with-deps chromium \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /app/.cache/og \
     && chown -R node:node /app/.cache /ms-playwright

@@ -16,7 +16,7 @@ test('six distinct tulip tepal lips share a reproducible curved bud and smooth f
   const petals = finish('tulip');
   expect(petals).toHaveLength(6);
   const heights = petals.map(g => {
-    const open = g.getAttribute('position'), bud = g.morphAttributes.position[0];
+    const open = g.getAttribute('position'), bud = g.morphAttributes.position![0];
     let radius = 0, budRadius = 0, high = 0;
     for (let i = 0; i < open.count; i++) {
       high = Math.max(high, open.getY(i));
@@ -25,7 +25,7 @@ test('six distinct tulip tepal lips share a reproducible curved bud and smooth f
     }
     expect(radius).toBeGreaterThan(2 * budRadius);
     expect(g.getAttribute('normal').array.every(Number.isFinite)).toBe(true);
-    expect(g.morphAttributes.normal[0].array.every(Number.isFinite)).toBe(true);
+    expect(g.morphAttributes.normal?.[0].array.every(Number.isFinite)).toBe(true);
     return high;
   });
   expect(Math.min(...heights.slice(3))).toBeGreaterThan(Math.max(...heights.slice(0, 3)));
@@ -41,7 +41,7 @@ test('the 140 dahlia rolls remain articulated but render in at most 12 cohorts',
   expect(florets.length).toBeGreaterThan(3);
   expect(florets.length).toBeLessThanOrEqual(12);
   for (const g of florets) {
-    expect(g.morphAttributes.position[0].count).toBe(g.getAttribute('position').count);
+    expect(g.morphAttributes.position?.[0].count).toBe(g.getAttribute('position').count);
     g.dispose();
   }
 });
@@ -53,7 +53,7 @@ test('ranunculus petals within each baked whorl have different halfway openings,
   const batches = finishPetals(specimen, petals, head);
   expect(batches.length).toBe(petals.length);
   const g = batches[1].mesh.geometry;
-  const open = g.getAttribute('position'), [bud, mid] = g.morphAttributes.position;
+  const open = g.getAttribute('position'), [bud, mid] = g.morphAttributes.position!;
   const uv = g.getAttribute('uv');
   const radii = (a: typeof mid, i: number) => Math.hypot(a.getX(i), a.getZ(i));
   const fraction = (i: number) => (radii(mid, i) - radii(bud, i)) / (radii(open, i) - radii(bud, i));

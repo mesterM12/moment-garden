@@ -194,7 +194,7 @@ test('context loss dismisses a sealed cover, keeps sharing available, and restor
   await page.getByRole('button', { name: 'Pull the ribbon' }).focus()
   const canLoseContext = await page.evaluate(() => {
     const canvas = document.querySelector('canvas')!
-    const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl')
+    const gl = canvas.getContext('webgl2')
     const extension = gl?.getExtension('WEBGL_lose_context')
     if (!extension) return false
     ;(window as unknown as { contextLoss: WEBGL_lose_context }).contextLoss = extension
@@ -277,15 +277,19 @@ test('sealed invitation stays inside the postcard at narrow widths and 200% text
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
 })
 
-test('renderer failure exposes a readable recovery rather than a sealed cover', async ({ page }) => {
+test('a WebGL 1-only browser gets recovery and sharing rather than a sealed cover', async ({ page }) => {
   await page.addInitScript(() => {
     const get = HTMLCanvasElement.prototype.getContext
     HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...args: unknown[]) {
-      return /webgl/.test(type) ? null : get.call(this, type as '2d', ...args)
+      if (type === 'webgl2') return null
+      if (type === 'webgl') this.dataset.requestedWebgl1 = ''
+      return get.call(this, type as '2d', ...args)
     } as typeof HTMLCanvasElement.prototype.getContext
   })
   await page.goto(gift)
-  await expect(page.getByText(/WebGL|couldn.t open|couldn.t bloom|couldn.t load|hardware acceleration|3D/i).first()).toBeVisible()
+  await expect(page.getByText(/need WebGL 2 to bloom/)).toBeVisible()
+  expect(await page.locator('canvas[data-requested-webgl1]').count()).toBe(0)
   await expect(page.getByRole('button', { name: 'Open your flowers', exact: true })).not.toBeVisible()
+  await expect(page.getByRole('button', { name: 'Send flowers', exact: true })).toBeEnabled()
 })
 })

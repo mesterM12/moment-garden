@@ -20,6 +20,7 @@ function install(g: THREE.BufferGeometry, targets: Attribute[]) {
   });
   g.setAttribute('position', position); g.setAttribute('normal', normal);
   g.morphAttributes.position = targets; g.morphAttributes.normal = normals;
+  return { positions: targets, normals };
 }
 
 // Free blades (lily, rays, poppy) are strips along +Z. Walk the midrib ONCE
@@ -80,7 +81,7 @@ export function foldBlade(g: THREE.BufferGeometry, key: SpeciesKey, openAngle: n
     }
     return shape;
   });
-  install(g, targets);
+  return install(g, targets);
 }
 
 // Head-space shells already have an authored sealed pose. Build a second
@@ -89,7 +90,8 @@ export function foldBlade(g: THREE.BufferGeometry, key: SpeciesKey, openAngle: n
 export function foldShell(g: THREE.BufferGeometry, specimen: Specimen, layer: number, phase: number, spans: BladeSpan[]) {
   const { key, length: R } = specimen;
   const open = g.getAttribute('position'), uv = g.getAttribute('uv');
-  const shut = g.morphAttributes.position[0], bent = open.clone();
+  const shut = g.morphAttributes.position?.[0], bent = open.clone();
+  if (!shut) throw new Error('Shell folding requires an authored closed pose.');
   // Non-blades (receptacles, stamens, spadix) simply ride the flower.
   for (let i = 0; i < open.count; i++) bent.setXYZ(i,
     .5 * (shut.getX(i) + open.getX(i)), .5 * (shut.getY(i) + open.getY(i)), .5 * (shut.getZ(i) + open.getZ(i)));
@@ -110,9 +112,12 @@ export function foldShell(g: THREE.BufferGeometry, specimen: Specimen, layer: nu
         const rise = ease(t) * (.29 * R + .12 * (R - y));
         const a = Math.atan2(x, z), winding = (.20 + .96 * outer) * ease(t);
         shut.setXYZ(i, furled * Math.sin(a + winding), y + rise, furled * Math.cos(a + winding));
-        const unwind = .42 + .35 * outer, rm = furled + (radius - furled) * unwind;
-        bent.setXYZ(i, rm * Math.sin(a + winding * (1 - unwind)), y + rise * (1 - unwind),
-          rm * Math.cos(a + winding * (1 - unwind)));
+        // One lap clears the spadix and takes its own weight. The inner lap
+        // remains a rolled upright quill, not a smaller final funnel.
+        const unwind = .19 + .68 * outer, rm = furled + (radius - furled) * unwind;
+        const sweep = a + winding * (1 - unwind) + .24 * lip * (1 - outer);
+        bent.setXYZ(i, rm * Math.sin(sweep), y + rise * (1 - unwind) - .13 * R * lip * outer,
+          rm * Math.cos(sweep));
         continue;
       }
       if (key === 'rose') {
@@ -126,13 +131,25 @@ export function foldShell(g: THREE.BufferGeometry, specimen: Specimen, layer: nu
         shut.setXYZ(i, radius * Math.sin(a), height, radius * Math.cos(a));
       }
       const sx = shut.getX(i), sy = shut.getY(i), sz = shut.getZ(i);
+      if (cup) {
+        // The tulip's shoulder bows OUT while its lip is still folded back
+        // over the centre. One corner peels off the next tepal before its
+        // opposite corner; the three inner sails keep the smaller cup.
+        const reach = .95 - .69 * lip + .25 * s * lip;
+        const r = Math.hypot(x, z), sealedR = Math.hypot(sx, sz);
+        const arch = .14 * inner * belly;
+        const rm = sealedR + (r - sealedR) * reach + R * arch;
+        const a = Math.atan2(x, z) + (.15 + .22 * s) * lip * inner;
+        bent.setXYZ(i, rm * Math.sin(a), sy + (y - sy) * reach + R * (.12 * lip - .08 * belly), rm * Math.cos(a));
+        continue;
+      }
       // On a rose one shoulder leads and the trailing margin stays cupped.
       const seam = key === 'rose' ? .24 * s * inner : .055 * s * variation;
-      const spread = .81 + .095 * variation - (cup ? .55 : roll ? .48 : .52) * lip + seam * lip;
+      const spread = .81 + .095 * variation - (roll ? .48 : .52) * lip + seam * lip;
       const bx = sx + (x - sx) * spread, bz = sz + (z - sz) * spread;
       const twist = (key === 'rose' ? .40 : roll ? .22 : .13 * variation) * lip;
       const c = Math.cos(twist), d = Math.sin(twist);
-      const lift = (cup ? .09 : roll ? .12 : .19) * inner * R * (belly + .65 * lip);
+      const lift = (roll ? .12 : .19) * inner * R * (belly + .65 * lip);
       let mx = bx * c + bz * d, my = sy + (y - sy) * spread + lift, mz = bz * c - bx * d;
       if (roll) {
         // A dahlia floret is a tube, not a shrunken spoon. Curl its two
@@ -151,7 +168,8 @@ export function foldShell(g: THREE.BufferGeometry, specimen: Specimen, layer: nu
 // Unfolding the tiny blades afterwards never detaches them from that scaffold.
 export function foldCluster(g: THREE.BufferGeometry, specimen: Specimen, spans: BladeSpan[]) {
   const open = g.getAttribute('position'), uv = g.getAttribute('uv');
-  const shut = g.morphAttributes.position[0], bent = open.clone();
+  const shut = g.morphAttributes.position?.[0], bent = open.clone();
+  if (!shut) throw new Error('Cluster folding requires an authored closed pose.');
   const globe = specimen.key === 'billyButton';
   for (const { first, end, voice } of spans) {
     let last = first;

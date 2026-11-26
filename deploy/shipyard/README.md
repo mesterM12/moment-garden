@@ -24,8 +24,8 @@ An existing installation upgrading from a hard-coded public URL must add `PUBLIC
 
 ## Release manually
 
-1. Run `npm run typecheck`, `npm test`, `npm run build`, and `npm run test:e2e` in your source checkout. Install Playwright Chromium first if needed.
-2. Upload a reviewed source snapshot to the configured `APP_SOURCE` directory. Exclude `.git`, dependencies, generated outputs, agent configuration, caches, and private `.env` files. Include `.postcssrc.json`, public fonts and licenses, and the lockfile.
+1. Run `pnpm typecheck`, `pnpm test`, `pnpm build`, and `pnpm test:e2e` in your source checkout. Install Playwright Chromium first if needed.
+2. Upload a reviewed source snapshot to the configured `APP_SOURCE` directory. Exclude `.git`, dependencies, generated outputs, agent configuration, caches, and private `.env` files. Include `.postcssrc.json`, public fonts and licenses, `pnpm-lock.yaml`, and `pnpm-workspace.yaml`.
 3. Record the source revision and any uncommitted changes included in the snapshot. A revision alone does not identify a dirty working tree. Prefer a clean reviewed revision and a unique image tag for each release.
 4. Save the previous `.env` and image tag, then update `FLOWERS_IMAGE` and `APP_SOURCE` for this release.
 5. Validate, build, and replace only this application:

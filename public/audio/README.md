@@ -16,8 +16,8 @@ The ribbon picks up speed as its weave runs through a pinch. A wider, lower brea
 With Node 22.18+ or 24+, run from the repository root:
 
 ```sh
-npm run sound:render
-npx vitest run --project unit src/lib/sound-assets.test.ts src/lib/bloom-sound.test.ts
+pnpm sound:render
+pnpm exec vitest run --project unit src/lib/sound-assets.test.ts src/lib/bloom-sound.test.ts
 ```
 
 Both files are mono 44.1 kHz, signed 16-bit PCM. Before quantization, the release measures 0.116788 peak / 0.010037 RMS; the bloom measures 0.105955 peak / 0.018667 RMS. FFmpeg's oversampled true peaks are −18.7 dBTP and −19.5 dBTP respectively. There is no loudness normalization. Tests compare the WAVs byte for byte, check clean edges and phrase dynamics, and probe each gesture's level through a mono 400 Hz high-pass / 3.2 kHz low-pass. That probe catches detail lost to bass; it is not a listening test on a phone.

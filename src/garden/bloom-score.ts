@@ -10,7 +10,7 @@ const beat = (t: number, from: number, to: number) => ease((t - from) / (to - fr
 export function bloomStart(index: number, delay: number) {
   // The v2 cuts all start with a pair of focal stems, three companions, then
   // accents. Let the little ones answer across the bouquet, not in slot order.
-  const entrances = [0, .085, .15, .224, .188, .295, .39, .336, .447, .36];
+  const entrances = [0, .105, .135, .222, .176, .278, .372, .312, .426, .35];
   return index === 0 ? 0 : entrances[Math.min(index, 9)] + delay * .44;
 }
 
@@ -44,11 +44,24 @@ export function petalWave(key: SpeciesKey, layer: number, order: number, phase: 
   // and the outer rolls of dense heads loosen before the innermost crown.
   const spiral = (order * .618034 + phase / (Math.PI * 2)) % 1;
   const depth = Math.min(layer, 6);
-  if (key === 'tulip' || key === 'rose' || key === 'ranunculus' || key === 'dahlia') {
-    return .012 + .048 * depth + spiral * .14;
+  if (key === 'tulip') return .065 + Math.min(1, depth) * .145 + .15 * spiral;
+  if (key === 'rose' || key === 'ranunculus' || key === 'dahlia') {
+    return .022 + .055 * depth + spiral * .135;
   }
   if (key === 'lily' || key === 'poppy' || key === 'anemone') return .04 + depth * .073 + spiral * .22;
   return .075 + depth * .046 + spiral * .15;
+}
+
+// Finish as a relay, rather than stretching every blade to the same end beat.
+// Outside rows turn over while the crown is moving; the last inner blades
+// still receive the full local clock. Never desynchronise a floret's scaffold.
+export function petalPace(key: SpeciesKey, layer: number, order: number, phase: number) {
+  const side = .5 + .5 * Math.cos(order * 2.39996 + phase);
+  if (key === 'hydrangea' || key === 'billyButton') return 1;
+  if (key === 'calla') return 1.02;
+  if (key === 'rose' || key === 'dahlia' || key === 'ranunculus') return 1 + (.38 + .16 * side) / (1 + layer * 1.25);
+  if (key === 'tulip' || key === 'lily') return 1 + (.22 + .14 * side) * (1 - Math.min(1, layer));
+  return 1 + (.07 + .25 * side) / (1 + layer);
 }
 
 // Choose a guard on the visible shoulder. One broad petal can break the

@@ -1,0 +1,10 @@
+{
+  "name": "flowers-petal-bake",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.23.0",
+  "devDependencies": {
+    "@vgpu/wgsl": "0.6.0",
+    "vgpu": "0.6.0"
+  }
+}

@@ -27,7 +27,7 @@ describe.each(['lily', 'poppy', 'sunflower'] as const)('%s blade', key => {
   test('the socket stays put, the base rolls down before the rim, and midrib length survives each pose', () => {
     const g = strip(); foldBlade(g, key, -.08, 1.62);
     expect(g.morphAttributes.position).toHaveLength(2);
-    const [sealed, bowed] = g.morphAttributes.position;
+    const [sealed, bowed] = g.morphAttributes.position!;
     const tangent = (i: number) => vector(bowed, i + 5).sub(vector(bowed, i));
     expect(tangent(2).z).toBeGreaterThan(tangent(2).y);
     expect(tangent(97).y).toBeGreaterThan(tangent(97).z);
@@ -37,16 +37,16 @@ describe.each(['lily', 'poppy', 'sunflower'] as const)('%s blade', key => {
       for (let j = 0; j < 20; j++) length += vector(shape, j * 5 + 7).distanceTo(vector(shape, j * 5 + 2));
       expect(length).toBeCloseTo(1, 6);
     }
-    expect(g.morphAttributes.normal.every(a => a.array.every(Number.isFinite))).toBe(true);
+    expect(g.morphAttributes.normal?.every(a => a.array.every(Number.isFinite))).toBe(true);
     g.dispose();
   });
 });
 
 test('a lily closes over its insertion ring instead of curling six isolated blades around open air', () => {
   const head = new THREE.Group(), mat = new THREE.MeshStandardMaterial();
-  const batch = bladeBatches('lily', head, mat);
+  const batch = bladeBatches('lily', head, mat, 42);
   batch.add(strip(), 0, 0, 0, 0, .1, -.08, 0);
-  const [{ mesh }] = batch.finish(), [bud, bent] = mesh.geometry.morphAttributes.position;
+  const [{ mesh }] = batch.finish(), [bud, bent] = mesh.geometry.morphAttributes.position!;
   const rim = 102, belly = 52;
   // In head coordinates the sealed tip meets the axis above its fixed socket;
   // in the bowed pose its distal tangent points back toward the pistil.
@@ -61,14 +61,14 @@ test('a lily closes over its insertion ring instead of curling six isolated blad
 
 test('three large sunflower whorls share at most fifteen draws, including closed and bowed targets', () => {
   const head = new THREE.Group(), mat = new THREE.MeshStandardMaterial();
-  const batches = bladeBatches('sunflower', head, mat);
+  const batches = bladeBatches('sunflower', head, mat, 42);
   for (let layer = 0; layer < 3; layer++) for (let i = 0; i < 31; i++)
     batches.add(strip(), i, layer, i / 31 * Math.PI * 2, layer * .02, .5, .1, .01);
   const entries = batches.finish();
   expect(entries).toHaveLength(15);
   for (const { mesh } of entries) {
     expect(mesh.morphTargetInfluences).toEqual([0, 0]);
-    expect(mesh.geometry.morphAttributes.position.every(a => a.count === mesh.geometry.attributes.position.count)).toBe(true);
+    expect(mesh.geometry.morphAttributes.position?.every(a => a.count === mesh.geometry.attributes.position.count)).toBe(true);
     mesh.geometry.dispose();
   }
   mat.dispose();
@@ -78,8 +78,8 @@ test('cluster sockets rise with their scaffold before the independently cupped f
   const specimen = createSpecimen(42, 'hydrangea'), head = new THREE.Group(), mat = new THREE.MeshStandardMaterial();
   const batches = finishPetals(specimen, extras.build(specimen, head, mat), head);
   const [branch, outer] = batches;
-  expect(branch.mesh.geometry.morphAttributes.position[1].array).toEqual(branch.mesh.geometry.attributes.position.array);
-  const g = outer.mesh.geometry, bent = g.morphAttributes.position[1];
+  expect(branch.mesh.geometry.morphAttributes.position?.[1].array).toEqual(branch.mesh.geometry.attributes.position.array);
+  const g = outer.mesh.geometry, bent = g.morphAttributes.position![1];
   const blade = outer.blades![0];
   expect(vector(bent, blade.first)).toEqual(vector(g.attributes.position, blade.first));
   expect(vector(bent, blade.end - 1).distanceTo(vector(g.attributes.position, blade.end - 1))).toBeGreaterThan(.07);
@@ -89,7 +89,7 @@ test('cluster sockets rise with their scaffold before the independently cupped f
 test('a calla covers its spadix with a wound lip and releases the outside lap first', () => {
   const specimen = createSpecimen(42, 'calla'), head = new THREE.Group(), mat = new THREE.MeshStandardMaterial();
   const [petal] = finishPetals(specimen, extras.build(specimen, head, mat), head);
-  const g = petal.mesh.geometry, open = g.attributes.position, [bud, mid] = g.morphAttributes.position;
+  const g = petal.mesh.geometry, open = g.attributes.position, [bud, mid] = g.morphAttributes.position!;
   const span = petal.blades![0];
   let spadix = -Infinity, lowLip = Infinity, inner = -1, outer = -1;
   for (let i = span.end; i < open.count; i++) spadix = Math.max(spadix, bud.getY(i));
@@ -109,7 +109,7 @@ test('a calla covers its spadix with a wound lip and releases the outside lap fi
 test('rose guards peel from their insertion, with one shoulder leading and the opposite rim still cupped', () => {
   const specimen = createSpecimen(42, 'rose'), head = new THREE.Group(), mat = new THREE.MeshStandardMaterial();
   const entries = finishPetals(specimen, dedicated.build(specimen, head, mat), head);
-  const g = entries[0].mesh.geometry, open = g.attributes.position, [bud, mid] = g.morphAttributes.position;
+  const g = entries[0].mesh.geometry, open = g.attributes.position, [bud, mid] = g.morphAttributes.position!;
   const spread = (i: number) => {
     const r = (p: typeof open) => Math.hypot(p.getX(i), p.getZ(i));
     return (r(mid) - r(bud)) / (r(open) - r(bud));

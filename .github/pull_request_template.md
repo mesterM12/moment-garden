@@ -6,10 +6,10 @@
 
 <!-- List commands run and results. Note skipped checks and why. -->
 
-- [ ] `npm run typecheck`
-- [ ] `npm test`
-- [ ] `npm run build`
-- [ ] `npm run test:e2e` (after building)
+- [ ] `pnpm typecheck`
+- [ ] `pnpm test`
+- [ ] `pnpm build`
+- [ ] `pnpm test:e2e` (after building)
 
 ## Visual or bouquet changes
 

@@ -25,7 +25,7 @@ it('replays from the binding and ends exactly at the same rest pose', () => {
   expect(leafy.morphTargetInfluences![0]).toBeGreaterThan(0);
   expect(leafy.morphTargetInfluences![0]).toBeLessThan(1);
   expect(late.morphTargetInfluences).toEqual([1, 0]);
-  const tucked = leafy.geometry.morphAttributes.position[0], rest = leafy.geometry.getAttribute('position');
+  const tucked = leafy.geometry.morphAttributes.position![0], rest = leafy.geometry.getAttribute('position');
   expect(Array.from(tucked.array).some((x, i) => Math.abs(x - rest.array[i]) > .5)).toBe(true);
   for (let i = 0; i < rest.count; i++) {
     if (Math.abs(rest.getY(i)) < .025) {
@@ -36,7 +36,7 @@ it('replays from the binding and ends exactly at the same rest pose', () => {
   expect(leafy.morphTargetInfluences![1]).toBeGreaterThan(.1);
   // The spray has already sprung outward; the turning blade faces still
   // catch the light differently here than in the mature keepsake.
-  const restNormal = leafy.geometry.getAttribute('normal'), recoilNormal = leafy.geometry.morphAttributes.normal[1];
+  const restNormal = leafy.geometry.getAttribute('normal'), recoilNormal = leafy.geometry.morphAttributes.normal![1];
   let turning = 0;
   for (let i = 0; i < restNormal.count; i++) {
     const x = restNormal.getX(i), y = restNormal.getY(i), z = restNormal.getZ(i);

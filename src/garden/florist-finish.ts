@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { ease } from './bloom-score';
+import { handAttribute, petalHand } from './petal-hand';
 import { foldCluster, foldShell } from './petal-fold';
 import type { MorphPetal, Specimen } from './types';
 
@@ -10,21 +11,30 @@ import type { MorphPetal, Specimen } from './types';
 function tulipTepal(specimen: Specimen, j: number, mesh: MorphPetal['mesh']) {
   const inner = j >= 3, R = specimen.length;
   const axis = specimen.rotation + j % 3 * Math.PI * 2 / 3 + (inner ? Math.PI / 3 : 0);
-  const variation = Math.sin(j * 2.39996 + specimen.rotation * 1.7);
+  const hand = petalHand(specimen.timestamp, j, 0);
+  const variation = (hand >>> 16) / 32767.5 - 1;
   const base = new THREE.Color(specimen.palette.base), tip = new THREE.Color(specimen.palette.tip);
   const root = new THREE.Color(specimen.palette.root), ivory = new THREE.Color('#fff0c8');
   const tint = new THREE.Color(), g = mesh.geometry;
   const pos = g.getAttribute('position'), col = g.getAttribute('color'), uv = g.getAttribute('uv');
-  const closed = g.morphAttributes.position[0];
+  const closed = g.morphAttributes.position?.[0], normals = g.morphAttributes.normal;
+  if (!closed || !normals?.[0]) throw new Error('Tulip tepals require an authored closed pose.');
   for (let i = 0; i < pos.count; i++) {
     const s = uv.getX(i) * 2 - 1, t = uv.getY(i), lip = ease((t - .6) / .4);
     const arch = t - .22 * s * s * lip;
+    // A tulip is spooned along its rib. The broad guards turn away at the
+    // rim while the taller inner sails hold their concave silhouette.
+    const rib = Math.exp(-((s * 4.1 - .18 * t) ** 2));
+    const margin = Math.abs(s) ** 3;
     const radial = .045 + (inner ? .46 : .56) * Math.sin(Math.PI * arch * .73)
-      + (inner ? -.033 : .096 + .035 * variation) * lip - .034 * s * s * lip;
+      + (inner ? -.033 : .13 + .055 * variation) * lip - .034 * s * s * lip
+      + (.045 * rib - .058 * margin) * Math.sin(Math.PI * t)
+      + lip * (.056 * Math.sin(4.4 * s + variation) - .075 * (1 - s * s) * (inner ? 1 : -.5));
     const span = (.12 + .98 * Math.sin(Math.PI * t * .82) ** .78) * (inner ? .90 : 1);
     const theta = axis + s * span + (inner ? .19 : .12) * t + variation * .065 * lip;
     const x = R * Math.sin(theta) * radial, z = R * Math.cos(theta) * radial;
-    const y = R * ((inner ? 1.09 : .87) + .075 * variation) * (arch ** 1.09);
+    const y = R * (((inner ? 1.09 : .87) + .075 * variation) * (arch ** 1.09)
+      + lip * (.037 * s - .044 * margin + .018 * Math.sin(5.2 * s + variation)));
     pos.setXYZ(i, x, y, z);
     const budRadius = R * (.042 + .19 * Math.sin(Math.PI * t * .93) + .017 * (inner ? 0 : 1));
     closed.setXYZ(i, Math.sin(theta) * budRadius, R * arch * (inner ? 1.01 : .97), Math.cos(theta) * budRadius);
@@ -33,8 +43,10 @@ function tulipTepal(specimen: Specimen, j: number, mesh: MorphPetal['mesh']) {
     const edge = ease((Math.abs(s) - .70) / .30);
     const blush = .08 + (inner ? .025 : .115) + .065 * variation;
     tint.copy(root).lerp(base, .40 + .6 * ease(t / .66))
-      .lerp(tip, .15 + .42 * t + blush + .07 * Math.sin(s * 4 + t))
+      .lerp(tip, .08 + .40 * t + blush + .07 * Math.sin(s * 4 + t))
       .lerp(ivory, blush * (.33 + .67 * t) + .10 * lip + edge * .13 * t);
+    // A single feather of basal pigment follows the rib up the cup.
+    tint.lerp(root, (.18 + .08 * variation) * rib * (1 - ease((t - .23) / .70)));
     tint.lerp(base, .12 * (1 - Math.abs(s)) * Math.sin(t * Math.PI));
     if (s < 0) tint.lerp(root, edge * .18 * Math.sin(t * Math.PI));
     col.setXYZ(i, tint.r, tint.g, tint.b);
@@ -42,7 +54,7 @@ function tulipTepal(specimen: Specimen, j: number, mesh: MorphPetal['mesh']) {
   g.computeVertexNormals();
   const openNormal = g.getAttribute('normal');
   g.setAttribute('position', closed); g.deleteAttribute('normal'); g.computeVertexNormals();
-  g.morphAttributes.normal[0] = g.getAttribute('normal');
+  normals[0] = g.getAttribute('normal');
   g.setAttribute('position', pos); g.setAttribute('normal', openNormal);
 }
 
@@ -62,6 +74,12 @@ export function finishPetals(specimen: Specimen, petals: MorphPetal[], head: THR
     const g = mesh.geometry;
     const pos = g.getAttribute('position'), uv = g.getAttribute('uv'), color = g.getAttribute('color');
     const phase = rotation + j * 2.39996;
+    const blades = petals[j].blades ?? [{ first: 0, end: pos.count, voice: 0 }];
+    const mark = handAttribute(g);
+    for (const { first, end, voice, anchor } of blades) {
+      if (!anchor) mark(first, end, petalHand(specimen.timestamp, j, voice));
+    }
+    const turn = (petalHand(specimen.timestamp, j, 0) >>> 16) / 32767.5 - 1;
     for (let i = 0; !tulip && i < pos.count; i++) {
       const t = uv.getY(i), s = 2 * uv.getX(i) - 1;
       const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
@@ -70,7 +88,25 @@ export function finishPetals(specimen: Specimen, petals: MorphPetal[], head: THR
       const rib = Math.cos(s * 8 + .67 * Math.sin(phase + t * 3));
       const crease = rib * rib * rib * rib;
       const lip = ease((t - .67) / .33);
-      if (dense) {
+      if (key === 'rose') {
+        // Overlapping guards turn up into a scalloped bowl. The centre
+        // stays wound: its taller, narrower shoulders show more than a lip.
+        const radius = Math.hypot(x, z), cap = 1 - s * s;
+        const r = radius * (1 - .07 * s * s * t + .035 * turn * t);
+        const a = Math.atan2(x, z) + t * t * (.26 + .05 * turn + .064 * layer) + .083 * s * t;
+        const fold = (.21 + .04 * turn) * cap * t * t + .075 * shoulder * s * s
+          + .075 * s * t - lip * (.087 + .062 * Math.cos(4.1 * s + turn)) * cap;
+        pos.setXYZ(i, r * Math.sin(a), y + length * fold / (1 + .34 * layer), r * Math.cos(a));
+      } else if (key === 'calla' && i < blades[0].end) {
+        // The folded spathe has one high tail and a lower, reflexed apron.
+        // Their asymmetry reads even when the surface veins are subpixel.
+        const a = Math.atan2(x, z), apex = Math.max(0, -Math.cos(a)) ** 3;
+        const pleat = .028 * shoulder * Math.cos(4.3 * a + 1.7 * t + turn);
+        const flare = pleat + lip * (.056 + .079 * apex + .017 * turn);
+        pos.setXYZ(i, x + length * (Math.sin(a) * flare + .06 * apex * lip * turn),
+          y + length * lip * (.12 * apex - .032 * (1 - apex) + .025 * Math.sin(3 * a + turn)),
+          z + length * Math.cos(a) * flare);
+      } else if (dense) {
         const radial = Math.hypot(x, z) || 1;
         const roll = .009 * shoulder * rib + .015 * lip * Math.sin(s * 3 + phase);
         // Raised asymmetric lips and a little reflex at the margin. Inner
@@ -82,16 +118,32 @@ export function finishPetals(specimen: Specimen, petals: MorphPetal[], head: THR
       const root = (1 - ease(t / .64)) * (.05 + .10 * crease);
       tint.fromBufferAttribute(color, i).lerp(shade, root)
         .multiplyScalar(.95 + .042 * shoulder + .039 * lip + .028 * rib * shoulder + .025 * Math.sin(phase));
+      if (key === 'rose') {
+        // The trailing flank tucks under its neighbour. Warm occlusion on
+        // the inner whorls keeps cream roses readable against cream paper.
+        const tuck = ease((s - .27) / .73) * t * .26 + (1 - t) ** 2 * .19;
+        tint.lerp(shade, tuck).multiplyScalar(1 - tuck * .44 - layer * .031 * (1 - lip));
+      }
       color.setXYZ(i, tint.r, tint.g, tint.b);
     }
-    if (dense) g.computeVertexNormals();
-    const blades = petals[j].blades ?? [{ first: 0, end: pos.count, voice: 0 }];
+    if (dense || key === 'calla') g.computeVertexNormals();
     if (key === 'hydrangea' || key === 'billyButton') {
       foldCluster(g, specimen, blades);
       mesh.updateMorphTargets();
     } else if (blades.length) {
       foldShell(g, specimen, layer, phase, blades);
       mesh.updateMorphTargets();
+    }
+    // The modelling pass needed the original UVs. Now mark only the solid
+    // details (including attached beard grains) as outside the petal field.
+    if (petals[j].blades) {
+      let next = 0;
+      for (const span of blades) {
+        for (let i = next; i < span.first; i++) uv.setXY(i, -1, -1);
+        if (span.anchor) for (let i = span.first; i < span.end; i++) uv.setXY(i, -1, -1);
+        next = span.end;
+      }
+      for (let i = next; i < uv.count; i++) uv.setXY(i, -1, -1);
     }
   }
   // Dense dahlias used to submit 140 separate draws per head. Retain their
